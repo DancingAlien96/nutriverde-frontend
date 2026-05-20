@@ -67,12 +67,6 @@ export function Hero() {
         </div>
       </div>
 
-      {/* Marca de agua grande en la parte inferior */}
-      <div className="pointer-events-none absolute -bottom-6 left-0 right-0 overflow-hidden">
-        <p className="font-serif-display text-[18vw] leading-none text-gray-900/90 whitespace-nowrap select-none">
-          NutriVerde
-        </p>
-      </div>
     </section>
   );
 }
