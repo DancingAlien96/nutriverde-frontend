@@ -28,7 +28,14 @@ export interface PaymentListItem {
   rejectedReason: string | null;
   patient: { id: string; fullName: string; email: string; phone: string | null };
   service: { id: string; name: string; slug: string; durationMin: number };
-  appointment: { id: string; status: string; scheduledAt: string | null } | null;
+  appointment: {
+    id: string;
+    status: string;
+    scheduledAt: string | null;
+    scheduleToken: string | null;
+    meetingUrl: string | null;
+    meetingProvider: "GOOGLE_MEET" | "ZOOM" | null;
+  } | null;
 }
 
 export interface PaymentDetail extends PaymentListItem {
@@ -123,6 +130,190 @@ export async function rejectPayment(
   const res = await authFetch(`/api/admin/payments/${id}/reject`, {
     method: "POST",
     body: JSON.stringify({ reason }),
+  });
+  return parseJson(res);
+}
+
+// ============================================================
+// Disponibilidad
+// ============================================================
+
+export interface AvailabilitySlot {
+  id: string;
+  dayOfWeek: number; // 0..6 (0 = domingo)
+  startMinute: number;
+  endMinute: number;
+  active: boolean;
+}
+
+export interface AvailabilityBlock {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  reason: string | null;
+}
+
+export interface SchedulingSettings {
+  allowSameDayBooking: boolean;
+  minLeadMinutes: number;
+}
+
+export async function listAvailability(): Promise<{
+  slots: AvailabilitySlot[];
+  blocks: AvailabilityBlock[];
+  settings: SchedulingSettings;
+}> {
+  const res = await authFetch("/api/admin/availability");
+  return parseJson(res);
+}
+
+export async function updateSchedulingSettings(
+  patch: Partial<SchedulingSettings>,
+): Promise<{ settings: SchedulingSettings }> {
+  const res = await authFetch("/api/admin/availability/settings", {
+    method: "PUT",
+    body: JSON.stringify(patch),
+  });
+  return parseJson(res);
+}
+
+export async function createSlot(input: {
+  dayOfWeek: number;
+  startMinute: number;
+  endMinute: number;
+}): Promise<{ slot: AvailabilitySlot }> {
+  const res = await authFetch("/api/admin/availability/slots", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
+export async function updateSlot(
+  id: string,
+  patch: Partial<{
+    dayOfWeek: number;
+    startMinute: number;
+    endMinute: number;
+    active: boolean;
+  }>,
+): Promise<{ slot: AvailabilitySlot }> {
+  const res = await authFetch(`/api/admin/availability/slots/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(patch),
+  });
+  return parseJson(res);
+}
+
+export async function deleteSlot(id: string): Promise<void> {
+  const res = await authFetch(`/api/admin/availability/slots/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    if (res.status === 401) clearToken();
+    throw new Error(`HTTP ${res.status}`);
+  }
+}
+
+export async function createBlock(input: {
+  startsAt: string;
+  endsAt: string;
+  reason?: string;
+}): Promise<{ block: AvailabilityBlock }> {
+  const res = await authFetch("/api/admin/availability/blocks", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
+export async function deleteBlock(id: string): Promise<void> {
+  const res = await authFetch(`/api/admin/availability/blocks/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    if (res.status === 401) clearToken();
+    throw new Error(`HTTP ${res.status}`);
+  }
+}
+
+// ============================================================
+// Servicios (admin)
+// ============================================================
+
+export interface ServiceAdmin {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  priceCents: number;
+  currency: string;
+  durationMin: number;
+  billingType: "ONE_TIME" | "MONTHLY";
+  active: boolean;
+  sortOrder: number;
+}
+
+export async function listAdminServices(): Promise<{ services: ServiceAdmin[] }> {
+  const res = await authFetch("/api/admin/services");
+  return parseJson(res);
+}
+
+export async function updateAdminService(
+  id: string,
+  patch: Partial<Omit<ServiceAdmin, "id" | "slug">>,
+): Promise<{ service: ServiceAdmin }> {
+  const res = await authFetch(`/api/admin/services/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(patch),
+  });
+  return parseJson(res);
+}
+
+export async function createAdminService(input: {
+  slug: string;
+  name: string;
+  description: string;
+  priceCents: number;
+  durationMin: number;
+  billingType: "ONE_TIME" | "MONTHLY";
+  currency?: string;
+  active?: boolean;
+  sortOrder?: number;
+}): Promise<{ service: ServiceAdmin }> {
+  const res = await authFetch("/api/admin/services", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
+export async function deleteAdminService(id: string): Promise<void> {
+  const res = await authFetch(`/api/admin/services/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    if (res.status === 401) clearToken();
+    throw new Error(data.error ?? `HTTP ${res.status}`);
+  }
+}
+
+export async function setMeetingUrl(
+  id: string,
+  meetingUrl: string,
+  meetingProvider?: "GOOGLE_MEET" | "ZOOM",
+): Promise<{
+  ok: true;
+  appointment: {
+    id: string;
+    meetingUrl: string | null;
+    meetingProvider: "GOOGLE_MEET" | "ZOOM" | null;
+  };
+}> {
+  const res = await authFetch(`/api/admin/payments/${id}/meeting`, {
+    method: "POST",
+    body: JSON.stringify({ meetingUrl, meetingProvider }),
   });
   return parseJson(res);
 }

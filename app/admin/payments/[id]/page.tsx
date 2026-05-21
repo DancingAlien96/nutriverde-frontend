@@ -9,9 +9,13 @@ import {
   formatCents,
   getPayment,
   rejectPayment,
+  setMeetingUrl,
   type IntakeData,
   type PaymentDetail,
 } from "../../../lib/admin";
+
+const FRONTEND_ORIGIN =
+  typeof window !== "undefined" ? window.location.origin : "";
 
 export default function PaymentDetailPage() {
   return (
@@ -35,6 +39,10 @@ function PaymentDetailContent() {
   const [submitting, setSubmitting] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [meetingDraft, setMeetingDraft] = useState("");
+  const [meetingSaving, setMeetingSaving] = useState(false);
+  const [meetingError, setMeetingError] = useState<string | null>(null);
+  const [meetingSaved, setMeetingSaved] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -47,6 +55,7 @@ function PaymentDetailContent() {
         if (cancelled) return;
         setPayment(p);
         setIntake(i);
+        setMeetingDraft(p.appointment?.meetingUrl ?? "");
         try {
           const r = await fetchReceipt(id);
           if (!cancelled) {
@@ -85,6 +94,31 @@ function PaymentDetailContent() {
       setActionError(err instanceof Error ? err.message : "Error");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleSaveMeeting() {
+    if (!payment) return;
+    setMeetingError(null);
+    setMeetingSaved(false);
+    setMeetingSaving(true);
+    try {
+      const { appointment } = await setMeetingUrl(payment.id, meetingDraft.trim());
+      setPayment({
+        ...payment,
+        appointment: payment.appointment
+          ? {
+              ...payment.appointment,
+              meetingUrl: appointment.meetingUrl,
+              meetingProvider: appointment.meetingProvider,
+            }
+          : null,
+      });
+      setMeetingSaved(true);
+    } catch (err) {
+      setMeetingError(err instanceof Error ? err.message : "Error");
+    } finally {
+      setMeetingSaving(false);
     }
   }
 
@@ -241,6 +275,98 @@ function PaymentDetailContent() {
             </dl>
           </div>
 
+          {payment.appointment && (
+            <div className="rounded-2xl bg-white border border-gray-200 p-5">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                Cita
+              </h3>
+
+              <dl className="mt-3 space-y-2.5 text-sm">
+                <Row
+                  label="Estado"
+                  value={appointmentStatusLabel(payment.appointment.status)}
+                  strong
+                />
+                {payment.appointment.scheduledAt && (
+                  <Row
+                    label={
+                      payment.appointment.status === "SCHEDULED"
+                        ? "Horario"
+                        : "Horario tentativo"
+                    }
+                    value={formatDate(payment.appointment.scheduledAt)}
+                  />
+                )}
+              </dl>
+
+              {payment.status === "PENDING_REVIEW" &&
+                payment.appointment.scheduledAt && (
+                  <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    El paciente eligió este horario al hacer el intake. Al
+                    aprobar el pago, si el slot sigue libre quedará confirmado;
+                    si no, le enviaremos el link para que elija otro.
+                  </p>
+                )}
+
+              {payment.appointment.scheduleToken && (
+                <div className="mt-4">
+                  <label className="block text-xs text-gray-500 mb-1.5">
+                    Link para el paciente
+                  </label>
+                  <ScheduleLinkRow
+                    url={`${FRONTEND_ORIGIN}/agendar-cita/${payment.appointment.scheduleToken}`}
+                  />
+                </div>
+              )}
+
+              {payment.status === "APPROVED" && (
+                <div className="mt-5">
+                  <label className="block text-xs text-gray-500 mb-1.5">
+                    Link de la videollamada (Meet / Zoom)
+                  </label>
+                  <input
+                    type="url"
+                    value={meetingDraft}
+                    onChange={(e) => {
+                      setMeetingDraft(e.target.value);
+                      setMeetingSaved(false);
+                      setMeetingError(null);
+                    }}
+                    placeholder="https://meet.google.com/..."
+                    className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                  {meetingError && (
+                    <p className="mt-2 text-xs text-red-600">{meetingError}</p>
+                  )}
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    {meetingSaved ? (
+                      <span className="text-xs text-brand-700 inline-flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Guardado
+                      </span>
+                    ) : (
+                      <span />
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleSaveMeeting}
+                      disabled={
+                        meetingSaving ||
+                        meetingDraft.trim() ===
+                          (payment.appointment.meetingUrl ?? "")
+                      }
+                      className="rounded-full bg-gray-900 hover:bg-gray-800 disabled:opacity-40 px-4 py-1.5 text-xs font-medium text-white"
+                    >
+                      {meetingSaving ? "Guardando…" : "Guardar"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="rounded-2xl bg-white border border-gray-200 p-5">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
               Paciente
@@ -308,14 +434,14 @@ function ReceiptViewer({
         <img
           src={receipt.blobUrl}
           alt="Comprobante"
-          className="w-full rounded-xl border border-gray-200 max-h-[600px] object-contain bg-gray-50"
+          className="w-full rounded-xl border border-gray-200 max-h-[400px] sm:max-h-[600px] object-contain bg-gray-50"
         />
       )}
       {isPdf && (
         <iframe
           src={receipt.blobUrl}
           title="Comprobante PDF"
-          className="w-full h-[600px] rounded-xl border border-gray-200"
+          className="w-full h-[400px] sm:h-[600px] rounded-xl border border-gray-200"
         />
       )}
       {!isImage && !isPdf && (
@@ -375,6 +501,58 @@ function BlockRow({ label, value }: { label: string; value: string }) {
     <div>
       <dt className="text-xs text-gray-500 mb-1">{label}</dt>
       <dd className="text-sm text-gray-800 whitespace-pre-wrap">{value}</dd>
+    </div>
+  );
+}
+
+function appointmentStatusLabel(status: string): string {
+  switch (status) {
+    case "AWAITING_PAYMENT":
+      return "Esperando pago";
+    case "PAYMENT_APPROVED":
+      return "Pendiente de horario";
+    case "SCHEDULED":
+      return "Agendada";
+    case "COMPLETED":
+      return "Realizada";
+    case "CANCELED":
+      return "Cancelada";
+    case "NO_SHOW":
+      return "No asistió";
+    default:
+      return status;
+  }
+}
+
+function ScheduleLinkRow({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // noop — navegadores muy viejos
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="text"
+        value={url}
+        readOnly
+        onFocus={(e) => e.currentTarget.select()}
+        className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700 font-mono"
+      />
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="shrink-0 rounded-full border border-gray-200 hover:border-brand-300 px-3 py-2 text-xs font-medium text-gray-700"
+      >
+        {copied ? "Copiado" : "Copiar"}
+      </button>
     </div>
   );
 }
