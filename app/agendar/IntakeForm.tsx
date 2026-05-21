@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { submitIntake, type ApiService } from "../lib/api";
+import {
+  fetchServiceAvailability,
+  fetchServiceSlots,
+  submitIntake,
+  type ApiService,
+} from "../lib/api";
+import { MonthCalendar } from "../components/MonthCalendar";
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
+
+const BUSINESS_TZ = "America/Guatemala";
 
 interface FormState {
   serviceSlug: string;
@@ -16,6 +24,7 @@ interface FormState {
   goal: string;
   conditions: string;
   receipt: File | null;
+  scheduledAt: string | null; // ISO UTC, opcional
 }
 
 const initialForm: FormState = {
@@ -31,6 +40,7 @@ const initialForm: FormState = {
   goal: "",
   conditions: "",
   receipt: null,
+  scheduledAt: null,
 };
 
 export function IntakeForm({ services }: { services: ApiService[] }) {
@@ -58,7 +68,8 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
         form.goal.trim().length > 0
       );
     }
-    return form.receipt !== null;
+    if (step === 3) return form.receipt !== null;
+    return true; // step 4: horario es opcional
   }
 
   async function handleSubmit() {
@@ -77,6 +88,7 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
       data.append("goal", form.goal.trim());
       if (form.conditions) data.append("conditions", form.conditions.trim());
       data.append("receipt", form.receipt);
+      if (form.scheduledAt) data.append("scheduledAt", form.scheduledAt);
 
       const result = await submitIntake(data);
       setSuccess({ intakeId: result.intakeId, message: result.message });
@@ -88,11 +100,17 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
   }
 
   if (success) {
-    return <SuccessView message={success.message} />;
+    return (
+      <SuccessView
+        message={success.message}
+        scheduledAt={form.scheduledAt}
+        patientTimezone={form.timezone}
+      />
+    );
   }
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-10">
+    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-10">
       <Stepper current={step} />
 
       {step === 1 && (
@@ -118,6 +136,17 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
         />
       )}
 
+      {step === 4 && selectedService && (
+        <StepHorario
+          serviceSlug={selectedService.slug}
+          serviceName={selectedService.name}
+          durationMin={selectedService.durationMin}
+          patientTimezone={form.timezone}
+          selected={form.scheduledAt}
+          onSelect={(iso) => updateField("scheduledAt", iso)}
+        />
+      )}
+
       {error && (
         <div className="mt-6 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
@@ -134,7 +163,7 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
           ← Atrás
         </button>
 
-        {step < 3 ? (
+        {step < 4 ? (
           <button
             type="button"
             onClick={() => canAdvance() && setStep((s) => (s + 1) as Step)}
@@ -150,10 +179,14 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!canAdvance() || submitting}
+            disabled={submitting}
             className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-medium text-white shadow hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {submitting ? "Enviando…" : "Enviar solicitud"}
+            {submitting
+              ? "Enviando…"
+              : form.scheduledAt
+                ? "Enviar solicitud"
+                : "Omitir y enviar"}
           </button>
         )}
       </div>
@@ -162,7 +195,7 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
 }
 
 function Stepper({ current }: { current: Step }) {
-  const steps = ["Servicio", "Tus datos", "Pago"];
+  const steps = ["Servicio", "Tus datos", "Pago", "Horario"];
   return (
     <ol className="flex items-center justify-between mb-8 max-w-md mx-auto">
       {steps.map((label, idx) => {
@@ -171,9 +204,9 @@ function Stepper({ current }: { current: Step }) {
         const active = num === current;
         return (
           <li key={label} className="flex items-center flex-1 last:flex-none">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <span
-                className={`h-7 w-7 rounded-full text-xs font-semibold flex items-center justify-center ${
+                className={`h-7 w-7 shrink-0 rounded-full text-xs font-semibold flex items-center justify-center ${
                   done
                     ? "bg-brand-600 text-white"
                     : active
@@ -189,9 +222,12 @@ function Stepper({ current }: { current: Step }) {
                   num
                 )}
               </span>
+              {/* En mobile solo mostramos el label del paso activo, los otros se ocultan para evitar overflow */}
               <span
-                className={`text-xs font-medium ${
-                  active ? "text-gray-900" : "text-gray-500"
+                className={`text-xs font-medium truncate ${
+                  active
+                    ? "text-gray-900 inline"
+                    : "text-gray-500 hidden sm:inline"
                 }`}
               >
                 {label}
@@ -199,7 +235,7 @@ function Stepper({ current }: { current: Step }) {
             </div>
             {idx < steps.length - 1 && (
               <span
-                className={`mx-3 h-px flex-1 ${
+                className={`mx-2 sm:mx-3 h-px flex-1 ${
                   done ? "bg-brand-500" : "bg-gray-200"
                 }`}
               />
@@ -431,6 +467,166 @@ function StepPayment({
   );
 }
 
+function StepHorario({
+  serviceSlug,
+  serviceName,
+  durationMin,
+  patientTimezone,
+  selected,
+  onSelect,
+}: {
+  serviceSlug: string;
+  serviceName: string;
+  durationMin: number;
+  patientTimezone: string;
+  selected: string | null;
+  onSelect: (iso: string | null) => void;
+}) {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [slots, setSlots] = useState<string[] | null>(null);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+
+  const fetchAvailability = useCallback(
+    (month: string) => fetchServiceAvailability(serviceSlug, month),
+    [serviceSlug],
+  );
+
+  useEffect(() => {
+    if (!selectedDate) {
+      setSlots(null);
+      return;
+    }
+    let cancelled = false;
+    setSlotsLoading(true);
+    setSlots(null);
+    fetchServiceSlots(serviceSlug, selectedDate)
+      .then((data) => {
+        if (!cancelled) {
+          setSlots(data.slots);
+          setSlotsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSlots([]);
+          setSlotsLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [serviceSlug, selectedDate]);
+
+  return (
+    <div>
+      <h2 className="font-serif-display text-2xl sm:text-3xl text-gray-900">
+        Elige tu horario (opcional)
+      </h2>
+      <p className="mt-2 text-sm text-gray-600">
+        {serviceName} · {durationMin} min. Cuando aprobemos tu pago confirmaremos
+        este horario. Si lo dejas en blanco, te enviaremos un link para elegirlo
+        después.
+      </p>
+
+      <div className="mt-6 bg-gray-50 rounded-2xl p-4 max-w-md mx-auto">
+        <MonthCalendar
+          fetchAvailability={fetchAvailability}
+          selectedDate={selectedDate}
+          onSelect={(date) => {
+            setSelectedDate(date);
+            onSelect(null);
+          }}
+        />
+      </div>
+
+      {selectedDate && (
+        <div className="mt-6">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
+            Horario disponible · {fmtSelectedDate(selectedDate)}
+          </p>
+          {slotsLoading ? (
+            <p className="text-sm text-gray-500">Buscando horarios…</p>
+          ) : !slots || slots.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              No hay horarios disponibles ese día.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+              {slots.map((iso) => {
+                const isPicked = iso === selected;
+                return (
+                  <button
+                    key={iso}
+                    type="button"
+                    onClick={() => onSelect(iso === selected ? null : iso)}
+                    className={`rounded-xl border px-3 py-2.5 text-sm transition-colors text-center ${
+                      isPicked
+                        ? "border-brand-600 bg-brand-50 ring-2 ring-brand-600/20"
+                        : "border-gray-200 hover:border-brand-300 bg-white"
+                    }`}
+                  >
+                    <div className="font-medium text-gray-900">
+                      {fmtTime(iso, BUSINESS_TZ)}
+                    </div>
+                    {patientTimezone !== BUSINESS_TZ && (
+                      <div className="text-[10px] text-gray-500 mt-0.5">
+                        {fmtTime(iso, patientTimezone)} tu hora
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {selected && (
+        <div className="mt-4 rounded-xl bg-brand-50 border border-brand-200 px-4 py-3 text-sm text-brand-800">
+          <strong>Horario tentativo:</strong> {fmtFullDate(selected, BUSINESS_TZ)}
+          {patientTimezone !== BUSINESS_TZ && (
+            <span className="block text-xs text-brand-700/80 mt-0.5">
+              {fmtFullDate(selected, patientTimezone)} (tu hora)
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function fmtSelectedDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d, 12, 0));
+  return date.toLocaleDateString("es-GT", {
+    timeZone: BUSINESS_TZ,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
+function fmtTime(iso: string, tz: string): string {
+  return new Date(iso).toLocaleTimeString("es-GT", {
+    timeZone: tz,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function fmtFullDate(iso: string, tz: string): string {
+  return new Date(iso).toLocaleString("es-GT", {
+    timeZone: tz,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 function FileDrop({
   file,
   onFile,
@@ -499,7 +695,15 @@ function Field({
   );
 }
 
-function SuccessView({ message }: { message: string }) {
+function SuccessView({
+  message,
+  scheduledAt,
+  patientTimezone,
+}: {
+  message: string;
+  scheduledAt: string | null;
+  patientTimezone: string;
+}) {
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 sm:p-12 text-center">
       <div className="mx-auto h-16 w-16 rounded-full bg-brand-100 flex items-center justify-center">
@@ -512,6 +716,23 @@ function SuccessView({ message }: { message: string }) {
       </h2>
       <p className="mt-3 text-gray-600 max-w-md mx-auto">{message}</p>
 
+      {scheduledAt && (
+        <div className="mt-6 inline-block text-left rounded-2xl bg-brand-50 border border-brand-200 px-5 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-brand-700 mb-1">
+            Horario tentativo
+          </p>
+          <p className="text-sm font-medium text-gray-900">
+            {fmtFullDate(scheduledAt, BUSINESS_TZ)}{" "}
+            <span className="text-xs font-normal text-gray-500">(Guatemala)</span>
+          </p>
+          {patientTimezone !== BUSINESS_TZ && (
+            <p className="text-xs text-gray-600 mt-0.5">
+              {fmtFullDate(scheduledAt, patientTimezone)} (tu hora)
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="mt-8 rounded-2xl bg-cream-100 border border-cream-300 p-5 text-left max-w-md mx-auto">
         <p className="text-xs font-semibold uppercase tracking-wider text-brand-700 mb-3">
           Próximos pasos
@@ -523,7 +744,9 @@ function SuccessView({ message }: { message: string }) {
           </li>
           <li className="flex gap-2">
             <span className="font-semibold text-brand-700">2.</span>
-            Te enviamos un correo con un enlace para elegir tu horario.
+            {scheduledAt
+              ? "Te confirmamos por correo y tu horario queda confirmado."
+              : "Te enviamos un correo con un enlace para elegir tu horario."}
           </li>
           <li className="flex gap-2">
             <span className="font-semibold text-brand-700">3.</span>

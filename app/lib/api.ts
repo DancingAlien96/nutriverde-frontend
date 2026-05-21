@@ -35,6 +35,48 @@ export interface IntakeErrorResult {
   details?: unknown;
 }
 
+export type DayStatus = "AVAILABLE" | "FULL" | "BLOCKED";
+
+export interface MonthAvailability {
+  month: string;
+  workingDaysOfWeek: number[];
+  days: Record<string, DayStatus>;
+  durationMin: number;
+}
+
+export async function fetchServiceAvailability(
+  slug: string,
+  month: string,
+): Promise<MonthAvailability> {
+  const res = await fetch(
+    `${API_URL}/api/services/${slug}/availability?month=${month}`,
+    { cache: "no-store" },
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchServiceCandidateDates(slug: string): Promise<string[]> {
+  const res = await fetch(`${API_URL}/api/services/${slug}/candidate-dates`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = (await res.json()) as { candidateDates: string[] };
+  return data.candidateDates;
+}
+
+export async function fetchServiceSlots(
+  slug: string,
+  date: string,
+): Promise<{ date: string; durationMin: number; slots: string[] }> {
+  const res = await fetch(
+    `${API_URL}/api/services/${slug}/slots?date=${date}`,
+    { cache: "no-store" },
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 export async function submitIntake(
   formData: FormData,
 ): Promise<IntakeResult> {
