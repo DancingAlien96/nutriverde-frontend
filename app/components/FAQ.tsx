@@ -7,13 +7,13 @@ export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="bg-white py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8 grid lg:grid-cols-12 gap-12">
+    <section id="faq" className="bg-white py-14 sm:py-20 lg:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-8 lg:gap-12">
         <div className="lg:col-span-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">
             FAQ
           </p>
-          <h2 className="font-serif-display mt-3 text-4xl sm:text-5xl font-medium text-gray-900 leading-tight">
+          <h2 className="font-serif-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-medium text-gray-900 leading-tight">
             Preguntas
             <br />
             frecuentes

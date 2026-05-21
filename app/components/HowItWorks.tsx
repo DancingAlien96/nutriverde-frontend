@@ -2,24 +2,24 @@ import { PROCESS_STEPS, PROCESS_FEATURES } from "../lib/data";
 
 export function HowItWorks() {
   return (
-    <section id="como-funciona" className="bg-ink-900 py-20 lg:py-28 text-white">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+    <section id="como-funciona" className="bg-ink-900 py-14 sm:py-20 lg:py-28 text-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <p className="text-xs font-semibold uppercase tracking-wider text-brand-400">
             Proceso
           </p>
-          <h2 className="font-serif-display mt-3 text-4xl sm:text-5xl font-medium leading-tight">
+          <h2 className="font-serif-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-medium leading-tight">
             Cómo funciona
             <br />
             tu consulta
           </h2>
-          <p className="mt-5 max-w-xl mx-auto text-white/70">
+          <p className="mt-5 max-w-xl mx-auto text-sm sm:text-base text-white/70">
             Un proceso simple, claro y diseñado para que tu experiencia sea
             cómoda desde el primer momento.
           </p>
         </div>
 
-        <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="mt-10 sm:mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           {PROCESS_STEPS.map((step) => (
             <article
               key={step.number}

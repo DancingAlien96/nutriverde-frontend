@@ -63,13 +63,13 @@ function DashboardContent() {
     <>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="font-serif-display text-3xl text-gray-900">Pagos</h1>
+          <h1 className="font-serif-display text-2xl sm:text-3xl text-gray-900">Pagos</h1>
           <p className="text-sm text-gray-600 mt-1">
             Revisa los comprobantes y aprueba o rechaza cada uno.
           </p>
         </div>
 
-        <div className="inline-flex rounded-full bg-white border border-gray-200 p-1 text-xs font-medium">
+        <div className="inline-flex rounded-full bg-white border border-gray-200 p-1 text-xs font-medium self-start sm:self-auto">
           {(Object.keys(STATUS_LABEL) as StatusFilter[]).map((s) => (
             <button
               key={s}
@@ -100,8 +100,8 @@ function DashboardContent() {
           No hay pagos en estado <strong>{STATUS_LABEL[status]}</strong>.
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
+          <table className="w-full text-sm min-w-[480px]">
             <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
               <tr>
                 <th className="text-left px-4 py-3 font-medium">Paciente</th>

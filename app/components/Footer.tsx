@@ -4,9 +4,9 @@ import { NAV_LINKS, SITE } from "../lib/data";
 export function Footer() {
   return (
     <footer className="bg-cream-200 text-gray-900 relative overflow-hidden">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8 py-16 lg:py-20">
-        <div className="grid lg:grid-cols-12 gap-10">
-          <div className="lg:col-span-4">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+        <div className="grid grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-10">
+          <div className="col-span-2 lg:col-span-4">
             <Link
               href="/"
               className="font-serif-display text-2xl text-gray-900"
@@ -92,7 +92,7 @@ export function Footer() {
             </ul>
           </div>
 
-          <div className="lg:col-span-3">
+          <div className="col-span-2 lg:col-span-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-brand-700">
               ¿Lista para comenzar?
             </h3>
@@ -115,7 +115,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-16 pt-6 border-t border-gray-300/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
+        <div className="mt-10 sm:mt-16 pt-6 border-t border-gray-300/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 text-center sm:text-left">
           <p>© {new Date().getFullYear()} NutriVerde. Todos los derechos reservados.</p>
           <p>Nutricionista certificada · Guatemala</p>
         </div>

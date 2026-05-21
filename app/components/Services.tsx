@@ -4,22 +4,22 @@ import { SERVICES } from "../lib/data";
 
 export function Services() {
   return (
-    <section id="servicios" className="bg-cream-50 py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+    <section id="servicios" className="bg-cream-50 py-14 sm:py-20 lg:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">
           Servicios
         </p>
-        <h2 className="font-serif-display mt-3 text-4xl sm:text-5xl font-medium leading-tight text-gray-900 max-w-xl">
+        <h2 className="font-serif-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-medium leading-tight text-gray-900 max-w-xl">
           Lo que ofrezco
           <br />
           para ti <span className="inline-block">🌿</span>
         </h2>
-        <p className="mt-4 max-w-md text-gray-600">
+        <p className="mt-4 max-w-md text-sm sm:text-base text-gray-600">
           Cada consulta está diseñada para adaptarse a tus necesidades, ritmo
           de vida y objetivos personales.
         </p>
 
-        <div className="mt-12 grid md:grid-cols-3 gap-6">
+        <div className="mt-8 sm:mt-12 grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
           {SERVICES.map((service) => (
             <ServiceCard key={service.slug} service={service} />
           ))}

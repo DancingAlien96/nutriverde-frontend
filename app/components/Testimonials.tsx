@@ -9,20 +9,20 @@ export function Testimonials() {
   const featured = TESTIMONIALS[active];
 
   return (
-    <section id="testimonios" className="bg-cream-50 py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+    <section id="testimonios" className="bg-cream-50 py-14 sm:py-20 lg:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">
             Testimonios
           </p>
-          <h2 className="font-serif-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-medium text-gray-900">
+          <h2 className="font-serif-display mt-3 text-2xl sm:text-4xl lg:text-5xl font-medium text-gray-900">
             ( Lo que dicen mis pacientes )
           </h2>
         </div>
 
-        <div className="mt-14 grid lg:grid-cols-5 gap-6">
+        <div className="mt-10 sm:mt-14 grid lg:grid-cols-5 gap-4 sm:gap-6">
           {/* Featured */}
-          <article className="lg:col-span-3 rounded-2xl bg-white border border-gray-100 p-8 lg:p-10 shadow-sm flex flex-col">
+          <article className="lg:col-span-3 rounded-2xl bg-white border border-gray-100 p-5 sm:p-8 lg:p-10 shadow-sm flex flex-col">
             <div className="flex items-center gap-3">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-3 py-1 text-xs text-white">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-amber-300">
@@ -33,7 +33,7 @@ export function Testimonials() {
               <span className="text-xs text-gray-500">{featured.plan}</span>
             </div>
 
-            <blockquote className="mt-6 font-serif-display text-xl lg:text-2xl leading-snug text-gray-900">
+            <blockquote className="mt-6 font-serif-display text-lg sm:text-xl lg:text-2xl leading-snug text-gray-900">
               &ldquo;{featured.quote}&rdquo;
             </blockquote>
 

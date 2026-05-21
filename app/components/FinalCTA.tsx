@@ -14,18 +14,18 @@ export function FinalCTA() {
         <div className="absolute inset-0 bg-ink-900/55" />
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 lg:px-8 py-24 lg:py-32 text-center">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32 text-center">
         <p className="text-xs font-semibold uppercase tracking-wider text-brand-300">
           Empieza hoy
         </p>
-        <h2 className="font-serif-display mt-4 text-4xl sm:text-5xl lg:text-6xl font-medium leading-tight uppercase">
+        <h2 className="font-serif-display mt-4 text-3xl sm:text-5xl lg:text-6xl font-medium leading-tight uppercase">
           Da el primer
           <br />
           paso hacia
           <br />
           tu bienestar
         </h2>
-        <p className="mt-6 max-w-xl mx-auto text-white/80">
+        <p className="mt-6 max-w-xl mx-auto text-sm sm:text-base text-white/80">
           Cada consulta es un paso hacia una vida más sana. Sin dietas
           imposibles, sin restricciones extremas. Solo nutrición real y
           adaptada a ti.

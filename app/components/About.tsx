@@ -3,8 +3,8 @@ import { SPECIALTIES } from "../lib/data";
 
 export function About() {
   return (
-    <section id="sobre-mi" className="bg-white py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+    <section id="sobre-mi" className="bg-white py-14 sm:py-20 lg:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
         {/* Imagen + badge */}
         <div className="relative">
           <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-gray-100">
@@ -36,7 +36,7 @@ export function About() {
           <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">
             Sobre mí
           </p>
-          <h2 className="font-serif-display mt-3 text-4xl sm:text-5xl font-medium leading-tight text-gray-900">
+          <h2 className="font-serif-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-medium leading-tight text-gray-900">
             Nutrición con
             <br />
             propósito
