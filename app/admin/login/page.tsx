@@ -32,7 +32,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Link href="/" className="font-serif-display text-2xl text-gray-900">
-            NutriVerde
+            Plenha
           </Link>
           <p className="mt-2 text-xs uppercase tracking-wider text-brand-700">
             Panel de administración

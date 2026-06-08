@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
 /* ==========================================================
-   NutriVerde — sistema de diseño
+   Plenha Nutrition — paleta sage + blush + cream
+   Inspirada en la lámina de colores del cliente:
+   verde olivo apagado · rosado/melocotón cálido · cremas/arenas
    ========================================================== */
 
 @theme inline {
@@ -9,34 +11,50 @@
   --font-sans: var(--font-inter);
   --font-serif: var(--font-fraunces);
 
-  /* Paleta — verde NutriVerde */
-  --color-brand-50: #ecfdf5;
-  --color-brand-100: #d1fae5;
-  --color-brand-200: #a7f3d0;
-  --color-brand-300: #6ee7b7;
-  --color-brand-400: #34d399;
-  --color-brand-500: #10b981;
-  --color-brand-600: #059669;
-  --color-brand-700: #047857;
-  --color-brand-800: #065f46;
-  --color-brand-900: #064e3b;
+  /* Brand — sage olivo (principal) */
+  --color-brand-50:  #f5f7ee;
+  --color-brand-100: #e8ebd6;
+  --color-brand-200: #ced5b1;
+  --color-brand-300: #b1bb8a;
+  --color-brand-400: #98a36e;
+  --color-brand-500: #7f8d57;
+  --color-brand-600: #687445;
+  --color-brand-700: #535b37;
+  --color-brand-800: #3a4127;
+  --color-brand-900: #232917;
 
-  /* Neutros tibios (cream/beige de la landing) */
-  --color-cream-50:  #faf8f3;
-  --color-cream-100: #f5f1ea;
-  --color-cream-200: #ece6d8;
-  --color-cream-300: #ddd4c0;
+  /* Blush — rosado/melocotón (acento cálido) */
+  --color-blush-50:  #fef5ee;
+  --color-blush-100: #fbe2d2;
+  --color-blush-200: #f5c4a9;
+  --color-blush-300: #eda283;
+  --color-blush-400: #df8362;
+  --color-blush-500: #c66744;
+  --color-blush-600: #a25036;
+  --color-blush-700: #7c3e2c;
+  --color-blush-800: #562c21;
+  --color-blush-900: #321a14;
 
-  /* Verde oscuro de la sección "Cómo funciona" */
-  --color-ink-900: #0a1410;
-  --color-ink-800: #11201b;
-  --color-ink-700: #1a2e26;
-  --color-ink-600: #2a4339;
+  /* Cream / arena — fondos cálidos */
+  --color-cream-50:  #faf6ed;
+  --color-cream-100: #f1eada;
+  --color-cream-200: #e4d8be;
+  --color-cream-300: #ccbd9c;
+  --color-cream-400: #b09e7d;
+
+  /* Ink — gris cálido / café oscuro para texto */
+  --color-ink-50:  #f6f3ee;
+  --color-ink-100: #ece6dc;
+  --color-ink-300: #aa9f8e;
+  --color-ink-500: #6b6052;
+  --color-ink-700: #3f372d;
+  --color-ink-800: #2c2620;
+  --color-ink-900: #1d1812;
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #111827;
+  --background: #faf6ed; /* cream-50 */
+  --foreground: #2c2620; /* ink-800 */
 }
 
 body {

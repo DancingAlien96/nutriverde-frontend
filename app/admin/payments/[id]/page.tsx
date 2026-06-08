@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { AdminShell } from "../../AdminShell";
 import {
   approvePayment,
+  confirmAppointment,
   fetchReceipt,
   formatCents,
   getPayment,
@@ -43,6 +44,33 @@ function PaymentDetailContent() {
   const [meetingSaving, setMeetingSaving] = useState(false);
   const [meetingError, setMeetingError] = useState<string | null>(null);
   const [meetingSaved, setMeetingSaved] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  async function refetch() {
+    if (!id) return;
+    const { payment: p } = await getPayment(id);
+    setPayment(p);
+    setMeetingDraft(p.appointment?.meetingUrl ?? "");
+  }
+
+  async function handleConfirmAppointment() {
+    if (!payment) return;
+    const url = meetingDraft.trim();
+    if (!url) {
+      setMeetingError("El link de la videollamada es obligatorio para confirmar.");
+      return;
+    }
+    setMeetingError(null);
+    setConfirming(true);
+    try {
+      await confirmAppointment(payment.id, { meetingUrl: url });
+      await refetch();
+    } catch (err) {
+      setMeetingError(err instanceof Error ? err.message : "Error");
+    } finally {
+      setConfirming(false);
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -150,7 +178,26 @@ function PaymentDetailContent() {
     );
   if (!payment) return null;
 
-  const canAct = payment.status === "PENDING_REVIEW";
+  // Estado de cada paso del proceso (no depende solo del enum status: el paso 3
+  // se activa en cuanto hay un horario propuesto y el pago está aprobado).
+  const hasTime = !!payment.appointment?.scheduledAt;
+  const isScheduled = payment.appointment?.status === "SCHEDULED";
+
+  const step1State: StepState =
+    payment.status === "PENDING_REVIEW"
+      ? "current"
+      : payment.status === "REJECTED"
+        ? "rejected"
+        : "done";
+
+  const step2State: StepState =
+    payment.status !== "APPROVED" ? "upcoming" : hasTime ? "done" : "current";
+
+  const step3State: StepState = isScheduled
+    ? "done"
+    : payment.status === "APPROVED" && hasTime
+      ? "current"
+      : "upcoming";
 
   return (
     <>
@@ -170,87 +217,230 @@ function PaymentDetailContent() {
       </div>
 
       <div className="grid lg:grid-cols-5 gap-6">
-        <section className="lg:col-span-3 space-y-4">
-          <div className="rounded-2xl bg-white border border-gray-200 p-5">
-            <h2 className="font-semibold text-gray-900">Comprobante</h2>
-            <ReceiptViewer payment={payment} receipt={receipt} />
-          </div>
-
+        <section className="lg:col-span-3">
           {actionError && (
-            <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
               {actionError}
             </div>
           )}
 
-          {canAct && (
-            <div className="rounded-2xl bg-white border border-gray-200 p-5">
-              {!showRejectForm ? (
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <button
-                    type="button"
-                    onClick={handleApprove}
-                    disabled={submitting}
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 px-5 py-3 text-sm font-medium text-white transition-colors"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    Aprobar pago
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowRejectForm(true)}
-                    disabled={submitting}
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-60 px-5 py-3 text-sm font-medium transition-colors"
-                  >
-                    Rechazar
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-900">
-                    Razón del rechazo
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={rejectReason}
-                    onChange={(e) => setRejectReason(e.target.value)}
-                    placeholder="Ej. El monto del comprobante no coincide con el servicio…"
-                    className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowRejectForm(false);
-                        setRejectReason("");
-                        setActionError(null);
-                      }}
-                      disabled={submitting}
-                      className="text-sm text-gray-600 hover:text-gray-900 px-3"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleReject}
-                      disabled={submitting || rejectReason.trim().length < 3}
-                      className="rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-60 px-4 py-2 text-sm font-medium text-white"
-                    >
-                      {submitting ? "Enviando…" : "Confirmar rechazo"}
-                    </button>
-                  </div>
+          <div className="rounded-2xl bg-white border border-gray-200 p-5 sm:p-6">
+            {/* ===== PASO 1: Revisar y aprobar el pago ===== */}
+            <VerticalStep number={1} title="Revisar y aprobar el pago" state={step1State}>
+              <div className="mt-3">
+                <ReceiptViewer payment={payment} receipt={receipt} />
+              </div>
+
+              {payment.status === "PENDING_REVIEW" && (
+                <div className="mt-4">
+                  {!showRejectForm ? (
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        type="button"
+                        onClick={handleApprove}
+                        disabled={submitting}
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 px-5 py-3 text-sm font-medium text-white transition-colors"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Aprobar pago
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowRejectForm(true)}
+                        disabled={submitting}
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-60 px-5 py-3 text-sm font-medium transition-colors"
+                      >
+                        Rechazar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-gray-900">
+                        Razón del rechazo
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                        placeholder="Ej. El monto del comprobante no coincide con el servicio…"
+                        className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowRejectForm(false);
+                            setRejectReason("");
+                            setActionError(null);
+                          }}
+                          disabled={submitting}
+                          className="text-sm text-gray-600 hover:text-gray-900 px-3"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleReject}
+                          disabled={submitting || rejectReason.trim().length < 3}
+                          className="rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-60 px-4 py-2 text-sm font-medium text-white"
+                        >
+                          {submitting ? "Enviando…" : "Confirmar rechazo"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          {payment.status === "REJECTED" && payment.rejectedReason && (
-            <div className="rounded-2xl bg-red-50 border border-red-200 p-4 text-sm">
-              <p className="font-medium text-red-800">Pago rechazado</p>
-              <p className="mt-1 text-red-700">{payment.rejectedReason}</p>
-            </div>
-          )}
+              {payment.status === "APPROVED" && (
+                <p className="mt-3 text-xs text-brand-700 inline-flex items-center gap-1.5">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Pago aprobado{payment.approvedAt ? ` · ${formatDate(payment.approvedAt)}` : ""}
+                </p>
+              )}
+
+              {payment.status === "REJECTED" && payment.rejectedReason && (
+                <p className="mt-3 text-sm text-red-700">
+                  <strong>Rechazado:</strong> {payment.rejectedReason}
+                </p>
+              )}
+            </VerticalStep>
+
+            {/* ===== PASO 2: Horario del paciente ===== */}
+            {payment.status !== "REJECTED" && payment.appointment && (
+              <VerticalStep number={2} title="Horario de la consulta" state={step2State}>
+                {hasTime ? (
+                  <p className="mt-2 text-sm text-gray-900">
+                    <span className="text-gray-500">Horario propuesto: </span>
+                    {formatDate(payment.appointment.scheduledAt!)}
+                  </p>
+                ) : step2State === "current" ? (
+                  <>
+                    <p className="mt-2 text-sm text-gray-600">
+                      Esperando a que el paciente elija un horario. Comparte este
+                      link si lo necesita:
+                    </p>
+                    {payment.appointment.scheduleToken && (
+                      <div className="mt-2">
+                        <ScheduleLinkRow
+                          url={`${FRONTEND_ORIGIN}/agendar-cita/${payment.appointment.scheduleToken}`}
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="mt-2 text-sm text-gray-500">
+                    Disponible cuando se apruebe el pago.
+                  </p>
+                )}
+              </VerticalStep>
+            )}
+
+            {/* ===== PASO 3: Confirmar cita + enviar link ===== */}
+            {payment.status !== "REJECTED" && payment.appointment && (
+              <VerticalStep
+                number={3}
+                title="Confirmar cita y enviar link"
+                state={step3State}
+                isLast
+              >
+                {step3State === "current" && (
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-600">
+                      Pega el link de la videollamada para confirmar la cita. El
+                      paciente recibirá un correo con la fecha y el enlace.
+                    </p>
+                    <label className="block text-xs text-gray-600 mt-3 mb-1.5">
+                      Link de la videollamada (Meet / Zoom) *
+                    </label>
+                    <input
+                      type="url"
+                      value={meetingDraft}
+                      onChange={(e) => {
+                        setMeetingDraft(e.target.value);
+                        setMeetingError(null);
+                      }}
+                      placeholder="https://meet.google.com/..."
+                      className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                    {meetingError && (
+                      <p className="mt-2 text-xs text-red-600">{meetingError}</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleConfirmAppointment}
+                      disabled={confirming || !meetingDraft.trim()}
+                      className="mt-3 w-full rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-40 px-4 py-2.5 text-sm font-medium text-white"
+                    >
+                      {confirming ? "Confirmando…" : "Confirmar cita y enviar link"}
+                    </button>
+                  </div>
+                )}
+
+                {step3State === "done" && (
+                  <div className="mt-2">
+                    <p className="text-sm text-brand-700 inline-flex items-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      Cita confirmada y link enviado.
+                    </p>
+                    <label className="block text-xs text-gray-500 mt-3 mb-1.5">
+                      Link de la videollamada (puedes actualizarlo)
+                    </label>
+                    <input
+                      type="url"
+                      value={meetingDraft}
+                      onChange={(e) => {
+                        setMeetingDraft(e.target.value);
+                        setMeetingSaved(false);
+                        setMeetingError(null);
+                      }}
+                      placeholder="https://meet.google.com/..."
+                      className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                    {meetingError && (
+                      <p className="mt-2 text-xs text-red-600">{meetingError}</p>
+                    )}
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      {meetingSaved ? (
+                        <span className="text-xs text-brand-700 inline-flex items-center gap-1">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          Guardado
+                        </span>
+                      ) : (
+                        <span />
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleSaveMeeting}
+                        disabled={
+                          meetingSaving ||
+                          meetingDraft.trim() ===
+                            (payment.appointment.meetingUrl ?? "")
+                        }
+                        className="rounded-full bg-gray-900 hover:bg-gray-800 disabled:opacity-40 px-4 py-1.5 text-xs font-medium text-white"
+                      >
+                        {meetingSaving ? "Guardando…" : "Actualizar link"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {step3State === "upcoming" && (
+                  <p className="mt-2 text-sm text-gray-500">
+                    Disponible cuando el paciente elija su horario.
+                  </p>
+                )}
+              </VerticalStep>
+            )}
+          </div>
         </section>
 
         <aside className="lg:col-span-2 space-y-4">
@@ -266,106 +456,14 @@ function PaymentDetailContent() {
                 strong
               />
               <Row label="Recibido" value={formatDate(payment.createdAt)} />
-              {payment.approvedAt && (
-                <Row label="Aprobado" value={formatDate(payment.approvedAt)} />
-              )}
-              {payment.approvedBy && (
-                <Row label="Aprobado por" value={payment.approvedBy.fullName} />
+              {payment.appointment && (
+                <Row
+                  label="Cita"
+                  value={appointmentStatusLabel(payment.appointment.status)}
+                />
               )}
             </dl>
           </div>
-
-          {payment.appointment && (
-            <div className="rounded-2xl bg-white border border-gray-200 p-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Cita
-              </h3>
-
-              <dl className="mt-3 space-y-2.5 text-sm">
-                <Row
-                  label="Estado"
-                  value={appointmentStatusLabel(payment.appointment.status)}
-                  strong
-                />
-                {payment.appointment.scheduledAt && (
-                  <Row
-                    label={
-                      payment.appointment.status === "SCHEDULED"
-                        ? "Horario"
-                        : "Horario tentativo"
-                    }
-                    value={formatDate(payment.appointment.scheduledAt)}
-                  />
-                )}
-              </dl>
-
-              {payment.status === "PENDING_REVIEW" &&
-                payment.appointment.scheduledAt && (
-                  <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                    El paciente eligió este horario al hacer el intake. Al
-                    aprobar el pago, si el slot sigue libre quedará confirmado;
-                    si no, le enviaremos el link para que elija otro.
-                  </p>
-                )}
-
-              {payment.appointment.scheduleToken && (
-                <div className="mt-4">
-                  <label className="block text-xs text-gray-500 mb-1.5">
-                    Link para el paciente
-                  </label>
-                  <ScheduleLinkRow
-                    url={`${FRONTEND_ORIGIN}/agendar-cita/${payment.appointment.scheduleToken}`}
-                  />
-                </div>
-              )}
-
-              {payment.status === "APPROVED" && (
-                <div className="mt-5">
-                  <label className="block text-xs text-gray-500 mb-1.5">
-                    Link de la videollamada (Meet / Zoom)
-                  </label>
-                  <input
-                    type="url"
-                    value={meetingDraft}
-                    onChange={(e) => {
-                      setMeetingDraft(e.target.value);
-                      setMeetingSaved(false);
-                      setMeetingError(null);
-                    }}
-                    placeholder="https://meet.google.com/..."
-                    className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                  {meetingError && (
-                    <p className="mt-2 text-xs text-red-600">{meetingError}</p>
-                  )}
-                  <div className="mt-2 flex items-center justify-between gap-2">
-                    {meetingSaved ? (
-                      <span className="text-xs text-brand-700 inline-flex items-center gap-1">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        Guardado
-                      </span>
-                    ) : (
-                      <span />
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleSaveMeeting}
-                      disabled={
-                        meetingSaving ||
-                        meetingDraft.trim() ===
-                          (payment.appointment.meetingUrl ?? "")
-                      }
-                      className="rounded-full bg-gray-900 hover:bg-gray-800 disabled:opacity-40 px-4 py-1.5 text-xs font-medium text-white"
-                    >
-                      {meetingSaving ? "Guardando…" : "Guardar"}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           <div className="rounded-2xl bg-white border border-gray-200 p-5">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -406,6 +504,71 @@ function PaymentDetailContent() {
         </aside>
       </div>
     </>
+  );
+}
+
+type StepState = "done" | "current" | "upcoming" | "rejected";
+
+function VerticalStep({
+  number,
+  title,
+  state,
+  isLast,
+  children,
+}: {
+  number: number;
+  title: string;
+  state: StepState;
+  isLast?: boolean;
+  children: React.ReactNode;
+}) {
+  const badge =
+    state === "done"
+      ? "bg-brand-600 text-white"
+      : state === "current"
+        ? "bg-brand-600 text-white ring-4 ring-brand-100"
+        : state === "rejected"
+          ? "bg-red-500 text-white"
+          : "bg-gray-100 text-gray-400 border border-gray-200";
+
+  // La línea conectora se tiñe de verde si el paso ya está completado/rechazado.
+  const lineColor =
+    state === "done" || state === "rejected" ? "bg-brand-300" : "bg-gray-200";
+
+  return (
+    <div className="flex gap-4">
+      {/* Columna izquierda: círculo + línea vertical conectora */}
+      <div className="flex flex-col items-center">
+        <span
+          className={`h-8 w-8 shrink-0 rounded-full text-xs font-semibold flex items-center justify-center ${badge}`}
+        >
+          {state === "done" ? (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : state === "rejected" ? (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          ) : (
+            number
+          )}
+        </span>
+        {!isLast && <span className={`w-px flex-1 my-1 ${lineColor}`} />}
+      </div>
+
+      {/* Columna derecha: título + contenido */}
+      <div className={`flex-1 min-w-0 ${isLast ? "" : "pb-8"}`}>
+        <h2
+          className={`font-semibold pt-1 ${
+            state === "upcoming" ? "text-gray-400" : "text-gray-900"
+          }`}
+        >
+          {title}
+        </h2>
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -511,6 +674,8 @@ function appointmentStatusLabel(status: string): string {
       return "Esperando pago";
     case "PAYMENT_APPROVED":
       return "Pendiente de horario";
+    case "PENDING_CONFIRMATION":
+      return "Por confirmar";
     case "SCHEDULED":
       return "Agendada";
     case "COMPLETED":

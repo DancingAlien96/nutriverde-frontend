@@ -14,10 +14,14 @@ type Step = 1 | 2 | 3 | 4;
 
 const BUSINESS_TZ = "America/Guatemala";
 
+type DocumentType = "DPI" | "CURP" | "PASSPORT" | "OTHER";
+
 interface FormState {
   serviceSlug: string;
   fullName: string;
   email: string;
+  documentType: DocumentType;
+  documentId: string;
   phone: string;
   whatsappNotify: boolean;
   timezone: string;
@@ -27,10 +31,50 @@ interface FormState {
   scheduledAt: string | null; // ISO UTC, opcional
 }
 
+const DOCUMENT_OPTIONS: {
+  type: DocumentType;
+  label: string;
+  placeholder: string;
+  hint: string;
+  validate: (v: string) => boolean;
+}[] = [
+  {
+    type: "DPI",
+    label: "DPI (Guatemala)",
+    placeholder: "1234 56789 0123",
+    hint: "13 dígitos.",
+    validate: (v) => /^\d{13}$/.test(v.replace(/[\s-]/g, "")),
+  },
+  {
+    type: "CURP",
+    label: "CURP (México)",
+    placeholder: "GOMR980613HDFLRD09",
+    hint: "18 caracteres alfanuméricos.",
+    validate: (v) =>
+      /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i.test(v.replace(/[\s-]/g, "")),
+  },
+  {
+    type: "PASSPORT",
+    label: "Pasaporte",
+    placeholder: "P12345678",
+    hint: "5 a 15 caracteres alfanuméricos.",
+    validate: (v) => /^[A-Z0-9]{5,15}$/i.test(v.replace(/[\s-]/g, "")),
+  },
+  {
+    type: "OTHER",
+    label: "Otro documento",
+    placeholder: "Número o código",
+    hint: "Cualquier identificación oficial.",
+    validate: (v) => v.replace(/[\s-]/g, "").length >= 3,
+  },
+];
+
 const initialForm: FormState = {
   serviceSlug: "",
   fullName: "",
   email: "",
+  documentType: "DPI",
+  documentId: "",
   phone: "",
   whatsappNotify: false,
   timezone:
@@ -59,12 +103,17 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
+  const docOption =
+    DOCUMENT_OPTIONS.find((d) => d.type === form.documentType) ??
+    DOCUMENT_OPTIONS[0];
+
   function canAdvance(): boolean {
     if (step === 1) return form.serviceSlug !== "";
     if (step === 2) {
       return (
         form.fullName.trim().length >= 2 &&
         /\S+@\S+\.\S+/.test(form.email.trim()) &&
+        docOption.validate(form.documentId) &&
         form.goal.trim().length > 0
       );
     }
@@ -82,6 +131,8 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
       data.append("serviceSlug", form.serviceSlug);
       data.append("fullName", form.fullName.trim());
       data.append("email", form.email.trim());
+      data.append("documentType", form.documentType);
+      data.append("documentId", form.documentId.replace(/[\s-]/g, ""));
       if (form.phone) data.append("phone", form.phone.trim());
       data.append("whatsappNotify", form.whatsappNotify ? "true" : "false");
       data.append("timezone", form.timezone);
@@ -342,6 +393,44 @@ function StepData({
           />
         </Field>
 
+        <Field label="Tipo de documento *">
+          <select
+            value={form.documentType}
+            onChange={(e) => onChange("documentType", e.target.value as DocumentType)}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          >
+            {DOCUMENT_OPTIONS.map((opt) => (
+              <option key={opt.type} value={opt.type}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field
+          label={`${
+            DOCUMENT_OPTIONS.find((d) => d.type === form.documentType)?.label ??
+            "Documento"
+          } *`}
+        >
+          <input
+            type="text"
+            inputMode={form.documentType === "DPI" ? "numeric" : "text"}
+            value={form.documentId}
+            onChange={(e) => onChange("documentId", e.target.value)}
+            placeholder={
+              DOCUMENT_OPTIONS.find((d) => d.type === form.documentType)
+                ?.placeholder ?? ""
+            }
+            maxLength={25}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent font-mono"
+          />
+          <p className="mt-1 text-[10px] text-gray-500">
+            {DOCUMENT_OPTIONS.find((d) => d.type === form.documentType)?.hint}
+            {" "}Nos permite reconocerte en futuras consultas.
+          </p>
+        </Field>
+
         <Field label="Teléfono / WhatsApp">
           <input
             type="tel"
@@ -384,20 +473,6 @@ function StepData({
               className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
             />
           </Field>
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.whatsappNotify}
-              onChange={(e) => onChange("whatsappNotify", e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-            />
-            <span className="text-sm text-gray-700">
-              Quiero recibir recordatorios por WhatsApp además del correo.
-            </span>
-          </label>
         </div>
       </div>
     </div>
@@ -452,7 +527,7 @@ function StepPayment({
             <strong>Cuenta:</strong> 000-00000-0
           </li>
           <li>
-            <strong>Nombre:</strong> NutriVerde
+            <strong>Nombre:</strong> Plenha Nutrition
           </li>
         </ul>
       </div>
@@ -745,7 +820,7 @@ function SuccessView({
           <li className="flex gap-2">
             <span className="font-semibold text-brand-700">2.</span>
             {scheduledAt
-              ? "Te confirmamos por correo y tu horario queda confirmado."
+              ? "Confirmamos tu pago y tu horario; luego te enviamos la confirmación final."
               : "Te enviamos un correo con un enlace para elegir tu horario."}
           </li>
           <li className="flex gap-2">

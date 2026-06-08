@@ -100,60 +100,105 @@ function DashboardContent() {
           No hay pagos en estado <strong>{STATUS_LABEL[status]}</strong>.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
-          <table className="w-full text-sm min-w-[480px]">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium">Paciente</th>
-                <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">
-                  Servicio
-                </th>
-                <th className="text-right px-4 py-3 font-medium">Monto</th>
-                <th className="text-left px-4 py-3 font-medium hidden md:table-cell">
-                  Recibido
-                </th>
-                <th className="text-left px-4 py-3 font-medium">Estado</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((p) => (
-                <tr key={p.id} className="border-t border-gray-100">
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">
-                      {p.patient.fullName}
+        <>
+          {/* Móvil: tarjetas */}
+          <ul className="space-y-3 sm:hidden">
+            {payments.map((p) => (
+              <li key={p.id}>
+                <Link
+                  href={`/admin/payments/${p.id}`}
+                  className="block rounded-2xl border border-gray-200 bg-white p-4 active:bg-gray-50"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 truncate">
+                        {p.patient.fullName}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {p.patient.email}
+                      </p>
                     </div>
-                    <div className="text-xs text-gray-500">{p.patient.email}</div>
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell text-gray-700">
-                    {p.service.name}
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium text-gray-900">
-                    {formatCents(p.amountCents, p.currency)}
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-gray-500 text-xs">
-                    {formatDate(p.createdAt)}
-                  </td>
-                  <td className="px-4 py-3">
                     <span
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[p.status]}`}
+                      className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[p.status]}`}
                     >
                       {STATUS_LABEL[p.status]}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/admin/payments/${p.id}`}
-                      className="text-xs font-medium text-brand-700 hover:text-brand-800"
-                    >
-                      Revisar →
-                    </Link>
-                  </td>
+                  </div>
+                  <div className="mt-3 flex items-end justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm text-gray-700 truncate">
+                        {p.service.name}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {formatDate(p.createdAt)}
+                      </p>
+                    </div>
+                    <p className="font-semibold text-gray-900 shrink-0">
+                      {formatCents(p.amountCents, p.currency)}
+                    </p>
+                  </div>
+                  <p className="mt-3 text-xs font-medium text-brand-700">
+                    Revisar →
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+
+          {/* Tablet/desktop: tabla */}
+          <div className="hidden sm:block overflow-x-auto rounded-2xl border border-gray-200 bg-white">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium">Paciente</th>
+                  <th className="text-left px-4 py-3 font-medium">Servicio</th>
+                  <th className="text-right px-4 py-3 font-medium">Monto</th>
+                  <th className="text-left px-4 py-3 font-medium hidden md:table-cell">
+                    Recibido
+                  </th>
+                  <th className="text-left px-4 py-3 font-medium">Estado</th>
+                  <th className="px-4 py-3" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {payments.map((p) => (
+                  <tr key={p.id} className="border-t border-gray-100">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900">
+                        {p.patient.fullName}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {p.patient.email}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">{p.service.name}</td>
+                    <td className="px-4 py-3 text-right font-medium text-gray-900">
+                      {formatCents(p.amountCents, p.currency)}
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell text-gray-500 text-xs">
+                      {formatDate(p.createdAt)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[p.status]}`}
+                      >
+                        {STATUS_LABEL[p.status]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/admin/payments/${p.id}`}
+                        className="text-xs font-medium text-brand-700 hover:text-brand-800"
+                      >
+                        Revisar →
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </>
   );

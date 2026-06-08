@@ -53,16 +53,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   const navLinks: { href: string; label: string }[] = [
     { href: "/admin", label: "Pagos" },
+    { href: "/admin/patients", label: "Pacientes" },
     { href: "/admin/availability", label: "Disponibilidad" },
     { href: "/admin/services", label: "Servicios" },
   ];
 
   return (
     <div className="min-h-screen bg-cream-50">
-      <header className="bg-white border-b border-cream-200 sticky top-0 z-10">
+      <header className="bg-white border-b border-cream-200 sticky top-0 z-30">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between gap-3 sm:gap-6">
           <Link href="/admin" className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <span className="font-serif-display text-lg sm:text-xl text-gray-900">NutriVerde</span>
+            <span className="font-serif-display text-lg sm:text-xl text-gray-900">Plenha</span>
             <span className="text-[10px] sm:text-xs uppercase tracking-wider text-brand-700 bg-brand-50 px-2 py-0.5 sm:py-1 rounded-full border border-brand-200">
               Admin
             </span>

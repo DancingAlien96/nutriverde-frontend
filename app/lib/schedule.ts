@@ -6,6 +6,7 @@ export interface ScheduleInfo {
     status:
       | "AWAITING_PAYMENT"
       | "PAYMENT_APPROVED"
+      | "PENDING_CONFIRMATION"
       | "SCHEDULED"
       | "COMPLETED"
       | "CANCELED"

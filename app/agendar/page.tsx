@@ -3,7 +3,7 @@ import { fetchServices } from "../lib/api";
 import { IntakeForm } from "./IntakeForm";
 
 export const metadata = {
-  title: "Agendar consulta — NutriVerde",
+  title: "Agendar consulta — Plenha Nutrition",
 };
 
 export default async function AgendarPage() {
@@ -19,7 +19,7 @@ export default async function AgendarPage() {
       <header className="border-b border-cream-200 bg-white">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex items-center justify-between gap-3">
           <Link href="/" className="font-serif-display text-xl sm:text-2xl text-gray-900">
-            NutriVerde
+            Plenha
           </Link>
           <Link
             href="/"
@@ -52,7 +52,7 @@ export default async function AgendarPage() {
         <p className="mt-8 text-center text-xs text-gray-500">
           ¿Tienes problemas?{" "}
           <a
-            href="mailto:hola@nutriverde.com"
+            href="mailto:hola@plenhanutrition.com"
             className="text-brand-700 hover:underline"
           >
             Escríbenos
@@ -73,7 +73,7 @@ function ErrorState() {
         </h1>
         <p className="mt-3 text-sm text-gray-600">
           Verifica tu conexión o intenta de nuevo en unos minutos. Si el
-          problema persiste, escríbenos a hola@nutriverde.com.
+          problema persiste, escríbenos a hola@plenhanutrition.com.
         </p>
         <Link
           href="/"

@@ -1,20 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { NAV_LINKS } from "../lib/data";
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    function handleScroll() {
+      setScrolled(window.scrollY > 12);
+    }
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <header className="absolute top-0 inset-x-0 z-20">
-      <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex items-center justify-between gap-3">
+    <header
+      className={`fixed top-0 inset-x-0 z-30 transition-colors duration-200 ${
+        scrolled || open
+          ? "bg-cream-50/95 backdrop-blur border-b border-cream-200"
+          : "bg-transparent"
+      }`}
+    >
+      <nav className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-3">
         <Link
           href="/"
-          className="font-serif-display text-xl sm:text-2xl text-white drop-shadow-sm"
+          className="font-serif-display text-xl sm:text-2xl text-ink-900"
         >
-          NutriVerde
+          Plenha
         </Link>
 
         <div className="hidden md:flex items-center gap-8">
@@ -22,7 +38,7 @@ export function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-white/90 hover:text-white transition-colors"
+              className="text-sm font-medium text-ink-700 hover:text-ink-900 transition-colors"
             >
               {link.label}
             </Link>
@@ -32,7 +48,7 @@ export function Header() {
         <div className="flex items-center gap-2">
           <Link
             href="/agendar"
-            className="rounded-full border border-white/30 bg-white/10 backdrop-blur px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-white hover:bg-white/20 transition-colors whitespace-nowrap"
+            className="rounded-full bg-ink-900 hover:bg-ink-800 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-white transition-colors whitespace-nowrap"
           >
             <span className="hidden sm:inline">Agendar consulta</span>
             <span className="sm:hidden">Agendar</span>
@@ -43,7 +59,7 @@ export function Header() {
             onClick={() => setOpen((v) => !v)}
             aria-label="Abrir menú"
             aria-expanded={open}
-            className="md:hidden h-10 w-10 rounded-full border border-white/30 bg-white/10 backdrop-blur text-white flex items-center justify-center"
+            className="md:hidden h-10 w-10 rounded-full border border-ink-300/40 text-ink-800 flex items-center justify-center"
           >
             {open ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -60,14 +76,14 @@ export function Header() {
 
       {/* Drop-down móvil */}
       {open && (
-        <div className="md:hidden mx-4 rounded-2xl bg-white/95 backdrop-blur border border-white/30 shadow-xl p-2">
+        <div className="md:hidden mx-4 mb-4 rounded-2xl bg-white border border-cream-200 shadow-xl p-2">
           <ul className="flex flex-col">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="block px-4 py-3 text-sm font-medium text-gray-900 hover:bg-cream-100 rounded-xl"
+                  className="block px-4 py-3 text-sm font-medium text-ink-900 hover:bg-cream-50 rounded-xl"
                 >
                   {link.label}
                 </Link>

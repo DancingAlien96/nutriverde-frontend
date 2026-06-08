@@ -3,81 +3,79 @@ import Link from "next/link";
 
 export function Hero() {
   return (
-    <section className="relative isolate overflow-hidden bg-cream-100">
-      {/* Imagen de fondo */}
-      <div className="absolute inset-0 -z-10">
+    <section className="relative isolate overflow-hidden bg-cream-50">
+      {/* Decoraciones de frutas — esquinas */}
+      <div className="pointer-events-none absolute top-24 -right-16 sm:right-0 w-40 sm:w-56 lg:w-72 opacity-90">
         <Image
-          src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=2000&q=80"
-          alt="Frutas y verduras frescas"
-          fill
-          priority
-          className="object-cover"
+          src="https://images.unsplash.com/photo-1528821128474-27f963b062bf?auto=format&fit=crop&w=600&q=80"
+          alt=""
+          width={600}
+          height={600}
+          className="rounded-full object-cover aspect-square"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-cream-50/70 via-cream-50/30 to-transparent" />
+      </div>
+      <div className="pointer-events-none hidden lg:block absolute bottom-12 -left-12 w-56 opacity-90">
+        <Image
+          src="https://images.unsplash.com/photo-1597474561103-0270e2c8a37e?auto=format&fit=crop&w=600&q=80"
+          alt=""
+          width={600}
+          height={600}
+          className="rounded-full object-cover aspect-square"
+        />
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 lg:px-8 pt-24 sm:pt-32 lg:pt-40 pb-12 lg:pb-20 min-h-[520px] sm:min-h-[600px] lg:min-h-[680px] flex flex-col justify-center relative">
-        <div className="max-w-2xl">
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/80 backdrop-blur border border-brand-200 px-4 py-1.5 text-xs font-medium text-brand-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-            Consultas online disponibles
-          </span>
+      <div className="mx-auto max-w-5xl px-6 lg:px-8 pt-28 sm:pt-36 pb-16 sm:pb-24 lg:pb-32 text-center relative">
+        <span className="inline-flex items-center gap-2 rounded-full bg-white border border-blush-200 px-4 py-1.5 text-xs font-medium text-blush-700">
+          <span className="h-1.5 w-1.5 rounded-full bg-blush-400" />
+          Asesoría nutricional online
+        </span>
 
-          <h1 className="font-serif-display mt-6 text-4xl sm:text-6xl lg:text-7xl font-medium leading-[1.05] text-gray-900">
-            Tu salud,
-            <br />
-            <span className="text-brand-600">guiada</span> por
-            <br />
-            una experta
-          </h1>
+        <h1 className="font-serif-display mt-6 text-4xl sm:text-6xl lg:text-7xl font-medium leading-[1.05] text-ink-900 max-w-3xl mx-auto">
+          Bienvenido a <span className="italic text-brand-600">Plenha</span>
+        </h1>
 
-          <p className="mt-6 max-w-md text-sm sm:text-base text-gray-700">
-            Consultas nutricionales personalizadas desde la comodidad de tu
-            hogar. Plan de alimentación adaptado a tu estilo de vida y
-            objetivos.
-          </p>
+        <p className="mt-6 max-w-2xl mx-auto text-base sm:text-lg text-ink-500 leading-relaxed">
+          Creemos que la mejor alimentación es aquella que puedes mantener en el
+          tiempo. Con asesoría personalizada y basada en evidencia científica, te
+          ayudamos a desarrollar hábitos sostenibles que se adaptan a tu estilo de
+          vida, preferencias y objetivos.
+        </p>
 
-          <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
-            <Link
-              href="/agendar"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-brand-600/20 hover:bg-brand-700 transition-colors"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
-              Agendar mi consulta
-            </Link>
-            <Link
-              href="#como-funciona"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white/80 backdrop-blur px-6 py-3.5 text-sm font-medium text-gray-900 hover:bg-white transition-colors"
-            >
-              Cómo funciona
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 5v14M5 12l7 7 7-7" />
-              </svg>
-            </Link>
-          </div>
-
-          <dl className="mt-10 sm:mt-12 grid grid-cols-3 gap-4 sm:gap-6 max-w-md">
-            <Stat value="+150" label="Pacientes atendidos" />
-            <Stat value="5 años" label="De experiencia" />
-            <Stat value="100%" label="Online y personalizado" />
-          </dl>
+        <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
+          <Link
+            href="/agendar"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-ink-900 hover:bg-ink-800 px-7 py-3.5 text-sm font-medium text-white transition-colors"
+          >
+            Agendar mi consulta
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
+          <Link
+            href="/como-funciona"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-ink-300/60 bg-white px-7 py-3.5 text-sm font-medium text-ink-800 hover:border-ink-700 transition-colors"
+          >
+            Cómo funciona
+          </Link>
         </div>
-      </div>
 
+        <dl className="mt-16 sm:mt-20 grid grid-cols-3 gap-6 sm:gap-12 max-w-xl mx-auto border-t border-cream-300 pt-8">
+          <Stat value="+150" label="Pacientes atendidos" />
+          <Stat value="5 años" label="De experiencia" />
+          <Stat value="100%" label="Online y personalizado" />
+        </dl>
+      </div>
     </section>
   );
 }
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div>
-      <dt className="text-lg sm:text-2xl font-serif-display font-medium text-gray-900">
+    <div className="text-center">
+      <dt className="font-serif-display text-2xl sm:text-3xl text-ink-900">
         {value}
       </dt>
-      <dd className="mt-1 text-[10px] sm:text-xs text-gray-600 leading-tight">
+      <dd className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-ink-500 leading-tight">
         {label}
       </dd>
     </div>

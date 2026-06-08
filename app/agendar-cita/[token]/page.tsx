@@ -27,6 +27,7 @@ export default function SchedulePage() {
   const [pickedSlot, setPickedSlot] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState<string | null>(null);
+  const [proposed, setProposed] = useState<string | null>(null);
 
   const patientTimezone = useMemo(
     () =>
@@ -50,9 +51,15 @@ export default function SchedulePage() {
       .then((data) => {
         if (cancelled) return;
         setInfo(data);
-        // Si ya está agendada, mostramos la confirmación
         if (data.appointment.scheduledAt && data.appointment.status === "SCHEDULED") {
+          // Cita ya confirmada por la nutricionista
           setConfirmed(data.appointment.scheduledAt);
+        } else if (
+          data.appointment.scheduledAt &&
+          data.appointment.status === "PENDING_CONFIRMATION"
+        ) {
+          // El paciente ya propuso horario, falta confirmación
+          setProposed(data.appointment.scheduledAt);
         } else if (data.candidateDates.length > 0) {
           setSelectedDate(data.candidateDates[0]);
         }
@@ -98,7 +105,8 @@ export default function SchedulePage() {
     setError(null);
     try {
       const result = await confirmSlot(token, pickedSlot);
-      setConfirmed(result.appointment.scheduledAt);
+      // El horario queda propuesto; la nutricionista lo confirma después.
+      setProposed(result.appointment.scheduledAt);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
     } finally {
@@ -124,8 +132,8 @@ export default function SchedulePage() {
           <p className="mt-2 text-sm text-red-700">{error}</p>
           <p className="mt-4 text-xs text-gray-600">
             Si crees que es un error, escríbenos a{" "}
-            <a href="mailto:hola@nutriverde.com" className="underline">
-              hola@nutriverde.com
+            <a href="mailto:hola@plenhanutrition.com" className="underline">
+              hola@plenhanutrition.com
             </a>
             .
           </p>
@@ -140,6 +148,14 @@ export default function SchedulePage() {
     return (
       <Layout>
         <ConfirmedView info={info} confirmedAt={confirmed} patientTimezone={patientTimezone} />
+      </Layout>
+    );
+  }
+
+  if (proposed) {
+    return (
+      <Layout>
+        <ProposedView info={info} proposedAt={proposed} patientTimezone={patientTimezone} />
       </Layout>
     );
   }
@@ -273,7 +289,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       <header className="bg-white border-b border-cream-200">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex items-center justify-between">
           <Link href="/" className="font-serif-display text-xl sm:text-2xl text-gray-900">
-            NutriVerde
+            Plenha
           </Link>
         </div>
       </header>
@@ -324,6 +340,54 @@ function ConfirmedView({
       <p className="mt-8 text-sm text-gray-600 max-w-md mx-auto">
         Recibirás un correo con el enlace de la videollamada antes de tu cita.
         Si necesitas reprogramar, responde al correo de confirmación.
+      </p>
+    </div>
+  );
+}
+
+function ProposedView({
+  info,
+  proposedAt,
+  patientTimezone,
+}: {
+  info: ScheduleInfo;
+  proposedAt: string;
+  patientTimezone: string;
+}) {
+  return (
+    <div className="bg-white rounded-3xl shadow-sm border border-cream-300 p-8 sm:p-12 text-center">
+      <div className="mx-auto h-16 w-16 rounded-full bg-cream-100 flex items-center justify-center">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-700">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 2" />
+        </svg>
+      </div>
+      <h1 className="mt-6 font-serif-display text-3xl text-gray-900">
+        ¡Recibimos tu horario!
+      </h1>
+      <p className="mt-2 text-sm text-gray-600">
+        {info.service.name} · {info.appointment.durationMin} min
+      </p>
+
+      <div className="mt-8 inline-block text-left bg-cream-100 border border-cream-300 rounded-2xl px-6 py-4">
+        <p className="text-xs uppercase tracking-wider text-brand-700 font-semibold mb-1">
+          Horario solicitado
+        </p>
+        <p className="font-medium text-gray-900">
+          {fmtFullDate(proposedAt, BUSINESS_TZ)}{" "}
+          <span className="text-sm font-normal text-gray-500">(Guatemala)</span>
+        </p>
+        {patientTimezone !== BUSINESS_TZ && (
+          <p className="text-sm text-gray-600 mt-1">
+            {fmtFullDate(proposedAt, patientTimezone)}{" "}
+            <span className="text-gray-500">(tu hora)</span>
+          </p>
+        )}
+      </div>
+
+      <p className="mt-8 text-sm text-gray-600 max-w-md mx-auto">
+        Estamos confirmando la disponibilidad. En breve recibirás un correo con
+        la <strong>confirmación final y el enlace de la videollamada</strong>.
       </p>
     </div>
   );

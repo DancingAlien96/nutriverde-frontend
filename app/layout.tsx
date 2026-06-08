@@ -16,9 +16,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "NutriVerde — Consultas nutricionales online",
+  title: "Plenha Nutrition — Asesoría nutricional online",
   description:
-    "Consultas nutricionales personalizadas con una nutricionista certificada. Plan de alimentación adaptado a tu estilo de vida y objetivos.",
+    "Asesoría nutricional personalizada y basada en evidencia con la nutricionista clínica Dulce Menzel. Hábitos sostenibles adaptados a tu estilo de vida y objetivos.",
   // Sitio privado por referencia — no indexar en buscadores
   robots: {
     index: false,

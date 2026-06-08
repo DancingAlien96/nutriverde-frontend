@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Admin — NutriVerde",
+  title: "Admin — Plenha Nutrition",
   robots: { index: false, follow: false },
 };
 

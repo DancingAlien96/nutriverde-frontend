@@ -238,6 +238,332 @@ export async function deleteBlock(id: string): Promise<void> {
 }
 
 // ============================================================
+// Pacientes (admin)
+// ============================================================
+
+export type DocumentType = "DPI" | "CURP" | "PASSPORT" | "OTHER";
+
+export const DOCUMENT_TYPE_LABEL: Record<DocumentType, string> = {
+  DPI: "DPI",
+  CURP: "CURP",
+  PASSPORT: "Pasaporte",
+  OTHER: "Otro",
+};
+
+export interface PatientListItem {
+  id: string;
+  fullName: string;
+  email: string;
+  documentId: string | null;
+  documentType: DocumentType;
+  phone: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count: {
+    appointments: number;
+    payments: number;
+    nutritionPlans: number;
+  };
+}
+
+export interface PatientDiagnosis {
+  id: string;
+  objective: string | null;
+  goalFatPercent: number | null;
+  goalFatLossLbs: number | null;
+  goalLeanMassKg: number | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface PatientTraining {
+  id: string;
+  duration: string | null;
+  frequency: string | null;
+  schedule: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface AnthropometricMeasurement {
+  id: string;
+  appointmentId: string | null;
+  measuredAt: string;
+  visitNumber: number | null;
+  weightKg: number | null;
+  fatPercent: number | null;
+  waterPercent: number | null;
+  leanMassKg: number | null;
+  metabolicAge: number | null;
+  visceralFat: number | null;
+  caliperFatPercent: number | null;
+  chestCm: number | null;
+  waistCm: number | null;
+  abdomenCm: number | null;
+  hipCm: number | null;
+  armCm: number | null;
+  thighCm: number | null;
+  calfCm: number | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface MealPlanRecord {
+  id: string;
+  title: string | null;
+  breakfast: string | null;
+  morningSnack: string | null;
+  lunch: string | null;
+  afternoonSnack: string | null;
+  dinner: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface PatientDetail {
+  id: string;
+  fullName: string;
+  email: string;
+  documentId: string | null;
+  documentType: DocumentType;
+  phone: string | null;
+  whatsappNotify: boolean;
+  timezone: string;
+  referralSource: string | null;
+  notes: string | null;
+  // Datos clínicos estáticos
+  birthDate: string | null;
+  heightCm: number | null;
+  allergies: string | null;
+  medicalConditions: string | null;
+  medications: string | null;
+  alcoholNotes: string | null;
+  cravingsNotes: string | null;
+  waterCoffeeNotes: string | null;
+  dislikedFoods: string | null;
+  weekendSpots: string | null;
+  // Historial clínico
+  diagnoses: PatientDiagnosis[];
+  trainings: PatientTraining[];
+  measurements: AnthropometricMeasurement[];
+  mealPlans: MealPlanRecord[];
+  createdAt: string;
+  updatedAt: string;
+  intakeForms: Array<{
+    id: string;
+    serviceSlug: string;
+    submittedAt: string;
+    data: {
+      goal?: string | null;
+      conditions?: string | null;
+      notes?: string | null;
+    };
+  }>;
+  appointments: Array<{
+    id: string;
+    status: string;
+    scheduledAt: string | null;
+    durationMin: number;
+    meetingUrl: string | null;
+    meetingProvider: "GOOGLE_MEET" | "ZOOM" | null;
+    createdAt: string;
+    service: { id: string; name: string; slug: string };
+    payment: {
+      id: string;
+      status: string;
+      amountCents: number;
+      currency: string;
+      approvedAt: string | null;
+      rejectedReason: string | null;
+    } | null;
+    nutritionPlan: {
+      id: string;
+      title: string;
+      fileUrl: string;
+      sentAt: string | null;
+    } | null;
+  }>;
+  payments: Array<{
+    id: string;
+    status: string;
+    amountCents: number;
+    currency: string;
+    receiptUrl: string;
+    receiptMime: string | null;
+    createdAt: string;
+    approvedAt: string | null;
+    rejectedReason: string | null;
+    appointmentId: string | null;
+    service: { name: string };
+  }>;
+  nutritionPlans: Array<{
+    id: string;
+    title: string;
+    fileUrl: string;
+    sentAt: string | null;
+    createdAt: string;
+  }>;
+}
+
+export interface PatientStats {
+  totalAppointments: number;
+  completedAppointments: number;
+  scheduledAppointments: number;
+  totalPaidCents: number;
+}
+
+export async function listPatients(
+  query?: string,
+): Promise<{ patients: PatientListItem[] }> {
+  const qs = query ? `?q=${encodeURIComponent(query)}` : "";
+  const res = await authFetch(`/api/admin/patients${qs}`);
+  return parseJson(res);
+}
+
+export async function getPatient(
+  id: string,
+): Promise<{ patient: PatientDetail; stats: PatientStats }> {
+  const res = await authFetch(`/api/admin/patients/${id}`);
+  return parseJson(res);
+}
+
+/** Descarga el PDF del expediente. Requiere auth Bearer. */
+export async function downloadExpedientePdf(
+  patientId: string,
+  fallbackName = "expediente",
+): Promise<void> {
+  const res = await authFetch(`/api/admin/patients/${patientId}/expediente.pdf`);
+  if (!res.ok) {
+    if (res.status === 401) clearToken();
+    throw new Error(`HTTP ${res.status}`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const cd = res.headers.get("content-disposition") ?? "";
+  const match = /filename="?([^"]+)"?/.exec(cd);
+  a.download = match?.[1] ?? `${fallbackName}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export type PatientUpdatePatch = Partial<{
+  fullName: string;
+  email: string;
+  documentId: string;
+  phone: string;
+  whatsappNotify: boolean;
+  notes: string | null;
+  referralSource: string | null;
+  birthDate: string | null;
+  heightCm: number | null;
+  allergies: string | null;
+  medicalConditions: string | null;
+  medications: string | null;
+  alcoholNotes: string | null;
+  cravingsNotes: string | null;
+  waterCoffeeNotes: string | null;
+  dislikedFoods: string | null;
+  weekendSpots: string | null;
+}>;
+
+export async function updatePatient(
+  id: string,
+  patch: PatientUpdatePatch,
+): Promise<{ patient: PatientDetail }> {
+  const res = await authFetch(`/api/admin/patients/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(patch),
+  });
+  return parseJson(res);
+}
+
+export async function addDiagnosis(
+  patientId: string,
+  input: Omit<PatientDiagnosis, "id" | "createdAt">,
+): Promise<{ diagnosis: PatientDiagnosis }> {
+  const res = await authFetch(`/api/admin/patients/${patientId}/diagnoses`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
+export async function deleteDiagnosis(
+  patientId: string,
+  id: string,
+): Promise<void> {
+  await authFetch(`/api/admin/patients/${patientId}/diagnoses/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function addTraining(
+  patientId: string,
+  input: Omit<PatientTraining, "id" | "createdAt">,
+): Promise<{ training: PatientTraining }> {
+  const res = await authFetch(`/api/admin/patients/${patientId}/trainings`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
+export async function deleteTraining(
+  patientId: string,
+  id: string,
+): Promise<void> {
+  await authFetch(`/api/admin/patients/${patientId}/trainings/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function addMeasurement(
+  patientId: string,
+  input: Omit<AnthropometricMeasurement, "id" | "createdAt"> & {
+    measuredAt?: string;
+  },
+): Promise<{ measurement: AnthropometricMeasurement }> {
+  const res = await authFetch(`/api/admin/patients/${patientId}/measurements`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
+export async function deleteMeasurement(
+  patientId: string,
+  id: string,
+): Promise<void> {
+  await authFetch(`/api/admin/patients/${patientId}/measurements/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function addMealPlan(
+  patientId: string,
+  input: Omit<MealPlanRecord, "id" | "createdAt">,
+): Promise<{ mealPlan: MealPlanRecord }> {
+  const res = await authFetch(`/api/admin/patients/${patientId}/meal-plans`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
+export async function deleteMealPlan(
+  patientId: string,
+  id: string,
+): Promise<void> {
+  await authFetch(`/api/admin/patients/${patientId}/meal-plans/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// ============================================================
 // Servicios (admin)
 // ============================================================
 
@@ -315,6 +641,23 @@ export async function setMeetingUrl(
     method: "POST",
     body: JSON.stringify({ meetingUrl, meetingProvider }),
   });
+  return parseJson(res);
+}
+
+/** Confirma la cita: el link de la videollamada es obligatorio. Marca la
+ *  cita como SCHEDULED y dispara el correo al paciente con fecha + enlace. */
+export async function confirmAppointment(
+  paymentId: string,
+  input: {
+    meetingUrl: string;
+    meetingProvider?: "GOOGLE_MEET" | "ZOOM";
+    scheduledAt?: string;
+  },
+): Promise<{ ok: true; appointment: PaymentDetail["appointment"] }> {
+  const res = await authFetch(
+    `/api/admin/payments/${paymentId}/confirm-appointment`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
   return parseJson(res);
 }
 

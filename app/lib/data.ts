@@ -19,11 +19,11 @@ export const SERVICES: Service[] = [
     price: "Q350",
     duration: "60 min",
     description:
-      "Evaluación completa de tu estado nutricional, hábitos alimentarios, objetivos y plan de alimentación personalizado para comenzar tu transformación.",
+      "Una evaluación integral de tu salud, hábitos, estilo de vida y objetivos. Revisaremos tu historial médico, alimentación actual, rutina y necesidades específicas para desarrollar una estrategia nutricional personalizada y sostenible.",
     features: [
-      "Evaluación nutricional",
-      "Plan alimentario inicial",
-      "Lista de compras",
+      "Evaluación integral de salud",
+      "Revisión de historial y hábitos",
+      "Estrategia personalizada",
     ],
     image:
       "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=900&q=80",
@@ -35,29 +35,44 @@ export const SERVICES: Service[] = [
     price: "Q250",
     duration: "45 min",
     description:
-      "Revisamos tus avances, ajustamos el plan según tus resultados y resolvemos dudas para mantener tu progreso.",
+      "Diseñadas para evaluar avances, resolver dificultades y realizar los ajustes necesarios para continuar progresando hacia tus objetivos de manera realista y sostenible.",
     features: [
-      "Revisión de avances",
+      "Evaluación de avances",
       "Ajuste del plan",
-      "Resolución de dudas",
+      "Resolución de dificultades",
     ],
     image:
       "https://images.unsplash.com/photo-1490818387583-1baba5e638af?auto=format&fit=crop&w=900&q=80",
   },
   {
-    slug: "plan-premium",
-    name: "Plan Nutricional Premium",
-    price: "Q550",
-    duration: "Mensual",
+    slug: "coaching-nutricional",
+    name: "Coaching Nutricional y Cambio de Hábitos",
+    price: "Q0",
+    duration: "60 min",
     description:
-      "Acompañamiento mensual con plan completo, ajustes ilimitados y soporte continuo por WhatsApp.",
+      "Un espacio enfocado en ayudarte a implementar cambios duraderos en tu alimentación y estilo de vida. Ideal para mejorar tu relación con la comida, fortalecer hábitos saludables y mantener resultados a largo plazo.",
     features: [
-      "Plan mensual completo",
-      "Ajustes ilimitados",
-      "Soporte por WhatsApp",
+      "Cambio de hábitos sostenible",
+      "Mejor relación con la comida",
+      "Estrategias prácticas",
     ],
     image:
-      "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    slug: "nutricion-deportiva",
+    name: "Nutrición Deportiva",
+    price: "Q0",
+    duration: "60 min",
+    description:
+      "Para corredores, atletas y personas que se preparan para competencias o eventos de resistencia. Estrategias de alimentación, hidratación y suplementación basadas en evidencia para optimizar el rendimiento y la recuperación.",
+    features: [
+      "Alimentación e hidratación",
+      "Suplementación basada en evidencia",
+      "Rendimiento y recuperación",
+    ],
+    image:
+      "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=900&q=80",
   },
 ];
 
@@ -67,12 +82,12 @@ export interface Specialty {
 }
 
 export const SPECIALTIES: Specialty[] = [
-  { label: "Control de peso", icon: "⚖️" },
-  { label: "Diabetes y metabolismo", icon: "🩺" },
-  { label: "Alimentación saludable", icon: "🥗" },
-  { label: "Nutrición femenina y SOP", icon: "🌸" },
-  { label: "Nutrición deportiva", icon: "💪" },
-  { label: "Nutrición familiar", icon: "👨‍👩‍👧" },
+  { label: "Nutrición clínica", icon: "🩺" },
+  { label: "Recomposición corporal", icon: "💪" },
+  { label: "Resistencia a la insulina", icon: "🩸" },
+  { label: "Rendimiento deportivo", icon: "🏃" },
+  { label: "Salud metabólica", icon: "🥗" },
+  { label: "Hábitos sostenibles", icon: "🌱" },
 ];
 
 export interface ProcessStep {
@@ -137,8 +152,8 @@ export const TESTIMONIALS: Testimonial[] = [
     name: "María José Rodríguez",
     location: "Guatemala City",
     quote:
-      "Comencé sin mucha esperanza, pero el seguimiento personalizado de NutriVerde cambió por completo mi relación con la comida. El plan fue real y adaptado a mi ritmo de vida. ¡Bajé 8 kilos en 3 meses sintiéndome con energía!",
-    plan: "Plan Nutricional Premium",
+      "Comencé sin mucha esperanza, pero el seguimiento personalizado de Plenha Nutrition cambió por completo mi relación con la comida. El plan fue real y adaptado a mi ritmo de vida. ¡Bajé 8 kilos en 3 meses sintiéndome con energía!",
+    plan: "Coaching Nutricional",
     rating: 5,
     result: "-8 kg en 3 meses",
     avatar:
@@ -159,7 +174,7 @@ export const TESTIMONIALS: Testimonial[] = [
     location: "Quetzaltenango",
     quote:
       "Tenía problemas de azúcar alta y no sabía cómo comer bien. El plan que me dieron fue claro, con recetas fáciles de hacer. Ya estoy viendo mejoras en mis análisis.",
-    plan: "Plan Nutricional Premium",
+    plan: "Nutrición Deportiva",
     rating: 5,
     avatar:
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
@@ -195,7 +210,7 @@ export const FAQS: FAQItem[] = [
   {
     question: "¿Cuánto dura la consulta?",
     answer:
-      "La Consulta Inicial dura 60 minutos. La Consulta de Seguimiento dura 45 minutos. El Plan Premium incluye consultas mensuales con duración variable según necesidad.",
+      "La Consulta Inicial, el Coaching Nutricional y la Nutrición Deportiva duran 60 minutos. La Consulta de Seguimiento dura 45 minutos.",
   },
   {
     question: "¿Qué incluye el plan nutricional?",
@@ -215,7 +230,7 @@ export const FAQS: FAQItem[] = [
   {
     question: "¿Hay seguimiento después de la consulta?",
     answer:
-      "Sí. Recibirás correos de seguimiento y tienes la opción de agendar consultas de seguimiento o suscribirte al Plan Premium para acompañamiento continuo.",
+      "Sí. Recibirás correos de seguimiento y puedes agendar consultas de seguimiento o sesiones de coaching nutricional para acompañamiento continuo.",
   },
   {
     question: "¿Atienden casos con enfermedades específicas?",
@@ -225,19 +240,22 @@ export const FAQS: FAQItem[] = [
 ];
 
 export const NAV_LINKS = [
-  { href: "#servicios", label: "Servicios" },
-  { href: "#como-funciona", label: "Cómo funciona" },
-  { href: "#testimonios", label: "Testimonios" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/sobre-mi", label: "Sobre mí" },
+  { href: "/servicios", label: "Servicios" },
+  { href: "/como-funciona", label: "Cómo funciona" },
+  { href: "/testimonios", label: "Testimonios" },
+  { href: "/faq", label: "FAQ" },
 ];
 
 export const SITE = {
-  name: "NutriVerde",
-  email: "hola@nutriverde.com",
+  name: "Plenha",
+  fullName: "Plenha Nutrition",
+  email: "hola@plenhanutrition.com",
   location: "Guatemala, C.A. (UTC-6)",
-  whatsappUrl: "https://wa.me/50200000000", // reemplazar con número real
+  whatsappNumber: "+502 3070 6592",
+  whatsappUrl: "https://wa.me/50230706592",
   socials: {
-    instagram: "https://instagram.com/nutriverde",
-    facebook: "https://facebook.com/nutriverde",
+    instagram: "https://instagram.com/plenhanutrition",
+    facebook: "https://facebook.com/plenhanutrition",
   },
 };

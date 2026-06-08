@@ -9,36 +9,35 @@ export function Testimonials() {
   const featured = TESTIMONIALS[active];
 
   return (
-    <section id="testimonios" className="bg-cream-50 py-14 sm:py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">
+    <section id="testimonios" className="bg-white py-16 sm:py-24 lg:py-32">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-brand-600">
             Testimonios
           </p>
-          <h2 className="font-serif-display mt-3 text-2xl sm:text-4xl lg:text-5xl font-medium text-gray-900">
-            ( Lo que dicen mis pacientes )
+          <h2 className="font-serif-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-medium text-ink-900">
+            Lo que dicen <span className="italic">mis pacientes</span>
           </h2>
         </div>
 
-        <div className="mt-10 sm:mt-14 grid lg:grid-cols-5 gap-4 sm:gap-6">
+        <div className="mt-12 sm:mt-16 grid lg:grid-cols-5 gap-4 sm:gap-6">
           {/* Featured */}
-          <article className="lg:col-span-3 rounded-2xl bg-white border border-gray-100 p-5 sm:p-8 lg:p-10 shadow-sm flex flex-col">
+          <article className="lg:col-span-3 rounded-3xl bg-cream-50 border border-cream-200 p-6 sm:p-10 flex flex-col">
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-3 py-1 text-xs text-white">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-amber-300">
+              <span className="inline-flex items-center gap-1.5 text-xs text-ink-500">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-amber-400">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
-                {featured.rating.toFixed(1)}
+                {featured.rating.toFixed(1)} · {featured.plan}
               </span>
-              <span className="text-xs text-gray-500">{featured.plan}</span>
             </div>
 
-            <blockquote className="mt-6 font-serif-display text-lg sm:text-xl lg:text-2xl leading-snug text-gray-900">
+            <blockquote className="mt-6 font-serif-display text-lg sm:text-xl lg:text-2xl leading-snug text-ink-900">
               &ldquo;{featured.quote}&rdquo;
             </blockquote>
 
             {featured.result && (
-              <div className="mt-6 inline-flex items-center gap-2 self-start rounded-full bg-brand-50 border border-brand-200 px-3 py-1.5 text-xs font-medium text-brand-700">
+              <div className="mt-6 inline-flex items-center gap-2 self-start rounded-full bg-white border border-cream-200 px-3 py-1.5 text-xs font-medium text-brand-700">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 3v18h18" />
                   <path d="M18 17l-5-5-4 4-3-3" />
@@ -57,10 +56,10 @@ export function Testimonials() {
                   className="rounded-full object-cover h-11 w-11"
                 />
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-sm font-semibold text-ink-900">
                     {featured.name}
                   </p>
-                  <p className="text-xs text-gray-500">{featured.location}</p>
+                  <p className="text-xs text-ink-500">{featured.location}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -71,7 +70,7 @@ export function Testimonials() {
                       (active - 1 + TESTIMONIALS.length) % TESTIMONIALS.length,
                     )
                   }
-                  className="h-9 w-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="h-9 w-9 rounded-full border border-cream-300 flex items-center justify-center text-ink-700 hover:bg-white transition-colors"
                   aria-label="Anterior"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -81,7 +80,7 @@ export function Testimonials() {
                 <button
                   type="button"
                   onClick={() => setActive((active + 1) % TESTIMONIALS.length)}
-                  className="h-9 w-9 rounded-full bg-gray-900 text-white flex items-center justify-center hover:bg-gray-800 transition-colors"
+                  className="h-9 w-9 rounded-full bg-ink-900 text-white flex items-center justify-center hover:bg-ink-800 transition-colors"
                   aria-label="Siguiente"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -99,7 +98,7 @@ export function Testimonials() {
                   type="button"
                   onClick={() => setActive(i)}
                   className={`h-1.5 rounded-full transition-all ${
-                    i === active ? "w-8 bg-brand-600" : "w-1.5 bg-gray-300"
+                    i === active ? "w-8 bg-brand-600" : "w-1.5 bg-cream-300"
                   }`}
                   aria-label={`Testimonio ${i + 1}`}
                 />
@@ -108,16 +107,16 @@ export function Testimonials() {
           </article>
 
           {/* Lista */}
-          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4 content-start">
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4 content-start">
             {TESTIMONIALS.map((t, i) => (
               <button
                 key={t.name}
                 type="button"
                 onClick={() => setActive(i)}
-                className={`text-left rounded-2xl p-5 border transition-all ${
+                className={`text-left rounded-2xl p-5 border transition-colors ${
                   i === active
-                    ? "bg-brand-600 border-brand-600 text-white shadow-md"
-                    : "bg-white border-gray-100 text-gray-900 hover:border-brand-200"
+                    ? "bg-brand-500 border-brand-500 text-white"
+                    : "bg-cream-50 border-cream-200 text-ink-900 hover:border-brand-300"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -132,7 +131,7 @@ export function Testimonials() {
                     <p className="text-sm font-semibold truncate">{t.name}</p>
                     <p
                       className={`text-xs truncate ${
-                        i === active ? "text-white/80" : "text-gray-500"
+                        i === active ? "text-white/80" : "text-ink-500"
                       }`}
                     >
                       {t.location}
@@ -141,7 +140,7 @@ export function Testimonials() {
                 </div>
                 <p
                   className={`mt-3 text-xs leading-relaxed line-clamp-4 ${
-                    i === active ? "text-white/90" : "text-gray-600"
+                    i === active ? "text-white/90" : "text-ink-700"
                   }`}
                 >
                   &ldquo;{t.quote}&rdquo;
