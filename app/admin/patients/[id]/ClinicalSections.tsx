@@ -10,6 +10,7 @@ import {
   deleteMealPlan,
   deleteMeasurement,
   deleteTraining,
+  sendMealPlan,
   updatePatient,
   type AnthropometricMeasurement,
   type MealPlanRecord,
@@ -20,7 +21,7 @@ import {
 } from "../../../lib/admin";
 
 // ============================================================
-// Datos clínicos estáticos
+// Static clinical data
 // ============================================================
 
 export function StaticHealthSection({
@@ -77,24 +78,24 @@ export function StaticHealthSection({
   }
 
   return (
-    <Card title="Datos clínicos">
+    <Card title="Clinical data">
       {!editing ? (
         <div className="space-y-1.5 text-sm">
-          <KV label="Fecha de nacimiento" value={fmtDate(patient.birthDate)} />
-          <KV label="Edad" value={ageFrom(patient.birthDate)} />
+          <KV label="Date of birth" value={fmtDate(patient.birthDate)} />
+          <KV label="Age" value={ageFrom(patient.birthDate)} />
           <KV
-            label="Estatura"
+            label="Height"
             value={patient.heightCm ? `${(patient.heightCm / 100).toFixed(2)} m` : "—"}
           />
-          <KV label="Alergias" value={patient.allergies ?? "—"} block />
-          <KV label="Enfermedades" value={patient.medicalConditions ?? "—"} block />
-          <KV label="Medicamentos" value={patient.medications ?? "—"} block />
+          <KV label="Allergies" value={patient.allergies ?? "—"} block />
+          <KV label="Medical conditions" value={patient.medicalConditions ?? "—"} block />
+          <KV label="Medications" value={patient.medications ?? "—"} block />
           <KV label="Alcohol" value={patient.alcoholNotes ?? "—"} />
-          <KV label="Antojos dulces" value={patient.cravingsNotes ?? "—"} />
-          <KV label="Agua / café" value={patient.waterCoffeeNotes ?? "—"} />
-          <KV label="Alimentos no gusta" value={patient.dislikedFoods ?? "—"} block />
+          <KV label="Sweet cravings" value={patient.cravingsNotes ?? "—"} />
+          <KV label="Water / coffee" value={patient.waterCoffeeNotes ?? "—"} />
+          <KV label="Disliked foods" value={patient.dislikedFoods ?? "—"} block />
           <KV
-            label="Lugares fin de semana"
+            label="Weekend spots"
             value={patient.weekendSpots ?? "—"}
             block
           />
@@ -103,13 +104,13 @@ export function StaticHealthSection({
             onClick={() => setEditing(true)}
             className="mt-3 text-xs font-medium text-brand-700 hover:text-brand-800"
           >
-            Editar →
+            Edit →
           </button>
         </div>
       ) : (
         <div className="space-y-3">
           <div className="grid sm:grid-cols-2 gap-3">
-            <Field label="Fecha de nacimiento">
+            <Field label="Date of birth">
               <input
                 type="date"
                 value={form.birthDate}
@@ -117,7 +118,7 @@ export function StaticHealthSection({
                 className={inputClass}
               />
             </Field>
-            <Field label="Estatura (cm)">
+            <Field label="Height (cm)">
               <input
                 type="number"
                 min={0}
@@ -129,7 +130,7 @@ export function StaticHealthSection({
               />
             </Field>
           </div>
-          <Field label="Alergias / enfermedades alimentarias">
+          <Field label="Food allergies / intolerances">
             <textarea
               rows={2}
               value={form.allergies}
@@ -137,7 +138,7 @@ export function StaticHealthSection({
               className={inputClass}
             />
           </Field>
-          <Field label="Enfermedades">
+          <Field label="Medical conditions">
             <textarea
               rows={2}
               value={form.medicalConditions}
@@ -147,7 +148,7 @@ export function StaticHealthSection({
               className={inputClass}
             />
           </Field>
-          <Field label="Medicamentos / suplementos">
+          <Field label="Medications / supplements">
             <textarea
               rows={2}
               value={form.medications}
@@ -166,7 +167,7 @@ export function StaticHealthSection({
                 className={inputClass}
               />
             </Field>
-            <Field label="Antojos cosas dulces">
+            <Field label="Sweet cravings">
               <input
                 type="text"
                 value={form.cravingsNotes}
@@ -176,7 +177,7 @@ export function StaticHealthSection({
                 className={inputClass}
               />
             </Field>
-            <Field label="Agua pura / café">
+            <Field label="Plain water / coffee">
               <input
                 type="text"
                 value={form.waterCoffeeNotes}
@@ -186,7 +187,7 @@ export function StaticHealthSection({
                 className={inputClass}
               />
             </Field>
-            <Field label="Alimentos que no le gusta">
+            <Field label="Disliked foods">
               <input
                 type="text"
                 value={form.dislikedFoods}
@@ -197,7 +198,7 @@ export function StaticHealthSection({
               />
             </Field>
           </div>
-          <Field label="Lugares que frecuenta fin de semana">
+          <Field label="Weekend spots frequented">
             <textarea
               rows={2}
               value={form.weekendSpots}
@@ -215,7 +216,7 @@ export function StaticHealthSection({
               disabled={submitting}
               className="text-sm text-gray-600 hover:text-gray-900"
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="button"
@@ -223,7 +224,7 @@ export function StaticHealthSection({
               disabled={submitting}
               className={primaryBtn}
             >
-              {submitting ? "Guardando…" : "Guardar"}
+              {submitting ? "Saving…" : "Save"}
             </button>
           </div>
         </div>
@@ -233,7 +234,7 @@ export function StaticHealthSection({
 }
 
 // ============================================================
-// Diagnóstico
+// Diagnosis
 // ============================================================
 
 export function DiagnosesSection({
@@ -284,7 +285,7 @@ export function DiagnosesSection({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar esta entrada de diagnóstico?")) return;
+    if (!confirm("Delete this diagnosis entry?")) return;
     try {
       await deleteDiagnosis(patientId, id);
       await onChanged();
@@ -294,9 +295,9 @@ export function DiagnosesSection({
   }
 
   return (
-    <Card title="Diagnóstico y metas">
+    <Card title="Diagnosis and goals">
       {diagnoses.length === 0 && !adding && (
-        <p className="text-sm text-gray-500">Sin entradas.</p>
+        <p className="text-sm text-gray-500">No entries.</p>
       )}
 
       <ul className="space-y-3">
@@ -311,7 +312,7 @@ export function DiagnosesSection({
               <div className="text-xs text-gray-500">
                 {i === 0 && (
                   <span className="inline-block mr-2 rounded-full bg-brand-600 text-white px-2 py-0.5 text-[10px] uppercase tracking-wider">
-                    actual
+                    current
                   </span>
                 )}
                 {fmtDateTime(d.createdAt)}
@@ -321,23 +322,23 @@ export function DiagnosesSection({
                 onClick={() => handleDelete(d.id)}
                 className="text-xs text-red-700 hover:text-red-800"
               >
-                Eliminar
+                Delete
               </button>
             </div>
             {d.objective && (
               <p className="mt-2 text-sm text-gray-800 whitespace-pre-wrap">
-                <strong className="text-gray-900">Objetivo:</strong> {d.objective}
+                <strong className="text-gray-900">Goal:</strong> {d.objective}
               </p>
             )}
             <dl className="mt-2 grid grid-cols-3 gap-2 text-xs text-gray-600">
               {d.goalFatPercent != null && (
-                <KVSmall label="Meta % grasa" value={`${d.goalFatPercent}%`} />
+                <KVSmall label="Target body fat %" value={`${d.goalFatPercent}%`} />
               )}
               {d.goalFatLossLbs != null && (
-                <KVSmall label="Meta lbs grasa" value={`${d.goalFatLossLbs} lb`} />
+                <KVSmall label="Target fat loss lbs" value={`${d.goalFatLossLbs} lb`} />
               )}
               {d.goalLeanMassKg != null && (
-                <KVSmall label="Meta masa magra" value={`${d.goalLeanMassKg} kg`} />
+                <KVSmall label="Target lean mass" value={`${d.goalLeanMassKg} kg`} />
               )}
             </dl>
             {d.notes && (
@@ -355,21 +356,21 @@ export function DiagnosesSection({
           onClick={() => setAdding(true)}
           className="mt-3 text-xs font-medium text-brand-700 hover:text-brand-800"
         >
-          + Nueva entrada
+          + New entry
         </button>
       ) : (
         <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
-          <Field label="Objetivo">
+          <Field label="Goal">
             <textarea
               rows={2}
               value={form.objective}
               onChange={(e) => setForm({ ...form, objective: e.target.value })}
-              placeholder="Ej. Control de comida y aumentar masa muscular"
+              placeholder="e.g. Manage eating habits and increase muscle mass"
               className={inputClass}
             />
           </Field>
           <div className="grid sm:grid-cols-3 gap-3">
-            <Field label="Meta % grasa">
+            <Field label="Target body fat %">
               <input
                 type="number"
                 step="0.1"
@@ -380,7 +381,7 @@ export function DiagnosesSection({
                 className={inputClass}
               />
             </Field>
-            <Field label="Meta lbs grasa">
+            <Field label="Target fat loss lbs">
               <input
                 type="number"
                 step="0.1"
@@ -391,7 +392,7 @@ export function DiagnosesSection({
                 className={inputClass}
               />
             </Field>
-            <Field label="Meta masa magra (kg)">
+            <Field label="Target lean mass (kg)">
               <input
                 type="number"
                 step="0.1"
@@ -403,7 +404,7 @@ export function DiagnosesSection({
               />
             </Field>
           </div>
-          <Field label="Notas">
+          <Field label="Notes">
             <textarea
               rows={2}
               value={form.notes}
@@ -419,7 +420,7 @@ export function DiagnosesSection({
               disabled={submitting}
               className="text-sm text-gray-600 hover:text-gray-900"
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="button"
@@ -427,7 +428,7 @@ export function DiagnosesSection({
               disabled={submitting}
               className={primaryBtn}
             >
-              {submitting ? "Guardando…" : "Agregar"}
+              {submitting ? "Saving…" : "Add"}
             </button>
           </div>
         </div>
@@ -437,7 +438,7 @@ export function DiagnosesSection({
 }
 
 // ============================================================
-// Entrenamiento
+// Training
 // ============================================================
 
 export function TrainingsSection({
@@ -480,7 +481,7 @@ export function TrainingsSection({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar esta entrada de entrenamiento?")) return;
+    if (!confirm("Delete this training entry?")) return;
     try {
       await deleteTraining(patientId, id);
       await onChanged();
@@ -490,9 +491,9 @@ export function TrainingsSection({
   }
 
   return (
-    <Card title="Entrenamiento">
+    <Card title="Training">
       {trainings.length === 0 && !adding && (
-        <p className="text-sm text-gray-500">Sin entradas.</p>
+        <p className="text-sm text-gray-500">No entries.</p>
       )}
       <ul className="space-y-3">
         {trainings.map((t, i) => (
@@ -506,7 +507,7 @@ export function TrainingsSection({
               <div className="text-xs text-gray-500">
                 {i === 0 && (
                   <span className="inline-block mr-2 rounded-full bg-brand-600 text-white px-2 py-0.5 text-[10px] uppercase tracking-wider">
-                    actual
+                    current
                   </span>
                 )}
                 {fmtDateTime(t.createdAt)}
@@ -516,20 +517,20 @@ export function TrainingsSection({
                 onClick={() => handleDelete(t.id)}
                 className="text-xs text-red-700 hover:text-red-800"
               >
-                Eliminar
+                Delete
               </button>
             </div>
             <dl className="mt-2 grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-              {t.duration && <KV label="Duración" value={t.duration} />}
-              {t.frequency && <KV label="Frecuencia" value={t.frequency} />}
+              {t.duration && <KV label="Duration" value={t.duration} />}
+              {t.frequency && <KV label="Frequency" value={t.frequency} />}
               {t.schedule && (
                 <div className="sm:col-span-2">
-                  <KV label="Horario" value={t.schedule} block />
+                  <KV label="Schedule" value={t.schedule} block />
                 </div>
               )}
               {t.notes && (
                 <div className="sm:col-span-2">
-                  <KV label="Notas" value={t.notes} block />
+                  <KV label="Notes" value={t.notes} block />
                 </div>
               )}
             </dl>
@@ -543,42 +544,42 @@ export function TrainingsSection({
           onClick={() => setAdding(true)}
           className="mt-3 text-xs font-medium text-brand-700 hover:text-brand-800"
         >
-          + Nueva entrada
+          + New entry
         </button>
       ) : (
         <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
           <div className="grid sm:grid-cols-2 gap-3">
-            <Field label="Duración">
+            <Field label="Duration">
               <input
                 type="text"
                 value={form.duration}
                 onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                placeholder="Ej. 45 min por sesión"
+                placeholder="e.g. 45 min per session"
                 className={inputClass}
               />
             </Field>
-            <Field label="Frecuencia">
+            <Field label="Frequency">
               <input
                 type="text"
                 value={form.frequency}
                 onChange={(e) =>
                   setForm({ ...form, frequency: e.target.value })
                 }
-                placeholder="Ej. 5 días a la semana"
+                placeholder="e.g. 5 days a week"
                 className={inputClass}
               />
             </Field>
           </div>
-          <Field label="Horario">
+          <Field label="Schedule">
             <textarea
               rows={2}
               value={form.schedule}
               onChange={(e) => setForm({ ...form, schedule: e.target.value })}
-              placeholder="Ej. 6:30 a 8:00 am en ayunas"
+              placeholder="e.g. 6:30 to 8:00 am, fasted"
               className={inputClass}
             />
           </Field>
-          <Field label="Notas">
+          <Field label="Notes">
             <textarea
               rows={2}
               value={form.notes}
@@ -594,7 +595,7 @@ export function TrainingsSection({
               disabled={submitting}
               className="text-sm text-gray-600 hover:text-gray-900"
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="button"
@@ -602,7 +603,7 @@ export function TrainingsSection({
               disabled={submitting}
               className={primaryBtn}
             >
-              {submitting ? "Guardando…" : "Agregar"}
+              {submitting ? "Saving…" : "Add"}
             </button>
           </div>
         </div>
@@ -612,24 +613,24 @@ export function TrainingsSection({
 }
 
 // ============================================================
-// Mediciones (timeline)
+// Measurements (timeline)
 // ============================================================
 
 const MEASUREMENT_FIELDS: { key: keyof MeasurementForm; label: string; unit?: string }[] = [
-  { key: "weightKg", label: "Peso", unit: "kg" },
-  { key: "fatPercent", label: "% grasa" },
-  { key: "waterPercent", label: "% agua" },
-  { key: "leanMassKg", label: "Masa magra", unit: "kg" },
-  { key: "metabolicAge", label: "Edad metabólica" },
-  { key: "visceralFat", label: "Grasa visceral" },
-  { key: "caliperFatPercent", label: "% grasa cáliper" },
-  { key: "chestCm", label: "Pecho", unit: "cm" },
-  { key: "waistCm", label: "Cintura", unit: "cm" },
+  { key: "weightKg", label: "Weight", unit: "kg" },
+  { key: "fatPercent", label: "Body fat %" },
+  { key: "waterPercent", label: "Water %" },
+  { key: "leanMassKg", label: "Lean mass", unit: "kg" },
+  { key: "metabolicAge", label: "Metabolic age" },
+  { key: "visceralFat", label: "Visceral fat" },
+  { key: "caliperFatPercent", label: "Caliper body fat %" },
+  { key: "chestCm", label: "Chest", unit: "cm" },
+  { key: "waistCm", label: "Waist", unit: "cm" },
   { key: "abdomenCm", label: "Abdomen", unit: "cm" },
-  { key: "hipCm", label: "Cadera", unit: "cm" },
-  { key: "armCm", label: "Brazo", unit: "cm" },
-  { key: "thighCm", label: "Muslo", unit: "cm" },
-  { key: "calfCm", label: "Pantorrilla", unit: "cm" },
+  { key: "hipCm", label: "Hip", unit: "cm" },
+  { key: "armCm", label: "Arm", unit: "cm" },
+  { key: "thighCm", label: "Thigh", unit: "cm" },
+  { key: "calfCm", label: "Calf", unit: "cm" },
 ];
 
 type MeasurementForm = {
@@ -740,7 +741,7 @@ export function MeasurementsSection({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar esta medición?")) return;
+    if (!confirm("Delete this measurement?")) return;
     try {
       await deleteMeasurement(patientId, id);
       await onChanged();
@@ -749,15 +750,15 @@ export function MeasurementsSection({
     }
   }
 
-  // Las mediciones se muestran como columnas (más reciente a la izquierda)
+  // Measurements are shown as columns (most recent on the left)
   const sorted = [...measurements].sort(
     (a, b) =>
       new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
   );
 
-  // Por defecto solo mostramos las últimas N visitas. El resto vive detrás
-  // de un toggle "ver todas". Las gráficas (en otra sección) siempre muestran
-  // el historial completo.
+  // By default we only show the last N visits. The rest live behind
+  // a "show all" toggle. The charts (in another section) always show
+  // the full history.
   const hasOverflow = sorted.length > DEFAULT_VISIT_LIMIT;
   const visibleVisits = showAll ? sorted : sorted.slice(0, DEFAULT_VISIT_LIMIT);
 
@@ -772,12 +773,12 @@ export function MeasurementsSection({
     <Card
       title={
         sorted.length === 0
-          ? "Mediciones"
-          : `Mediciones · ${sorted.length}${rangeLabel ? ` · ${rangeLabel}` : ""}`
+          ? "Measurements"
+          : `Measurements · ${sorted.length}${rangeLabel ? ` · ${rangeLabel}` : ""}`
       }
     >
       {sorted.length === 0 && !adding && (
-        <p className="text-sm text-gray-500">Sin mediciones registradas.</p>
+        <p className="text-sm text-gray-500">No measurements recorded.</p>
       )}
 
       {sorted.length > 0 && (
@@ -785,8 +786,8 @@ export function MeasurementsSection({
           {hasOverflow && (
             <p className="text-xs text-gray-500 mb-3">
               {showAll
-                ? `Mostrando todas las ${sorted.length} mediciones.`
-                : `Mostrando las últimas ${DEFAULT_VISIT_LIMIT}. La sección "Evolución" más abajo grafica el historial completo.`}
+                ? `Showing all ${sorted.length} measurements.`
+                : `Showing the last ${DEFAULT_VISIT_LIMIT}. The "Progress" section below charts the full history.`}
               {" "}
               <button
                 type="button"
@@ -794,8 +795,8 @@ export function MeasurementsSection({
                 className="font-medium text-brand-700 hover:text-brand-800"
               >
                 {showAll
-                  ? "Ver solo últimas 6"
-                  : `Ver todas las ${sorted.length} →`}
+                  ? "Show only last 6"
+                  : `Show all ${sorted.length} →`}
               </button>
             </p>
           )}
@@ -805,7 +806,7 @@ export function MeasurementsSection({
               <thead>
                 <tr>
                   <th className="text-left py-2 px-2 font-medium text-gray-500 sticky left-0 bg-white">
-                    Medida
+                    Measure
                   </th>
                   {visibleVisits.map((m, i) => (
                     <th
@@ -822,7 +823,7 @@ export function MeasurementsSection({
                           : `#${sorted.length - sorted.indexOf(m)}`}
                       </div>
                       <div className="text-[10px] text-gray-500 font-normal">
-                        {new Date(m.measuredAt).toLocaleDateString("es-GT", {
+                        {new Date(m.measuredAt).toLocaleDateString("en-US", {
                           day: "2-digit",
                           month: "short",
                         })}
@@ -871,12 +872,12 @@ export function MeasurementsSection({
           onClick={() => setAdding(true)}
           className="mt-3 text-xs font-medium text-brand-700 hover:text-brand-800"
         >
-          + Nueva medición
+          + New measurement
         </button>
       ) : (
         <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
           <div className="grid sm:grid-cols-3 gap-3">
-            <Field label="Fecha">
+            <Field label="Date">
               <input
                 type="date"
                 value={form.measuredAt}
@@ -886,7 +887,7 @@ export function MeasurementsSection({
                 className={inputClass}
               />
             </Field>
-            <Field label="N° de visita">
+            <Field label="Visit no.">
               <input
                 type="number"
                 min={1}
@@ -900,10 +901,10 @@ export function MeasurementsSection({
           </div>
 
           <p className="text-xs uppercase tracking-wider text-gray-500 mt-2">
-            Composición
+            Composition
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Field label="Peso (kg)">
+            <Field label="Weight (kg)">
               <input
                 type="number"
                 step="0.1"
@@ -912,7 +913,7 @@ export function MeasurementsSection({
                 className={inputClass}
               />
             </Field>
-            <Field label="% grasa">
+            <Field label="Body fat %">
               <input
                 type="number"
                 step="0.1"
@@ -923,7 +924,7 @@ export function MeasurementsSection({
                 className={inputClass}
               />
             </Field>
-            <Field label="% agua">
+            <Field label="Water %">
               <input
                 type="number"
                 step="0.1"
@@ -934,7 +935,7 @@ export function MeasurementsSection({
                 className={inputClass}
               />
             </Field>
-            <Field label="Masa magra (kg)">
+            <Field label="Lean mass (kg)">
               <input
                 type="number"
                 step="0.1"
@@ -945,7 +946,7 @@ export function MeasurementsSection({
                 className={inputClass}
               />
             </Field>
-            <Field label="Edad metabólica">
+            <Field label="Metabolic age">
               <input
                 type="number"
                 value={form.metabolicAge}
@@ -955,7 +956,7 @@ export function MeasurementsSection({
                 className={inputClass}
               />
             </Field>
-            <Field label="Grasa visceral">
+            <Field label="Visceral fat">
               <input
                 type="number"
                 value={form.visceralFat}
@@ -965,7 +966,7 @@ export function MeasurementsSection({
                 className={inputClass}
               />
             </Field>
-            <Field label="% grasa cáliper">
+            <Field label="Caliper body fat %">
               <input
                 type="number"
                 step="0.1"
@@ -979,7 +980,7 @@ export function MeasurementsSection({
           </div>
 
           <p className="text-xs uppercase tracking-wider text-gray-500 mt-2">
-            Circunferencias (cm)
+            Circumferences (cm)
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {(["chestCm", "waistCm", "abdomenCm", "hipCm", "armCm", "thighCm", "calfCm"] as const).map(
@@ -1002,7 +1003,7 @@ export function MeasurementsSection({
             )}
           </div>
 
-          <Field label="Notas">
+          <Field label="Notes">
             <textarea
               rows={2}
               value={form.notes}
@@ -1018,7 +1019,7 @@ export function MeasurementsSection({
               disabled={submitting}
               className="text-sm text-gray-600 hover:text-gray-900"
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="button"
@@ -1026,7 +1027,7 @@ export function MeasurementsSection({
               disabled={submitting}
               className={primaryBtn}
             >
-              {submitting ? "Guardando…" : "Agregar medición"}
+              {submitting ? "Saving…" : "Add measurement"}
             </button>
           </div>
         </div>
@@ -1036,15 +1037,15 @@ export function MeasurementsSection({
 }
 
 // ============================================================
-// Plan alimentario
+// Meal plan
 // ============================================================
 
 const MEAL_FIELDS: { key: keyof MealForm; label: string }[] = [
-  { key: "breakfast", label: "Desayuno" },
-  { key: "morningSnack", label: "Refacción matutina" },
-  { key: "lunch", label: "Almuerzo" },
-  { key: "afternoonSnack", label: "Refacción vespertina" },
-  { key: "dinner", label: "Cena" },
+  { key: "breakfast", label: "Breakfast" },
+  { key: "morningSnack", label: "Morning snack" },
+  { key: "lunch", label: "Lunch" },
+  { key: "afternoonSnack", label: "Afternoon snack" },
+  { key: "dinner", label: "Dinner" },
 ];
 
 type MealForm = {
@@ -1083,6 +1084,26 @@ export function MealPlansSection({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [sentInfo, setSentInfo] = useState<{ id: string; to: string } | null>(
+    null,
+  );
+
+  async function handleSend(id: string) {
+    setSendingId(id);
+    setSentInfo(null);
+    setError(null);
+    try {
+      const { sentTo } = await sendMealPlan(patientId, id);
+      setSentInfo({ id, to: sentTo });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "The meal plan could not be sent.",
+      );
+    } finally {
+      setSendingId(null);
+    }
+  }
 
   function toggle(id: string) {
     const next = new Set(expanded);
@@ -1115,7 +1136,7 @@ export function MealPlansSection({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este plan alimentario?")) return;
+    if (!confirm("Delete this meal plan?")) return;
     try {
       await deleteMealPlan(patientId, id);
       await onChanged();
@@ -1125,9 +1146,9 @@ export function MealPlansSection({
   }
 
   return (
-    <Card title="Plan alimentario">
+    <Card title="Meal plan">
       {mealPlans.length === 0 && !adding && (
-        <p className="text-sm text-gray-500">Sin planes registrados.</p>
+        <p className="text-sm text-gray-500">No plans recorded.</p>
       )}
 
       <ul className="space-y-3">
@@ -1143,12 +1164,12 @@ export function MealPlansSection({
               <div className="flex items-center justify-between gap-2 p-4">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900">
-                    {mp.title ?? "Plan alimentario"}
+                    {mp.title ?? "Meal plan"}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {i === 0 && (
                       <span className="inline-block mr-2 rounded-full bg-brand-600 text-white px-2 py-0.5 text-[10px] uppercase tracking-wider align-middle">
-                        actual
+                        current
                       </span>
                     )}
                     {fmtDateTime(mp.createdAt)}
@@ -1157,20 +1178,40 @@ export function MealPlansSection({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
+                    onClick={() => handleSend(mp.id)}
+                    disabled={sendingId === mp.id}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800 disabled:opacity-50"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                      <polyline points="22,6 12,13 2,6" />
+                    </svg>
+                    {sendingId === mp.id ? "Sending…" : "Email"}
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => toggle(mp.id)}
                     className="text-xs text-gray-600 hover:text-gray-900"
                   >
-                    {isOpen ? "Ocultar" : "Ver"}
+                    {isOpen ? "Hide" : "View"}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDelete(mp.id)}
                     className="text-xs text-red-700 hover:text-red-800"
                   >
-                    Eliminar
+                    Delete
                   </button>
                 </div>
               </div>
+              {sentInfo?.id === mp.id && (
+                <p className="px-4 -mt-2 pb-2 text-xs text-brand-700 inline-flex items-center gap-1">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Sent to {sentInfo.to}
+                </p>
+              )}
               {isOpen && (
                 <div className="px-4 pb-4 space-y-2 text-sm">
                   {MEAL_FIELDS.map(({ key, label }) => {
@@ -1190,7 +1231,7 @@ export function MealPlansSection({
                   {mp.notes && (
                     <div>
                       <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
-                        Notas
+                        Notes
                       </p>
                       <p className="text-xs text-gray-600 whitespace-pre-wrap mt-0.5">
                         {mp.notes}
@@ -1204,22 +1245,27 @@ export function MealPlansSection({
         })}
       </ul>
 
+      {error && !adding && (
+        <p className="mt-3 text-xs text-red-700">{error}</p>
+      )}
+
       {!adding ? (
         <button
           type="button"
           onClick={() => setAdding(true)}
           className="mt-3 text-xs font-medium text-brand-700 hover:text-brand-800"
         >
-          + Nuevo plan alimentario
+          + New meal plan
         </button>
-      ) : (
+      ) : null}
+      {adding && (
         <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
-          <Field label="Título (opcional)">
+          <Field label="Title (optional)">
             <input
               type="text"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Ej. Plan inicial, Plan ajustado abril"
+              placeholder="e.g. Initial plan, Adjusted plan April"
               className={inputClass}
             />
           </Field>
@@ -1231,12 +1277,12 @@ export function MealPlansSection({
                 onChange={(e) =>
                   setForm({ ...form, [key]: e.target.value })
                 }
-                placeholder="Hora y lugar + descripción"
+                placeholder="Time and place + description"
                 className={inputClass}
               />
             </Field>
           ))}
-          <Field label="Notas">
+          <Field label="Notes">
             <textarea
               rows={2}
               value={form.notes}
@@ -1252,7 +1298,7 @@ export function MealPlansSection({
               disabled={submitting}
               className="text-sm text-gray-600 hover:text-gray-900"
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="button"
@@ -1260,7 +1306,7 @@ export function MealPlansSection({
               disabled={submitting}
               className={primaryBtn}
             >
-              {submitting ? "Guardando…" : "Agregar plan"}
+              {submitting ? "Saving…" : "Add plan"}
             </button>
           </div>
         </div>
@@ -1270,7 +1316,7 @@ export function MealPlansSection({
 }
 
 // ============================================================
-// Helpers compartidos
+// Shared helpers
 // ============================================================
 
 const inputClass =
@@ -1351,7 +1397,7 @@ function KVSmall({ label, value }: { label: string; value: string }) {
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("es-GT", {
+  return new Date(iso).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -1359,7 +1405,7 @@ function fmtDate(iso: string | null): string {
 }
 
 function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("es-GT", {
+  return new Date(iso).toLocaleString("en-US", {
     year: "numeric",
     month: "short",
     day: "2-digit",
@@ -1369,7 +1415,7 @@ function fmtDateTime(iso: string): string {
 }
 
 function fmtShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("es-GT", {
+  return new Date(iso).toLocaleDateString("en-US", {
     day: "2-digit",
     month: "short",
     year: "2-digit",
@@ -1383,5 +1429,5 @@ function ageFrom(birthDate: string | null): string {
   let age = now.getFullYear() - b.getFullYear();
   const m = now.getMonth() - b.getMonth();
   if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
-  return `${age} años`;
+  return `${age} years`;
 }

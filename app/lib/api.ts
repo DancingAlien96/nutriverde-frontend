@@ -6,11 +6,33 @@ export interface ApiService {
   slug: string;
   name: string;
   description: string;
+  // Traducciones overlay (pueden faltar en servicios viejos → fallback a name/description)
+  nameEn?: string | null;
+  nameEs?: string | null;
+  descriptionEn?: string | null;
+  descriptionEs?: string | null;
   priceCents: number;
   currency: string;
   durationMin: number;
   billingType: "ONE_TIME" | "MONTHLY";
   priceFormatted: string;
+}
+
+/** Devuelve el nombre/descripción del servicio en el idioma pedido. */
+export function localizedService(
+  s: ApiService,
+  locale: "en" | "es",
+): { name: string; description: string } {
+  if (locale === "es") {
+    return {
+      name: s.nameEs || s.name,
+      description: s.descriptionEs || s.description,
+    };
+  }
+  return {
+    name: s.nameEn || s.name,
+    description: s.descriptionEn || s.description,
+  };
 }
 
 export async function fetchServices(): Promise<ApiService[]> {

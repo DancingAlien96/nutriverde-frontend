@@ -6,9 +6,11 @@ import {
   fetchServiceAvailability,
   fetchServiceSlots,
   submitIntake,
+  localizedService,
   type ApiService,
 } from "../lib/api";
 import { MonthCalendar } from "../components/MonthCalendar";
+import { useT, useLocale } from "../lib/i18n";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -31,43 +33,28 @@ interface FormState {
   scheduledAt: string | null; // ISO UTC, opcional
 }
 
-const DOCUMENT_OPTIONS: {
-  type: DocumentType;
-  label: string;
-  placeholder: string;
-  hint: string;
-  validate: (v: string) => boolean;
-}[] = [
-  {
-    type: "DPI",
-    label: "DPI (Guatemala)",
-    placeholder: "1234 56789 0123",
-    hint: "13 dígitos.",
-    validate: (v) => /^\d{13}$/.test(v.replace(/[\s-]/g, "")),
-  },
+// Solo la lógica de validación vive aquí; las etiquetas/hints se traducen.
+const DOCUMENT_VALIDATORS: { type: DocumentType; validate: (v: string) => boolean }[] = [
+  { type: "DPI", validate: (v) => /^\d{13}$/.test(v.replace(/[\s-]/g, "")) },
   {
     type: "CURP",
-    label: "CURP (México)",
-    placeholder: "GOMR980613HDFLRD09",
-    hint: "18 caracteres alfanuméricos.",
     validate: (v) =>
       /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i.test(v.replace(/[\s-]/g, "")),
   },
   {
     type: "PASSPORT",
-    label: "Pasaporte",
-    placeholder: "P12345678",
-    hint: "5 a 15 caracteres alfanuméricos.",
     validate: (v) => /^[A-Z0-9]{5,15}$/i.test(v.replace(/[\s-]/g, "")),
   },
-  {
-    type: "OTHER",
-    label: "Otro documento",
-    placeholder: "Número o código",
-    hint: "Cualquier identificación oficial.",
-    validate: (v) => v.replace(/[\s-]/g, "").length >= 3,
-  },
+  { type: "OTHER", validate: (v) => v.replace(/[\s-]/g, "").length >= 3 },
 ];
+
+const DOC_TYPES: DocumentType[] = ["DPI", "CURP", "PASSPORT", "OTHER"];
+
+function validatorFor(type: DocumentType) {
+  return (
+    DOCUMENT_VALIDATORS.find((d) => d.type === type) ?? DOCUMENT_VALIDATORS[0]
+  );
+}
 
 const initialForm: FormState = {
   serviceSlug: "",
@@ -88,6 +75,7 @@ const initialForm: FormState = {
 };
 
 export function IntakeForm({ services }: { services: ApiService[] }) {
+  const { t, locale } = useLocale();
   const [step, setStep] = useState<Step>(1);
   const [form, setForm] = useState<FormState>(initialForm);
   const [error, setError] = useState<string | null>(null);
@@ -103,17 +91,13 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  const docOption =
-    DOCUMENT_OPTIONS.find((d) => d.type === form.documentType) ??
-    DOCUMENT_OPTIONS[0];
-
   function canAdvance(): boolean {
     if (step === 1) return form.serviceSlug !== "";
     if (step === 2) {
       return (
         form.fullName.trim().length >= 2 &&
         /\S+@\S+\.\S+/.test(form.email.trim()) &&
-        docOption.validate(form.documentId) &&
+        validatorFor(form.documentType).validate(form.documentId) &&
         form.goal.trim().length > 0
       );
     }
@@ -126,7 +110,7 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
     setSubmitting(true);
 
     try {
-      if (!form.receipt) throw new Error("Falta el comprobante.");
+      if (!form.receipt) throw new Error(t.agendar.errors.missingReceipt);
       const data = new FormData();
       data.append("serviceSlug", form.serviceSlug);
       data.append("fullName", form.fullName.trim());
@@ -144,7 +128,7 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
       const result = await submitIntake(data);
       setSuccess({ intakeId: result.intakeId, message: result.message });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error desconocido");
+      setError(err instanceof Error ? err.message : t.agendar.errors.unknown);
     } finally {
       setSubmitting(false);
     }
@@ -172,25 +156,16 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
         />
       )}
 
-      {step === 2 && (
-        <StepData
-          form={form}
-          onChange={updateField}
-        />
-      )}
+      {step === 2 && <StepData form={form} onChange={updateField} />}
 
       {step === 3 && (
-        <StepPayment
-          form={form}
-          service={selectedService}
-          onChange={updateField}
-        />
+        <StepPayment form={form} service={selectedService} onChange={updateField} />
       )}
 
       {step === 4 && selectedService && (
         <StepHorario
           serviceSlug={selectedService.slug}
-          serviceName={selectedService.name}
+          serviceName={localizedService(selectedService, locale).name}
           durationMin={selectedService.durationMin}
           patientTimezone={form.timezone}
           selected={form.scheduledAt}
@@ -211,7 +186,7 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
           disabled={step === 1 || submitting}
           className="text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          ← Atrás
+          ← {t.agendar.buttons.back}
         </button>
 
         {step < 4 ? (
@@ -221,7 +196,7 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
             disabled={!canAdvance()}
             className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-medium text-white shadow hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            Continuar
+            {t.agendar.buttons.continue}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
@@ -234,10 +209,10 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
             className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-medium text-white shadow hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {submitting
-              ? "Enviando…"
+              ? t.agendar.buttons.submitting
               : form.scheduledAt
-                ? "Enviar solicitud"
-                : "Omitir y enviar"}
+                ? t.agendar.buttons.submit
+                : t.agendar.buttons.skip}
           </button>
         )}
       </div>
@@ -246,7 +221,13 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
 }
 
 function Stepper({ current }: { current: Step }) {
-  const steps = ["Servicio", "Tus datos", "Pago", "Horario"];
+  const t = useT();
+  const steps = [
+    t.agendar.steps.service,
+    t.agendar.steps.data,
+    t.agendar.steps.payment,
+    t.agendar.steps.schedule,
+  ];
   return (
     <ol className="flex items-center justify-between mb-8 max-w-md mx-auto">
       {steps.map((label, idx) => {
@@ -273,7 +254,6 @@ function Stepper({ current }: { current: Step }) {
                   num
                 )}
               </span>
-              {/* En mobile solo mostramos el label del paso activo, los otros se ocultan para evitar overflow */}
               <span
                 className={`text-xs font-medium truncate ${
                   active
@@ -307,18 +287,18 @@ function StepService({
   selected: string;
   onSelect: (slug: string) => void;
 }) {
+  const { t, locale } = useLocale();
   return (
     <div>
       <h2 className="font-serif-display text-2xl sm:text-3xl text-gray-900">
-        Elige tu servicio
+        {t.agendar.service.title}
       </h2>
-      <p className="mt-2 text-sm text-gray-600">
-        Selecciona el tipo de consulta que mejor se adapte a ti.
-      </p>
+      <p className="mt-2 text-sm text-gray-600">{t.agendar.service.subtitle}</p>
 
       <div className="mt-6 space-y-3">
         {services.map((s) => {
           const isSelected = selected === s.slug;
+          const loc = localizedService(s, locale);
           return (
             <button
               type="button"
@@ -332,14 +312,14 @@ function StepService({
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="font-semibold text-gray-900">{s.name}</p>
+                  <p className="font-semibold text-gray-900">{loc.name}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {s.billingType === "MONTHLY"
-                      ? "Mensual"
-                      : `${s.durationMin} min`}
+                      ? t.agendar.service.monthly
+                      : `${s.durationMin} ${t.agendar.service.min}`}
                   </p>
                   <p className="mt-2 text-sm text-gray-600 line-clamp-2">
-                    {s.description}
+                    {loc.description}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
@@ -363,85 +343,76 @@ function StepData({
   form: FormState;
   onChange: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
 }) {
+  const t = useT();
+  const doc = t.agendar.documents[form.documentType];
   return (
     <div>
       <h2 className="font-serif-display text-2xl sm:text-3xl text-gray-900">
-        Cuéntanos sobre ti
+        {t.agendar.data.title}
       </h2>
-      <p className="mt-2 text-sm text-gray-600">
-        Necesitamos tus datos para coordinar la consulta y enviarte el plan.
-      </p>
+      <p className="mt-2 text-sm text-gray-600">{t.agendar.data.subtitle}</p>
 
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field label="Nombre completo *">
+        <Field label={t.agendar.data.fullName}>
           <input
             type="text"
             value={form.fullName}
             onChange={(e) => onChange("fullName", e.target.value)}
-            placeholder="Ej. María González"
+            placeholder={t.agendar.data.fullNamePh}
             className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           />
         </Field>
 
-        <Field label="Correo electrónico *">
+        <Field label={t.agendar.data.email}>
           <input
             type="email"
             value={form.email}
             onChange={(e) => onChange("email", e.target.value)}
-            placeholder="tu@correo.com"
+            placeholder={t.agendar.data.emailPh}
             className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           />
         </Field>
 
-        <Field label="Tipo de documento *">
+        <Field label={t.agendar.data.docType}>
           <select
             value={form.documentType}
             onChange={(e) => onChange("documentType", e.target.value as DocumentType)}
             className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           >
-            {DOCUMENT_OPTIONS.map((opt) => (
-              <option key={opt.type} value={opt.type}>
-                {opt.label}
+            {DOC_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {t.agendar.documents[type].label}
               </option>
             ))}
           </select>
         </Field>
 
-        <Field
-          label={`${
-            DOCUMENT_OPTIONS.find((d) => d.type === form.documentType)?.label ??
-            "Documento"
-          } *`}
-        >
+        <Field label={`${doc.label} *`}>
           <input
             type="text"
             inputMode={form.documentType === "DPI" ? "numeric" : "text"}
             value={form.documentId}
             onChange={(e) => onChange("documentId", e.target.value)}
-            placeholder={
-              DOCUMENT_OPTIONS.find((d) => d.type === form.documentType)
-                ?.placeholder ?? ""
-            }
+            placeholder={doc.placeholder}
             maxLength={25}
             className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent font-mono"
           />
           <p className="mt-1 text-[10px] text-gray-500">
-            {DOCUMENT_OPTIONS.find((d) => d.type === form.documentType)?.hint}
-            {" "}Nos permite reconocerte en futuras consultas.
+            {doc.hint} {t.agendar.data.docHelpSuffix}
           </p>
         </Field>
 
-        <Field label="Teléfono / WhatsApp">
+        <Field label={t.agendar.data.phone}>
           <input
             type="tel"
             value={form.phone}
             onChange={(e) => onChange("phone", e.target.value)}
-            placeholder="+502 0000 0000"
+            placeholder={t.agendar.data.phonePh}
             className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           />
         </Field>
 
-        <Field label="Zona horaria">
+        <Field label={t.agendar.data.timezone}>
           <input
             type="text"
             value={form.timezone}
@@ -452,24 +423,24 @@ function StepData({
         </Field>
 
         <div className="sm:col-span-2">
-          <Field label="¿Cuál es tu objetivo? *">
+          <Field label={t.agendar.data.goal}>
             <textarea
               value={form.goal}
               onChange={(e) => onChange("goal", e.target.value)}
               rows={3}
-              placeholder="Ej. Bajar 5 kilos en 3 meses, mejorar mi energía, controlar mi diabetes…"
+              placeholder={t.agendar.data.goalPh}
               className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
             />
           </Field>
         </div>
 
         <div className="sm:col-span-2">
-          <Field label="¿Tienes alguna condición médica o alergia?">
+          <Field label={t.agendar.data.conditions}>
             <textarea
               value={form.conditions}
               onChange={(e) => onChange("conditions", e.target.value)}
               rows={2}
-              placeholder="Diabetes, hipertensión, alergias, restricciones alimentarias…"
+              placeholder={t.agendar.data.conditionsPh}
               className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
             />
           </Field>
@@ -488,27 +459,26 @@ function StepPayment({
   service: ApiService | undefined;
   onChange: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
 }) {
+  const { t, locale } = useLocale();
+  const serviceName = service ? localizedService(service, locale).name : "";
   return (
     <div>
       <h2 className="font-serif-display text-2xl sm:text-3xl text-gray-900">
-        Sube tu comprobante de pago
+        {t.agendar.payment.title}
       </h2>
-      <p className="mt-2 text-sm text-gray-600">
-        Realiza el pago por transferencia o depósito y sube el comprobante.
-        Verificamos manualmente en máximo 24 horas.
-      </p>
+      <p className="mt-2 text-sm text-gray-600">{t.agendar.payment.subtitle}</p>
 
       <div className="mt-6 rounded-2xl bg-cream-100 border border-cream-300 p-5">
         <p className="text-xs font-semibold uppercase tracking-wider text-brand-700">
-          Resumen
+          {t.agendar.payment.summary}
         </p>
         <div className="mt-3 flex items-center justify-between">
           <div>
-            <p className="font-semibold text-gray-900">{service?.name}</p>
+            <p className="font-semibold text-gray-900">{serviceName}</p>
             <p className="text-xs text-gray-500">
               {service?.billingType === "MONTHLY"
-                ? "Mensual"
-                : `${service?.durationMin} min`}
+                ? t.agendar.payment.monthly
+                : `${service?.durationMin} ${t.agendar.payment.min}`}
             </p>
           </div>
           <p className="font-serif-display text-3xl text-brand-700">
@@ -518,25 +488,22 @@ function StepPayment({
       </div>
 
       <div className="mt-6 rounded-2xl bg-gray-50 border border-gray-200 p-5 text-sm text-gray-700">
-        <p className="font-semibold mb-2">Datos para el depósito:</p>
+        <p className="font-semibold mb-2">{t.agendar.payment.depositTitle}</p>
         <ul className="space-y-1 text-xs">
           <li>
-            <strong>Banco:</strong> (configurar) — completar en producción
+            <strong>{t.agendar.payment.bankLabel}</strong> {t.agendar.payment.bankValue}
           </li>
           <li>
-            <strong>Cuenta:</strong> 000-00000-0
+            <strong>{t.agendar.payment.accountLabel}</strong> 000-00000-0
           </li>
           <li>
-            <strong>Nombre:</strong> Plenha Nutrition
+            <strong>{t.agendar.payment.nameLabel}</strong> Plenha Nutrition
           </li>
         </ul>
       </div>
 
       <div className="mt-6">
-        <FileDrop
-          file={form.receipt}
-          onFile={(f) => onChange("receipt", f)}
-        />
+        <FileDrop file={form.receipt} onFile={(f) => onChange("receipt", f)} />
       </div>
     </div>
   );
@@ -557,6 +524,8 @@ function StepHorario({
   selected: string | null;
   onSelect: (iso: string | null) => void;
 }) {
+  const t = useT();
+  const dateLocale = t.dateLocale;
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [slots, setSlots] = useState<string[] | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
@@ -595,12 +564,10 @@ function StepHorario({
   return (
     <div>
       <h2 className="font-serif-display text-2xl sm:text-3xl text-gray-900">
-        Elige tu horario (opcional)
+        {t.agendar.schedule.title}
       </h2>
       <p className="mt-2 text-sm text-gray-600">
-        {serviceName} · {durationMin} min. Cuando aprobemos tu pago confirmaremos
-        este horario. Si lo dejas en blanco, te enviaremos un link para elegirlo
-        después.
+        {serviceName} · {durationMin} {t.agendar.schedule.min}. {t.agendar.schedule.note}
       </p>
 
       <div className="mt-6 bg-gray-50 rounded-2xl p-4 max-w-md mx-auto">
@@ -617,14 +584,12 @@ function StepHorario({
       {selectedDate && (
         <div className="mt-6">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
-            Horario disponible · {fmtSelectedDate(selectedDate)}
+            {t.agendar.schedule.availableOn} {fmtSelectedDate(selectedDate, dateLocale)}
           </p>
           {slotsLoading ? (
-            <p className="text-sm text-gray-500">Buscando horarios…</p>
+            <p className="text-sm text-gray-500">{t.agendar.schedule.searching}</p>
           ) : !slots || slots.length === 0 ? (
-            <p className="text-sm text-gray-500">
-              No hay horarios disponibles ese día.
-            </p>
+            <p className="text-sm text-gray-500">{t.agendar.schedule.none}</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
               {slots.map((iso) => {
@@ -645,7 +610,7 @@ function StepHorario({
                     </div>
                     {patientTimezone !== BUSINESS_TZ && (
                       <div className="text-[10px] text-gray-500 mt-0.5">
-                        {fmtTime(iso, patientTimezone)} tu hora
+                        {fmtTime(iso, patientTimezone)} {t.agendar.schedule.yourTime}
                       </div>
                     )}
                   </button>
@@ -658,10 +623,11 @@ function StepHorario({
 
       {selected && (
         <div className="mt-4 rounded-xl bg-brand-50 border border-brand-200 px-4 py-3 text-sm text-brand-800">
-          <strong>Horario tentativo:</strong> {fmtFullDate(selected, BUSINESS_TZ)}
+          <strong>{t.agendar.schedule.tentative}</strong>{" "}
+          {fmtFullDate(selected, BUSINESS_TZ, dateLocale)}
           {patientTimezone !== BUSINESS_TZ && (
             <span className="block text-xs text-brand-700/80 mt-0.5">
-              {fmtFullDate(selected, patientTimezone)} (tu hora)
+              {fmtFullDate(selected, patientTimezone, dateLocale)} ({t.agendar.schedule.yourTime})
             </span>
           )}
         </div>
@@ -670,10 +636,10 @@ function StepHorario({
   );
 }
 
-function fmtSelectedDate(dateStr: string): string {
+function fmtSelectedDate(dateStr: string, locale: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
   const date = new Date(Date.UTC(y, m - 1, d, 12, 0));
-  return date.toLocaleDateString("es-GT", {
+  return date.toLocaleDateString(locale, {
     timeZone: BUSINESS_TZ,
     weekday: "long",
     day: "numeric",
@@ -682,7 +648,7 @@ function fmtSelectedDate(dateStr: string): string {
 }
 
 function fmtTime(iso: string, tz: string): string {
-  return new Date(iso).toLocaleTimeString("es-GT", {
+  return new Date(iso).toLocaleTimeString("en-GB", {
     timeZone: tz,
     hour: "2-digit",
     minute: "2-digit",
@@ -690,8 +656,8 @@ function fmtTime(iso: string, tz: string): string {
   });
 }
 
-function fmtFullDate(iso: string, tz: string): string {
-  return new Date(iso).toLocaleString("es-GT", {
+function fmtFullDate(iso: string, tz: string, locale: string): string {
+  return new Date(iso).toLocaleString(locale, {
     timeZone: tz,
     weekday: "long",
     day: "numeric",
@@ -709,6 +675,7 @@ function FileDrop({
   file: File | null;
   onFile: (f: File | null) => void;
 }) {
+  const t = useT();
   return (
     <label
       htmlFor="receipt-input"
@@ -733,7 +700,7 @@ function FileDrop({
           </svg>
           <p className="text-sm font-medium text-gray-900">{file.name}</p>
           <p className="text-xs text-gray-500">
-            {(file.size / 1024).toFixed(0)} KB · Click para cambiar
+            {(file.size / 1024).toFixed(0)} KB · {t.agendar.fileDrop.changeHint}
           </p>
         </>
       ) : (
@@ -742,11 +709,9 @@ function FileDrop({
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
           </svg>
           <p className="text-sm font-medium text-gray-900">
-            Click para subir tu comprobante
+            {t.agendar.fileDrop.uploadTitle}
           </p>
-          <p className="text-xs text-gray-500">
-            JPG, PNG, WebP, HEIC o PDF — máximo 10 MB
-          </p>
+          <p className="text-xs text-gray-500">{t.agendar.fileDrop.uploadHint}</p>
         </>
       )}
     </label>
@@ -779,6 +744,8 @@ function SuccessView({
   scheduledAt: string | null;
   patientTimezone: string;
 }) {
+  const t = useT();
+  const dateLocale = t.dateLocale;
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 sm:p-12 text-center">
       <div className="mx-auto h-16 w-16 rounded-full bg-brand-100 flex items-center justify-center">
@@ -787,22 +754,24 @@ function SuccessView({
         </svg>
       </div>
       <h2 className="mt-6 font-serif-display text-3xl text-gray-900">
-        ¡Recibimos tu solicitud!
+        {t.agendar.success.title}
       </h2>
       <p className="mt-3 text-gray-600 max-w-md mx-auto">{message}</p>
 
       {scheduledAt && (
         <div className="mt-6 inline-block text-left rounded-2xl bg-brand-50 border border-brand-200 px-5 py-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-brand-700 mb-1">
-            Horario tentativo
+            {t.agendar.success.tentative}
           </p>
           <p className="text-sm font-medium text-gray-900">
-            {fmtFullDate(scheduledAt, BUSINESS_TZ)}{" "}
-            <span className="text-xs font-normal text-gray-500">(Guatemala)</span>
+            {fmtFullDate(scheduledAt, BUSINESS_TZ, dateLocale)}{" "}
+            <span className="text-xs font-normal text-gray-500">
+              ({t.agendar.success.guatemala})
+            </span>
           </p>
           {patientTimezone !== BUSINESS_TZ && (
             <p className="text-xs text-gray-600 mt-0.5">
-              {fmtFullDate(scheduledAt, patientTimezone)} (tu hora)
+              {fmtFullDate(scheduledAt, patientTimezone, dateLocale)} ({t.agendar.success.yourTime})
             </p>
           )}
         </div>
@@ -810,22 +779,22 @@ function SuccessView({
 
       <div className="mt-8 rounded-2xl bg-cream-100 border border-cream-300 p-5 text-left max-w-md mx-auto">
         <p className="text-xs font-semibold uppercase tracking-wider text-brand-700 mb-3">
-          Próximos pasos
+          {t.agendar.success.nextStepsTitle}
         </p>
         <ol className="space-y-2 text-sm text-gray-700">
           <li className="flex gap-2">
             <span className="font-semibold text-brand-700">1.</span>
-            Revisamos tu comprobante (máximo 24 horas).
+            {t.agendar.success.step1}
           </li>
           <li className="flex gap-2">
             <span className="font-semibold text-brand-700">2.</span>
             {scheduledAt
-              ? "Confirmamos tu pago y tu horario; luego te enviamos la confirmación final."
-              : "Te enviamos un correo con un enlace para elegir tu horario."}
+              ? t.agendar.success.step2WithSchedule
+              : t.agendar.success.step2NoSchedule}
           </li>
           <li className="flex gap-2">
             <span className="font-semibold text-brand-700">3.</span>
-            Recibes el link de la videollamada antes de la cita.
+            {t.agendar.success.step3}
           </li>
         </ol>
       </div>
@@ -834,7 +803,7 @@ function SuccessView({
         href="/"
         className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-brand-700 hover:text-brand-800"
       >
-        ← Volver al inicio
+        ← {t.agendar.success.backHome}
       </Link>
     </div>
   );

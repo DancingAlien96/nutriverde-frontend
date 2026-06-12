@@ -1,9 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================
-   Plenha Nutrition — paleta sage + blush + cream
-   Inspirada en la lámina de colores del cliente:
-   verde olivo apagado · rosado/melocotón cálido · cremas/arenas
+   Plenha Nutrition — paleta sage suave + crema orgánica
    ========================================================== */
 
 @theme inline {
@@ -11,50 +9,48 @@
   --font-sans: var(--font-inter);
   --font-serif: var(--font-fraunces);
 
-  /* Brand — sage olivo (principal) */
-  --color-brand-50:  #f5f7ee;
-  --color-brand-100: #e8ebd6;
-  --color-brand-200: #ced5b1;
-  --color-brand-300: #b1bb8a;
-  --color-brand-400: #98a36e;
-  --color-brand-500: #7f8d57;
-  --color-brand-600: #687445;
-  --color-brand-700: #535b37;
-  --color-brand-800: #3a4127;
-  --color-brand-900: #232917;
+  /* Brand — sage verde suave (botones, círculos, acentos) */
+  --color-brand-50:  #f4f6ee;
+  --color-brand-100: #e7ecd9;
+  --color-brand-200: #d3ddba;
+  --color-brand-300: #b9c995;
+  --color-brand-400: #a3b67b;
+  --color-brand-500: #8ba162;
+  --color-brand-600: #6f854c;
+  --color-brand-700: #58693d;
+  --color-brand-800: #3f4c2e;
+  --color-brand-900: #28311d;
 
-  /* Blush — rosado/melocotón (acento cálido) */
-  --color-blush-50:  #fef5ee;
-  --color-blush-100: #fbe2d2;
-  --color-blush-200: #f5c4a9;
-  --color-blush-300: #eda283;
-  --color-blush-400: #df8362;
-  --color-blush-500: #c66744;
-  --color-blush-600: #a25036;
-  --color-blush-700: #7c3e2c;
-  --color-blush-800: #562c21;
-  --color-blush-900: #321a14;
+  /* Blush — acento cálido mínimo */
+  --color-blush-50:  #fdf6f1;
+  --color-blush-100: #f8e6da;
+  --color-blush-200: #efc9b2;
+  --color-blush-300: #e3a787;
+  --color-blush-400: #d4855f;
+  --color-blush-500: #bd6743;
 
   /* Cream / arena — fondos cálidos */
-  --color-cream-50:  #faf6ed;
-  --color-cream-100: #f1eada;
-  --color-cream-200: #e4d8be;
-  --color-cream-300: #ccbd9c;
-  --color-cream-400: #b09e7d;
+  --color-cream-50:  #f8f4ea;
+  --color-cream-100: #f1ecdc;
+  --color-cream-200: #e6ddc8;
+  --color-cream-300: #d6caac;
+  --color-cream-400: #bfb088;
 
-  /* Ink — gris cálido / café oscuro para texto */
-  --color-ink-50:  #f6f3ee;
-  --color-ink-100: #ece6dc;
-  --color-ink-300: #aa9f8e;
-  --color-ink-500: #6b6052;
-  --color-ink-700: #3f372d;
-  --color-ink-800: #2c2620;
-  --color-ink-900: #1d1812;
+  /* Ink — gris cálido para texto */
+  --color-ink-50:  #f6f4ef;
+  --color-ink-100: #ece7dd;
+  --color-ink-300: #a9a190;
+  --color-ink-400: #8a8273;
+  --color-ink-500: #6b6353;
+  --color-ink-600: #565044;
+  --color-ink-700: #44403a;
+  --color-ink-800: #353029;
+  --color-ink-900: #26221d;
 }
 
 :root {
-  --background: #faf6ed; /* cream-50 */
-  --foreground: #2c2620; /* ink-800 */
+  --background: #f8f4ea; /* cream-50 */
+  --foreground: #353029; /* ink-800 */
 }
 
 body {
@@ -69,7 +65,12 @@ body {
 .font-serif-display {
   font-family: var(--font-serif), Georgia, serif;
   font-feature-settings: "ss01" on;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+}
+
+/* Tagline / kicker con tracking amplio */
+.tracking-widest-2 {
+  letter-spacing: 0.22em;
 }
 
 /* Scroll suave para los anchors del nav */

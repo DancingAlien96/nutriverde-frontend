@@ -57,7 +57,7 @@ function PaymentDetailContent() {
     if (!payment) return;
     const url = meetingDraft.trim();
     if (!url) {
-      setMeetingError("El link de la videollamada es obligatorio para confirmar.");
+      setMeetingError("The video call link is required to confirm.");
       return;
     }
     setMeetingError(null);
@@ -112,7 +112,7 @@ function PaymentDetailContent() {
 
   async function handleApprove() {
     if (!payment) return;
-    if (!confirm("¿Aprobar este pago? Se enviará un correo al paciente.")) return;
+    if (!confirm("Approve this payment? An email will be sent to the patient.")) return;
     setActionError(null);
     setSubmitting(true);
     try {
@@ -153,7 +153,7 @@ function PaymentDetailContent() {
   async function handleReject() {
     if (!payment) return;
     if (rejectReason.trim().length < 3) {
-      setActionError("La razón debe tener al menos 3 caracteres.");
+      setActionError("The reason must be at least 3 characters.");
       return;
     }
     setActionError(null);
@@ -169,7 +169,7 @@ function PaymentDetailContent() {
     }
   }
 
-  if (loading) return <div className="text-sm text-gray-500">Cargando…</div>;
+  if (loading) return <div className="text-sm text-gray-500">Loading…</div>;
   if (error)
     return (
       <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
@@ -204,13 +204,13 @@ function PaymentDetailContent() {
       <div className="mb-6 flex items-center justify-between">
         <button
           type="button"
-          onClick={() => router.push("/admin")}
-          className="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1.5"
+          onClick={() => router.push("/admin/pagos")}
+          className="text-sm text-ink-600 hover:text-ink-900 inline-flex items-center gap-1.5"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          Volver al listado
+          Back to payments
         </button>
 
         <StatusPill status={payment.status} />
@@ -226,7 +226,7 @@ function PaymentDetailContent() {
 
           <div className="rounded-2xl bg-white border border-gray-200 p-5 sm:p-6">
             {/* ===== PASO 1: Revisar y aprobar el pago ===== */}
-            <VerticalStep number={1} title="Revisar y aprobar el pago" state={step1State}>
+            <VerticalStep number={1} title="Review and approve the payment" state={step1State}>
               <div className="mt-3">
                 <ReceiptViewer payment={payment} receipt={receipt} />
               </div>
@@ -244,7 +244,7 @@ function PaymentDetailContent() {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
-                        Aprobar pago
+                        Approve payment
                       </button>
                       <button
                         type="button"
@@ -252,19 +252,19 @@ function PaymentDetailContent() {
                         disabled={submitting}
                         className="flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-60 px-5 py-3 text-sm font-medium transition-colors"
                       >
-                        Rechazar
+                        Reject
                       </button>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       <label className="block text-sm font-medium text-gray-900">
-                        Razón del rechazo
+                        Reason for rejection
                       </label>
                       <textarea
                         rows={3}
                         value={rejectReason}
                         onChange={(e) => setRejectReason(e.target.value)}
-                        placeholder="Ej. El monto del comprobante no coincide con el servicio…"
+                        placeholder="e.g. The receipt amount doesn't match the service…"
                         className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
                       />
                       <div className="flex gap-2 justify-end">
@@ -278,7 +278,7 @@ function PaymentDetailContent() {
                           disabled={submitting}
                           className="text-sm text-gray-600 hover:text-gray-900 px-3"
                         >
-                          Cancelar
+                          Cancel
                         </button>
                         <button
                           type="button"
@@ -286,7 +286,7 @@ function PaymentDetailContent() {
                           disabled={submitting || rejectReason.trim().length < 3}
                           className="rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-60 px-4 py-2 text-sm font-medium text-white"
                         >
-                          {submitting ? "Enviando…" : "Confirmar rechazo"}
+                          {submitting ? "Sending…" : "Confirm rejection"}
                         </button>
                       </div>
                     </div>
@@ -299,30 +299,30 @@ function PaymentDetailContent() {
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  Pago aprobado{payment.approvedAt ? ` · ${formatDate(payment.approvedAt)}` : ""}
+                  Payment approved{payment.approvedAt ? ` · ${formatDate(payment.approvedAt)}` : ""}
                 </p>
               )}
 
               {payment.status === "REJECTED" && payment.rejectedReason && (
                 <p className="mt-3 text-sm text-red-700">
-                  <strong>Rechazado:</strong> {payment.rejectedReason}
+                  <strong>Rejected:</strong> {payment.rejectedReason}
                 </p>
               )}
             </VerticalStep>
 
             {/* ===== PASO 2: Horario del paciente ===== */}
             {payment.status !== "REJECTED" && payment.appointment && (
-              <VerticalStep number={2} title="Horario de la consulta" state={step2State}>
+              <VerticalStep number={2} title="Consultation time" state={step2State}>
                 {hasTime ? (
                   <p className="mt-2 text-sm text-gray-900">
-                    <span className="text-gray-500">Horario propuesto: </span>
+                    <span className="text-gray-500">Proposed time: </span>
                     {formatDate(payment.appointment.scheduledAt!)}
                   </p>
                 ) : step2State === "current" ? (
                   <>
                     <p className="mt-2 text-sm text-gray-600">
-                      Esperando a que el paciente elija un horario. Comparte este
-                      link si lo necesita:
+                      Waiting for the patient to choose a time. Share this link
+                      if needed:
                     </p>
                     {payment.appointment.scheduleToken && (
                       <div className="mt-2">
@@ -334,7 +334,7 @@ function PaymentDetailContent() {
                   </>
                 ) : (
                   <p className="mt-2 text-sm text-gray-500">
-                    Disponible cuando se apruebe el pago.
+                    Available once the payment is approved.
                   </p>
                 )}
               </VerticalStep>
@@ -344,18 +344,18 @@ function PaymentDetailContent() {
             {payment.status !== "REJECTED" && payment.appointment && (
               <VerticalStep
                 number={3}
-                title="Confirmar cita y enviar link"
+                title="Confirm appointment and send link"
                 state={step3State}
                 isLast
               >
                 {step3State === "current" && (
                   <div className="mt-2">
                     <p className="text-sm text-gray-600">
-                      Pega el link de la videollamada para confirmar la cita. El
-                      paciente recibirá un correo con la fecha y el enlace.
+                      Paste the video call link to confirm the appointment. The
+                      patient will receive an email with the date and link.
                     </p>
                     <label className="block text-xs text-gray-600 mt-3 mb-1.5">
-                      Link de la videollamada (Meet / Zoom) *
+                      Video call link (Meet / Zoom) *
                     </label>
                     <input
                       type="url"
@@ -376,7 +376,7 @@ function PaymentDetailContent() {
                       disabled={confirming || !meetingDraft.trim()}
                       className="mt-3 w-full rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-40 px-4 py-2.5 text-sm font-medium text-white"
                     >
-                      {confirming ? "Confirmando…" : "Confirmar cita y enviar link"}
+                      {confirming ? "Confirming…" : "Confirm appointment and send link"}
                     </button>
                   </div>
                 )}
@@ -387,10 +387,10 @@ function PaymentDetailContent() {
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
-                      Cita confirmada y link enviado.
+                      Appointment confirmed and link sent.
                     </p>
                     <label className="block text-xs text-gray-500 mt-3 mb-1.5">
-                      Link de la videollamada (puedes actualizarlo)
+                      Video call link (you can update it)
                     </label>
                     <input
                       type="url"
@@ -412,7 +412,7 @@ function PaymentDetailContent() {
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
-                          Guardado
+                          Saved
                         </span>
                       ) : (
                         <span />
@@ -427,7 +427,7 @@ function PaymentDetailContent() {
                         }
                         className="rounded-full bg-gray-900 hover:bg-gray-800 disabled:opacity-40 px-4 py-1.5 text-xs font-medium text-white"
                       >
-                        {meetingSaving ? "Guardando…" : "Actualizar link"}
+                        {meetingSaving ? "Saving…" : "Update link"}
                       </button>
                     </div>
                   </div>
@@ -435,7 +435,7 @@ function PaymentDetailContent() {
 
                 {step3State === "upcoming" && (
                   <p className="mt-2 text-sm text-gray-500">
-                    Disponible cuando el paciente elija su horario.
+                    Available once the patient chooses their time.
                   </p>
                 )}
               </VerticalStep>
@@ -446,19 +446,19 @@ function PaymentDetailContent() {
         <aside className="lg:col-span-2 space-y-4">
           <div className="rounded-2xl bg-white border border-gray-200 p-5">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Resumen
+              Summary
             </h3>
             <dl className="mt-3 space-y-2.5 text-sm">
-              <Row label="Servicio" value={payment.service.name} />
+              <Row label="Service" value={payment.service.name} />
               <Row
-                label="Monto"
+                label="Amount"
                 value={formatCents(payment.amountCents, payment.currency)}
                 strong
               />
-              <Row label="Recibido" value={formatDate(payment.createdAt)} />
+              <Row label="Received" value={formatDate(payment.createdAt)} />
               {payment.appointment && (
                 <Row
-                  label="Cita"
+                  label="Appointment"
                   value={appointmentStatusLabel(payment.appointment.status)}
                 />
               )}
@@ -467,18 +467,18 @@ function PaymentDetailContent() {
 
           <div className="rounded-2xl bg-white border border-gray-200 p-5">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Paciente
+              Patient
             </h3>
             <dl className="mt-3 space-y-2.5 text-sm">
-              <Row label="Nombre" value={payment.patient.fullName} strong />
-              <Row label="Correo" value={payment.patient.email} />
+              <Row label="Name" value={payment.patient.fullName} strong />
+              <Row label="Email" value={payment.patient.email} />
               {payment.patient.phone && (
-                <Row label="Teléfono" value={payment.patient.phone} />
+                <Row label="Phone" value={payment.patient.phone} />
               )}
-              <Row label="Zona horaria" value={payment.patient.timezone} />
+              <Row label="Time zone" value={payment.patient.timezone} />
               <Row
                 label="WhatsApp"
-                value={payment.patient.whatsappNotify ? "Sí" : "No"}
+                value={payment.patient.whatsappNotify ? "Yes" : "No"}
               />
             </dl>
           </div>
@@ -486,17 +486,17 @@ function PaymentDetailContent() {
           {intake && (
             <div className="rounded-2xl bg-white border border-gray-200 p-5">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Formulario
+                Intake form
               </h3>
               <dl className="mt-3 space-y-3 text-sm">
                 {intake.data.goal && (
-                  <BlockRow label="Objetivo" value={intake.data.goal} />
+                  <BlockRow label="Goal" value={intake.data.goal} />
                 )}
                 {intake.data.conditions && (
-                  <BlockRow label="Condiciones" value={intake.data.conditions} />
+                  <BlockRow label="Conditions" value={intake.data.conditions} />
                 )}
                 {intake.data.notes && (
-                  <BlockRow label="Notas" value={intake.data.notes} />
+                  <BlockRow label="Notes" value={intake.data.notes} />
                 )}
               </dl>
             </div>
@@ -582,7 +582,7 @@ function ReceiptViewer({
   if (!receipt) {
     return (
       <p className="mt-3 text-sm text-gray-500">
-        No se pudo cargar el comprobante.
+        Couldn't load the receipt.
       </p>
     );
   }
@@ -596,28 +596,28 @@ function ReceiptViewer({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={receipt.blobUrl}
-          alt="Comprobante"
+          alt="Receipt"
           className="w-full rounded-xl border border-gray-200 max-h-[400px] sm:max-h-[600px] object-contain bg-gray-50"
         />
       )}
       {isPdf && (
         <iframe
           src={receipt.blobUrl}
-          title="Comprobante PDF"
+          title="Receipt PDF"
           className="w-full h-[400px] sm:h-[600px] rounded-xl border border-gray-200"
         />
       )}
       {!isImage && !isPdf && (
-        <p className="text-sm text-gray-500">Tipo de archivo: {receipt.mime}</p>
+        <p className="text-sm text-gray-500">File type: {receipt.mime}</p>
       )}
       <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-        <span>Tipo: {payment.receiptMime ?? receipt.mime}</span>
+        <span>Type: {payment.receiptMime ?? receipt.mime}</span>
         <a
           href={receipt.blobUrl}
-          download={`comprobante-${payment.id}${getExtFromMime(receipt.mime)}`}
+          download={`receipt-${payment.id}${getExtFromMime(receipt.mime)}`}
           className="text-brand-700 hover:text-brand-800 font-medium"
         >
-          Descargar
+          Download
         </a>
       </div>
     </div>
@@ -631,10 +631,10 @@ function StatusPill({
 }) {
   const label =
     status === "PENDING_REVIEW"
-      ? "Pendiente"
+      ? "Pending"
       : status === "APPROVED"
-        ? "Aprobado"
-        : "Rechazado";
+        ? "Approved"
+        : "Rejected";
   const cls =
     status === "APPROVED"
       ? "bg-brand-100 text-brand-800 border-brand-200"
@@ -671,19 +671,19 @@ function BlockRow({ label, value }: { label: string; value: string }) {
 function appointmentStatusLabel(status: string): string {
   switch (status) {
     case "AWAITING_PAYMENT":
-      return "Esperando pago";
+      return "Awaiting payment";
     case "PAYMENT_APPROVED":
-      return "Pendiente de horario";
+      return "Pending time";
     case "PENDING_CONFIRMATION":
-      return "Por confirmar";
+      return "Pending confirmation";
     case "SCHEDULED":
-      return "Agendada";
+      return "Scheduled";
     case "COMPLETED":
-      return "Realizada";
+      return "Completed";
     case "CANCELED":
-      return "Cancelada";
+      return "Canceled";
     case "NO_SHOW":
-      return "No asistió";
+      return "No show";
     default:
       return status;
   }
@@ -716,14 +716,14 @@ function ScheduleLinkRow({ url }: { url: string }) {
         onClick={handleCopy}
         className="shrink-0 rounded-full border border-gray-200 hover:border-brand-300 px-3 py-2 text-xs font-medium text-gray-700"
       >
-        {copied ? "Copiado" : "Copiar"}
+        {copied ? "Copied" : "Copy"}
       </button>
     </div>
   );
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString("es-GT", {
+  return new Date(iso).toLocaleString("en-US", {
     year: "numeric",
     month: "short",
     day: "2-digit",

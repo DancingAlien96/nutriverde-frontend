@@ -21,7 +21,7 @@ export default function AdminLoginPage() {
       await adminLogin(email.trim(), password);
       router.replace("/admin");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error desconocido");
+      setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setSubmitting(false);
     }
@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
             Plenha
           </Link>
           <p className="mt-2 text-xs uppercase tracking-wider text-brand-700">
-            Panel de administración
+            Administration panel
           </p>
         </div>
 
@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
         >
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Correo
+              Email
             </label>
             <input
               type="email"
@@ -60,7 +60,7 @@ export default function AdminLoginPage() {
 
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Contraseña
+              Password
             </label>
             <div className="relative">
               <input
@@ -74,7 +74,7 @@ export default function AdminLoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                aria-label={showPassword ? "Hide password" : "Show password"}
                 tabIndex={-1}
                 className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-700"
               >
@@ -104,7 +104,7 @@ export default function AdminLoginPage() {
             disabled={submitting}
             className="w-full rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 px-4 py-2.5 text-sm font-medium text-white transition-colors"
           >
-            {submitting ? "Entrando…" : "Entrar"}
+            {submitting ? "Signing in…" : "Sign in"}
           </button>
         </form>
 
@@ -112,7 +112,7 @@ export default function AdminLoginPage() {
           href="/"
           className="mt-6 text-center text-xs text-gray-500 hover:text-gray-700 block"
         >
-          ← Volver al sitio público
+          ← Back to public site
         </Link>
       </div>
     </main>

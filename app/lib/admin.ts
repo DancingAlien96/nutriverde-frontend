@@ -246,8 +246,8 @@ export type DocumentType = "DPI" | "CURP" | "PASSPORT" | "OTHER";
 export const DOCUMENT_TYPE_LABEL: Record<DocumentType, string> = {
   DPI: "DPI",
   CURP: "CURP",
-  PASSPORT: "Pasaporte",
-  OTHER: "Otro",
+  PASSPORT: "Passport",
+  OTHER: "Other",
 };
 
 export interface PatientListItem {
@@ -563,6 +563,18 @@ export async function deleteMealPlan(
   });
 }
 
+/** Envía el meal plan al correo registrado del paciente. */
+export async function sendMealPlan(
+  patientId: string,
+  id: string,
+): Promise<{ ok: true; sentTo: string }> {
+  const res = await authFetch(
+    `/api/admin/patients/${patientId}/meal-plans/${id}/send`,
+    { method: "POST" },
+  );
+  return parseJson(res);
+}
+
 // ============================================================
 // Servicios (admin)
 // ============================================================
@@ -659,6 +671,100 @@ export async function confirmAppointment(
     { method: "POST", body: JSON.stringify(input) },
   );
   return parseJson(res);
+}
+
+// ============================================================
+// Citas (admin) — calendario
+// ============================================================
+
+export type AppointmentStatus =
+  | "AWAITING_PAYMENT"
+  | "PAYMENT_APPROVED"
+  | "PENDING_CONFIRMATION"
+  | "SCHEDULED"
+  | "COMPLETED"
+  | "CANCELED"
+  | "NO_SHOW";
+
+export interface AppointmentItem {
+  id: string;
+  scheduledAt: string; // el endpoint solo devuelve citas con horario
+  durationMin: number;
+  timezone: string;
+  status: AppointmentStatus;
+  meetingUrl: string | null;
+  meetingProvider: "GOOGLE_MEET" | "ZOOM" | null;
+  notes: string | null;
+  patient: { id: string; fullName: string; email: string; phone: string | null };
+  service: { id: string; name: string };
+  payment: {
+    id: string;
+    status: string;
+    amountCents: number;
+    currency: string;
+  } | null;
+}
+
+export async function listAppointments(range?: {
+  from?: string;
+  to?: string;
+}): Promise<{ appointments: AppointmentItem[] }> {
+  const qs = new URLSearchParams();
+  if (range?.from) qs.set("from", range.from);
+  if (range?.to) qs.set("to", range.to);
+  const q = qs.toString();
+  const res = await authFetch(`/api/admin/appointments${q ? `?${q}` : ""}`);
+  return parseJson(res);
+}
+
+// ============================================================
+// Recordatorios / tareas (admin)
+// ============================================================
+
+export interface Reminder {
+  id: string;
+  text: string;
+  done: boolean;
+  dueAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function listReminders(): Promise<{ reminders: Reminder[] }> {
+  const res = await authFetch("/api/admin/reminders");
+  return parseJson(res);
+}
+
+export async function createReminder(
+  text: string,
+  dueAt?: string | null,
+): Promise<{ reminder: Reminder }> {
+  const res = await authFetch("/api/admin/reminders", {
+    method: "POST",
+    body: JSON.stringify({ text, dueAt: dueAt ?? null }),
+  });
+  return parseJson(res);
+}
+
+export async function updateReminder(
+  id: string,
+  patch: Partial<{ text: string; done: boolean; dueAt: string | null }>,
+): Promise<{ reminder: Reminder }> {
+  const res = await authFetch(`/api/admin/reminders/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(patch),
+  });
+  return parseJson(res);
+}
+
+export async function deleteReminder(id: string): Promise<void> {
+  const res = await authFetch(`/api/admin/reminders/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    if (res.status === 401) clearToken();
+    throw new Error(`HTTP ${res.status}`);
+  }
 }
 
 export function receiptUrl(paymentId: string): string {

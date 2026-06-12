@@ -15,7 +15,7 @@ import {
   type SchedulingSettings,
 } from "../../lib/admin";
 
-const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 // Mostrar de Lunes a Domingo
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
@@ -51,15 +51,15 @@ function Content() {
     reload().finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="text-sm text-gray-500">Cargando…</div>;
+  if (loading) return <div className="text-sm text-gray-500">Loading…</div>;
 
   return (
     <>
       <div className="mb-6">
-        <h1 className="font-serif-display text-2xl sm:text-3xl text-gray-900">Disponibilidad</h1>
+        <h1 className="font-serif-display text-2xl sm:text-3xl text-gray-900">Availability</h1>
         <p className="text-sm text-gray-600 mt-1">
-          Define tu horario semanal y bloquea fechas específicas (vacaciones,
-          feriados). Los pacientes solo verán horarios dentro de estos rangos.
+          Define your weekly schedule and block specific dates (vacations,
+          holidays). Patients will only see times within these ranges.
         </p>
       </div>
 
@@ -80,9 +80,9 @@ function Content() {
       )}
 
       <section className="rounded-2xl bg-white border border-gray-200 p-4 sm:p-6 mb-6">
-        <h2 className="font-semibold text-gray-900">Horario semanal</h2>
+        <h2 className="font-semibold text-gray-900">Weekly schedule</h2>
         <p className="text-xs text-gray-500 mt-1">
-          Puedes agregar varios rangos por día (por ejemplo 8-12 y 14-17).
+          You can add several ranges per day (for example 8-12 and 14-17).
         </p>
 
         <div className="mt-6 space-y-3">
@@ -109,10 +109,10 @@ function Content() {
       </section>
 
       <section className="rounded-2xl bg-white border border-gray-200 p-4 sm:p-6">
-        <h2 className="font-semibold text-gray-900">Bloqueos puntuales</h2>
+        <h2 className="font-semibold text-gray-900">One-off blocks</h2>
         <p className="text-xs text-gray-500 mt-1">
-          Vacaciones, feriados, días sin disponibilidad. Se aplican sobre el
-          horario semanal.
+          Vacations, holidays, days with no availability. They apply on top of
+          the weekly schedule.
         </p>
 
         <BlockForm
@@ -123,7 +123,7 @@ function Content() {
         />
 
         {blocks.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-500">No hay bloqueos activos.</p>
+          <p className="mt-4 text-sm text-gray-500">No active blocks.</p>
         ) : (
           <ul className="mt-4 space-y-2">
             {blocks.map((b) => (
@@ -142,7 +142,7 @@ function Content() {
                 <button
                   type="button"
                   onClick={async () => {
-                    if (!confirm("¿Eliminar este bloqueo?")) return;
+                    if (!confirm("Delete this block?")) return;
                     try {
                       await deleteBlock(b.id);
                       await reload();
@@ -152,7 +152,7 @@ function Content() {
                   }}
                   className="text-xs text-red-700 hover:text-red-800 font-medium"
                 >
-                  Eliminar
+                  Delete
                 </button>
               </li>
             ))}
@@ -185,7 +185,7 @@ function SettingsSection({
     setSavedFlag(false);
     const minutes = Number(minLead);
     if (Number.isNaN(minutes) || minutes < 0) {
-      setError("Anticipación inválida.");
+      setError("Invalid lead time.");
       return;
     }
     setSaving(true);
@@ -205,9 +205,9 @@ function SettingsSection({
 
   return (
     <section className="rounded-2xl bg-white border border-gray-200 p-4 sm:p-6 mb-6">
-      <h2 className="font-semibold text-gray-900">Configuración</h2>
+      <h2 className="font-semibold text-gray-900">Settings</h2>
       <p className="text-xs text-gray-500 mt-1">
-        Reglas que se aplican al calendario que ve el paciente.
+        Rules applied to the calendar the patient sees.
       </p>
 
       <div className="mt-4 space-y-4">
@@ -220,18 +220,18 @@ function SettingsSection({
           />
           <span>
             <span className="block text-sm font-medium text-gray-900">
-              Permitir reservas para el mismo día
+              Allow same-day bookings
             </span>
             <span className="block text-xs text-gray-500 mt-0.5">
-              Si lo desactivas, el día de hoy aparece como "lleno" sin importar
-              los horarios libres.
+              If you turn this off, today appears as &quot;full&quot; regardless
+              of free times.
             </span>
           </span>
         </label>
 
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-1">
-            Anticipación mínima
+            Minimum lead time
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -243,11 +243,11 @@ function SettingsSection({
               disabled={!allowSameDay}
               className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-50 disabled:text-gray-400"
             />
-            <span className="text-sm text-gray-600">minutos</span>
+            <span className="text-sm text-gray-600">minutes</span>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            El paciente no puede reservar slots que empiecen antes de este
-            margen desde ahora. Por ejemplo, 60 = al menos 1 hora antes.
+            The patient can't book slots that start before this margin from now.
+            For example, 60 = at least 1 hour ahead.
           </p>
         </div>
       </div>
@@ -262,7 +262,7 @@ function SettingsSection({
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            Guardado
+            Saved
           </span>
         )}
         <button
@@ -271,7 +271,7 @@ function SettingsSection({
           disabled={saving || !dirty}
           className="rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-40 px-5 py-2 text-sm font-medium text-white"
         >
-          {saving ? "Guardando…" : "Guardar cambios"}
+          {saving ? "Saving…" : "Save changes"}
         </button>
       </div>
     </section>
@@ -322,13 +322,13 @@ function DayRow({
             onClick={() => setAdding(true)}
             className="text-xs text-brand-700 hover:text-brand-800 font-medium"
           >
-            + Agregar rango
+            + Add range
           </button>
         )}
       </div>
 
       {slots.length === 0 && !adding && (
-        <p className="text-xs text-gray-500">Sin rangos. No habrá citas este día.</p>
+        <p className="text-xs text-gray-500">No ranges. No appointments this day.</p>
       )}
 
       {slots.length > 0 && (
@@ -349,14 +349,14 @@ function DayRow({
                 onClick={() => onToggle(s.id, !s.active)}
                 className="ml-auto text-xs text-gray-600 hover:text-gray-900"
               >
-                {s.active ? "Pausar" : "Activar"}
+                {s.active ? "Pause" : "Activate"}
               </button>
               <button
                 type="button"
                 onClick={() => onDelete(s.id)}
                 className="text-xs text-red-700 hover:text-red-800"
               >
-                Eliminar
+                Delete
               </button>
             </li>
           ))}
@@ -366,7 +366,7 @@ function DayRow({
       {adding && (
         <div className="mt-3 flex flex-wrap items-end gap-2">
           <label className="text-xs">
-            Desde
+            From
             <input
               type="time"
               value={start}
@@ -375,7 +375,7 @@ function DayRow({
             />
           </label>
           <label className="text-xs">
-            Hasta
+            To
             <input
               type="time"
               value={end}
@@ -389,7 +389,7 @@ function DayRow({
             disabled={submitting}
             className="rounded-full bg-gray-900 hover:bg-gray-800 disabled:opacity-60 px-4 py-1.5 text-xs font-medium text-white"
           >
-            {submitting ? "Agregando…" : "Agregar"}
+            {submitting ? "Adding…" : "Add"}
           </button>
           <button
             type="button"
@@ -399,7 +399,7 @@ function DayRow({
             }}
             className="text-xs text-gray-600 hover:text-gray-900"
           >
-            Cancelar
+            Cancel
           </button>
           {error && (
             <p className="w-full text-xs text-red-700">{error}</p>
@@ -428,7 +428,7 @@ function BlockForm({
   async function handle() {
     setError(null);
     if (!start || !end) {
-      setError("Indica fecha y hora de inicio y fin.");
+      setError("Enter start and end date and time.");
       return;
     }
     setSubmitting(true);
@@ -455,7 +455,7 @@ function BlockForm({
   return (
     <div className="mt-4 grid sm:grid-cols-2 gap-3 items-end">
       <label className="text-xs">
-        Desde (hora Guatemala)
+        From (Guatemala time)
         <input
           type="datetime-local"
           value={start}
@@ -464,7 +464,7 @@ function BlockForm({
         />
       </label>
       <label className="text-xs">
-        Hasta (hora Guatemala)
+        To (Guatemala time)
         <input
           type="datetime-local"
           value={end}
@@ -473,12 +473,12 @@ function BlockForm({
         />
       </label>
       <label className="text-xs sm:col-span-2">
-        Razón (opcional)
+        Reason (optional)
         <input
           type="text"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="Ej. Vacaciones, viaje, capacitación…"
+          placeholder="e.g. Vacation, travel, training…"
           className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
         />
       </label>
@@ -489,7 +489,7 @@ function BlockForm({
           disabled={submitting}
           className="rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 px-5 py-2 text-sm font-medium text-white"
         >
-          {submitting ? "Agregando…" : "Agregar bloqueo"}
+          {submitting ? "Adding…" : "Add block"}
         </button>
         {error && <p className="text-xs text-red-700">{error}</p>}
       </div>
@@ -518,7 +518,7 @@ function fmtBlockRange(startIso: string, endIso: string): string {
     minute: "2-digit",
     hour12: false,
   };
-  return `${s.toLocaleString("es-GT", opts)} → ${e.toLocaleString("es-GT", opts)} (GT)`;
+  return `${s.toLocaleString("en-US", opts)} → ${e.toLocaleString("en-US", opts)} (GT)`;
 }
 
 /** Recibe "YYYY-MM-DDTHH:MM" como hora GT (UTC-6) y devuelve ISO UTC. */

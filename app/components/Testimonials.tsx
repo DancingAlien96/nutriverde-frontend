@@ -2,153 +2,109 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { TESTIMONIALS } from "../lib/data";
+import { useT } from "../lib/i18n";
+
+const PER_PAGE = 3;
+
+function Stars({ n }: { n: number }) {
+  return (
+    <div className="flex items-center gap-0.5 text-brand-400">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <svg
+          key={i}
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill={i < n ? "currentColor" : "none"}
+          stroke="currentColor"
+          strokeWidth="1.5"
+        >
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+      ))}
+    </div>
+  );
+}
 
 export function Testimonials() {
-  const [active, setActive] = useState(0);
-  const featured = TESTIMONIALS[active];
+  const t = useT();
+  const all = t.testimonials.items;
+  const pageCount = Math.ceil(all.length / PER_PAGE);
+  const [page, setPage] = useState(0);
+  const visible = all.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE);
 
   return (
-    <section id="testimonios" className="bg-white py-16 sm:py-24 lg:py-32">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-brand-600">
-            Testimonios
+    <section
+      id="testimonios"
+      className="relative isolate overflow-hidden bg-cream-100 py-16 sm:py-24 lg:py-28"
+    >
+      {/* Jarrón grande que sangra por el borde derecho (como el diseño) */}
+      <Image
+        src="/jarron.png"
+        alt=""
+        width={600}
+        height={600}
+        aria-hidden
+        className="pointer-events-none absolute -right-6 top-4 w-28 sm:w-40 lg:top-16 lg:-right-10 lg:w-80 xl:-right-4 xl:w-[26rem] object-contain z-0"
+      />
+
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-2xl">
+          <p className="text-xs font-medium uppercase tracking-widest-2 text-brand-600">
+            {t.testimonials.eyebrow}
           </p>
-          <h2 className="font-serif-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-medium text-ink-900">
-            Lo que dicen <span className="italic">mis pacientes</span>
+          <h2 className="font-serif-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-medium leading-tight text-ink-900">
+            {t.testimonials.titleLead}
+            <br />
+            <span className="italic text-brand-600">{t.testimonials.titleEmphasis}</span>
           </h2>
+          <p className="mt-4 text-sm sm:text-base text-ink-500 leading-relaxed">
+            {t.testimonials.subtitle}
+          </p>
         </div>
 
-        <div className="mt-12 sm:mt-16 grid lg:grid-cols-5 gap-4 sm:gap-6">
-          {/* Featured */}
-          <article className="lg:col-span-3 rounded-3xl bg-cream-50 border border-cream-200 p-6 sm:p-10 flex flex-col">
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 text-xs text-ink-500">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-amber-400">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                {featured.rating.toFixed(1)} · {featured.plan}
-              </span>
-            </div>
-
-            <blockquote className="mt-6 font-serif-display text-lg sm:text-xl lg:text-2xl leading-snug text-ink-900">
-              &ldquo;{featured.quote}&rdquo;
-            </blockquote>
-
-            {featured.result && (
-              <div className="mt-6 inline-flex items-center gap-2 self-start rounded-full bg-white border border-cream-200 px-3 py-1.5 text-xs font-medium text-brand-700">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 3v18h18" />
-                  <path d="M18 17l-5-5-4 4-3-3" />
-                </svg>
-                {featured.result}
-              </div>
-            )}
-
-            <div className="mt-auto pt-8 flex items-center justify-between">
-              <div className="flex items-center gap-3">
+        <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          {visible.map((item) => (
+            <article
+              key={item.name}
+              className="bg-cream-50 rounded-3xl border border-cream-200 p-6 flex flex-col"
+            >
+              <Stars n={item.rating} />
+              <blockquote className="mt-4 text-sm text-ink-700 leading-relaxed flex-1">
+                &ldquo;{item.quote}&rdquo;
+              </blockquote>
+              <div className="mt-5 flex items-center gap-3 border-t border-cream-200 pt-4">
                 <Image
-                  src={featured.avatar}
-                  alt={featured.name}
-                  width={44}
-                  height={44}
-                  className="rounded-full object-cover h-11 w-11"
+                  src={item.avatar}
+                  alt={item.name}
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 rounded-full object-cover"
                 />
                 <div>
-                  <p className="text-sm font-semibold text-ink-900">
-                    {featured.name}
-                  </p>
-                  <p className="text-xs text-ink-500">{featured.location}</p>
+                  <p className="text-sm font-semibold text-ink-900">{item.name}</p>
+                  <p className="text-xs text-ink-500">{item.location}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setActive(
-                      (active - 1 + TESTIMONIALS.length) % TESTIMONIALS.length,
-                    )
-                  }
-                  className="h-9 w-9 rounded-full border border-cream-300 flex items-center justify-center text-ink-700 hover:bg-white transition-colors"
-                  aria-label="Anterior"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 18l-6-6 6-6" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActive((active + 1) % TESTIMONIALS.length)}
-                  className="h-9 w-9 rounded-full bg-ink-900 text-white flex items-center justify-center hover:bg-ink-800 transition-colors"
-                  aria-label="Siguiente"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 18l6-6-6-6" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            </article>
+          ))}
+        </div>
 
-            {/* Dots */}
-            <div className="mt-4 flex items-center gap-1.5">
-              {TESTIMONIALS.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setActive(i)}
-                  className={`h-1.5 rounded-full transition-all ${
-                    i === active ? "w-8 bg-brand-600" : "w-1.5 bg-cream-300"
-                  }`}
-                  aria-label={`Testimonio ${i + 1}`}
-                />
-              ))}
-            </div>
-          </article>
-
-          {/* Lista */}
-          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4 content-start">
-            {TESTIMONIALS.map((t, i) => (
+        {pageCount > 1 && (
+          <div className="mt-8 flex items-center justify-center gap-2">
+            {Array.from({ length: pageCount }).map((_, i) => (
               <button
-                key={t.name}
+                key={i}
                 type="button"
-                onClick={() => setActive(i)}
-                className={`text-left rounded-2xl p-5 border transition-colors ${
-                  i === active
-                    ? "bg-brand-500 border-brand-500 text-white"
-                    : "bg-cream-50 border-cream-200 text-ink-900 hover:border-brand-300"
+                onClick={() => setPage(i)}
+                aria-label={`Página ${i + 1}`}
+                className={`h-2 rounded-full transition-all ${
+                  i === page ? "w-7 bg-brand-500" : "w-2 bg-brand-200"
                 }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Image
-                    src={t.avatar}
-                    alt={t.name}
-                    width={32}
-                    height={32}
-                    className="rounded-full object-cover h-8 w-8"
-                  />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate">{t.name}</p>
-                    <p
-                      className={`text-xs truncate ${
-                        i === active ? "text-white/80" : "text-ink-500"
-                      }`}
-                    >
-                      {t.location}
-                    </p>
-                  </div>
-                </div>
-                <p
-                  className={`mt-3 text-xs leading-relaxed line-clamp-4 ${
-                    i === active ? "text-white/90" : "text-ink-700"
-                  }`}
-                >
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-              </button>
+              />
             ))}
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

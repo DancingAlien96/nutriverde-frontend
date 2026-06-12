@@ -39,16 +39,16 @@ function Content() {
     reload().finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="text-sm text-gray-500">Cargando…</div>;
+  if (loading) return <div className="text-sm text-gray-500">Loading…</div>;
 
   return (
     <>
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-serif-display text-2xl sm:text-3xl text-gray-900">Servicios</h1>
+          <h1 className="font-serif-display text-2xl sm:text-3xl text-gray-900">Services</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Edita o crea servicios. Los cambios se reflejan inmediatamente en la
-            página pública.
+            Edit or create services. Changes are reflected immediately on the
+            public site.
           </p>
         </div>
         {!creating && (
@@ -60,7 +60,7 @@ function Content() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 5v14M5 12h14" />
             </svg>
-            Nuevo servicio
+            New service
           </button>
         )}
       </div>
@@ -71,15 +71,17 @@ function Content() {
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
         {creating && (
-          <NewServiceForm
-            onCancel={() => setCreating(false)}
-            onCreated={async () => {
-              setCreating(false);
-              await reload();
-            }}
-          />
+          <div className="col-span-full">
+            <NewServiceForm
+              onCancel={() => setCreating(false)}
+              onCreated={async () => {
+                setCreating(false);
+                await reload();
+              }}
+            />
+          </div>
         )}
         {services.map((s) => (
           <ServiceCard
@@ -133,10 +135,10 @@ function NewServiceForm({
     setError(null);
     const priceCents = Math.round(Number(price) * 100);
     const durationMin = Number(duration);
-    if (!name.trim()) return setError("El nombre es obligatorio.");
-    if (!slug.trim()) return setError("El slug es obligatorio.");
-    if (Number.isNaN(priceCents) || priceCents < 0) return setError("Precio inválido.");
-    if (Number.isNaN(durationMin) || durationMin < 0) return setError("Duración inválida.");
+    if (!name.trim()) return setError("Name is required.");
+    if (!slug.trim()) return setError("Slug is required.");
+    if (Number.isNaN(priceCents) || priceCents < 0) return setError("Invalid price.");
+    if (Number.isNaN(durationMin) || durationMin < 0) return setError("Invalid duration.");
 
     setSubmitting(true);
     try {
@@ -159,17 +161,17 @@ function NewServiceForm({
   return (
     <div className="rounded-2xl bg-white border border-brand-200 ring-2 ring-brand-100 p-5">
       <p className="text-xs uppercase tracking-wider text-brand-700 font-semibold mb-3">
-        Nuevo servicio
+        New service
       </p>
 
       <div className="grid sm:grid-cols-2 gap-3">
         <label className="text-xs">
-          Nombre *
+          Name *
           <input
             type="text"
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
-            placeholder="Ej. Consulta Express"
+            placeholder="e.g. Express Consultation"
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
         </label>
@@ -183,16 +185,16 @@ function NewServiceForm({
               setSlug(e.target.value);
               setSlugTouched(true);
             }}
-            placeholder="consulta-express"
+            placeholder="express-consultation"
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono"
           />
           <span className="block text-[10px] text-gray-500 mt-0.5">
-            Minúsculas, números y guiones. Se autogenera del nombre.
+            Lowercase, numbers and hyphens. Auto-generated from the name.
           </span>
         </label>
 
         <label className="text-xs">
-          Precio (Q) *
+          Price (Q) *
           <input
             type="number"
             step="1"
@@ -205,7 +207,7 @@ function NewServiceForm({
         </label>
 
         <label className="text-xs">
-          Duración (minutos) *
+          Duration (minutes) *
           <input
             type="number"
             step="5"
@@ -217,7 +219,7 @@ function NewServiceForm({
         </label>
 
         <label className="text-xs">
-          Tipo
+          Type
           <select
             value={billingType}
             onChange={(e) =>
@@ -225,18 +227,18 @@ function NewServiceForm({
             }
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white"
           >
-            <option value="ONE_TIME">Pago único</option>
-            <option value="MONTHLY">Mensual</option>
+            <option value="ONE_TIME">One-time payment</option>
+            <option value="MONTHLY">Monthly</option>
           </select>
         </label>
 
         <label className="text-xs sm:col-span-2">
-          Descripción
+          Description
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            placeholder="Qué incluye este servicio…"
+            placeholder="What this service includes…"
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm resize-none"
           />
         </label>
@@ -251,7 +253,7 @@ function NewServiceForm({
           disabled={submitting}
           className="text-sm text-gray-600 hover:text-gray-900"
         >
-          Cancelar
+          Cancel
         </button>
         <button
           type="button"
@@ -259,7 +261,7 @@ function NewServiceForm({
           disabled={submitting}
           className="rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 px-5 py-2 text-sm font-medium text-white"
         >
-          {submitting ? "Creando…" : "Crear servicio"}
+          {submitting ? "Creating…" : "Create service"}
         </button>
       </div>
     </div>
@@ -294,7 +296,7 @@ function ServiceCard({
   async function handleDelete() {
     if (
       !confirm(
-        `¿Eliminar "${service.name}"? Esta acción no se puede deshacer. Si el servicio ya tiene citas, no se podrá borrar (mejor desactivarlo).`,
+        `Delete "${service.name}"? This action cannot be undone. If the service already has appointments, it can't be deleted (better to deactivate it).`,
       )
     )
       return;
@@ -303,7 +305,7 @@ function ServiceCard({
       await deleteAdminService(service.id);
       await onDeleted();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Error al eliminar.");
+      onError(err instanceof Error ? err.message : "Failed to delete.");
     } finally {
       setDeleting(false);
     }
@@ -325,11 +327,11 @@ function ServiceCard({
     const priceCents = Math.round(Number(price) * 100);
     const durationMin = Number(duration);
     if (Number.isNaN(priceCents) || priceCents < 0) {
-      setError("Precio inválido.");
+      setError("Invalid price.");
       return;
     }
     if (Number.isNaN(durationMin) || durationMin < 0) {
-      setError("Duración inválida.");
+      setError("Invalid duration.");
       return;
     }
 
@@ -355,50 +357,51 @@ function ServiceCard({
 
   if (!editing) {
     return (
-      <div className="rounded-2xl bg-white border border-gray-200 p-5">
+      <div className="rounded-2xl bg-white border border-cream-200 p-5 flex flex-col h-full">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-gray-900">{service.name}</h3>
+              <h3 className="font-semibold text-ink-900">{service.name}</h3>
               {!service.active && (
-                <span className="text-[10px] uppercase tracking-wider text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                  Inactivo
+                <span className="text-[10px] uppercase tracking-wider text-ink-500 bg-cream-100 px-2 py-0.5 rounded-full">
+                  Inactive
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-0.5">slug: {service.slug}</p>
-            <p className="mt-2 text-sm text-gray-700 line-clamp-2">
-              {service.description}
-            </p>
+            <p className="text-xs text-ink-500 mt-0.5">slug: {service.slug}</p>
           </div>
           <div className="text-right shrink-0">
             <p className="font-serif-display text-2xl text-brand-700">
               {service.currency === "GTQ" ? "Q" : `${service.currency} `}
               {(service.priceCents / 100).toFixed(0)}
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-ink-500 mt-0.5">
               {service.billingType === "MONTHLY"
-                ? "Mensual"
+                ? "Monthly"
                 : `${service.durationMin} min`}
             </p>
           </div>
         </div>
 
-        <div className="mt-4 flex justify-end gap-4">
+        <p className="mt-3 text-sm text-ink-700 line-clamp-3">
+          {service.description}
+        </p>
+
+        <div className="mt-auto pt-4 flex justify-end gap-4 border-t border-cream-100">
           <button
             type="button"
             onClick={handleDelete}
             disabled={deleting}
             className="text-xs font-medium text-red-700 hover:text-red-800 disabled:opacity-60"
           >
-            {deleting ? "Eliminando…" : "Eliminar"}
+            {deleting ? "Deleting…" : "Delete"}
           </button>
           <button
             type="button"
             onClick={() => setEditing(true)}
             className="text-xs font-medium text-brand-700 hover:text-brand-800"
           >
-            Editar →
+            Edit →
           </button>
         </div>
       </div>
@@ -406,14 +409,14 @@ function ServiceCard({
   }
 
   return (
-    <div className="rounded-2xl bg-white border border-brand-200 ring-2 ring-brand-100 p-5">
+    <div className="col-span-full rounded-2xl bg-white border border-brand-200 ring-2 ring-brand-100 p-5">
       <p className="text-xs uppercase tracking-wider text-brand-700 font-semibold mb-3">
-        Editar servicio
+        Edit service
       </p>
 
       <div className="grid sm:grid-cols-2 gap-3">
         <label className="text-xs">
-          Nombre
+          Name
           <input
             type="text"
             value={name}
@@ -423,7 +426,7 @@ function ServiceCard({
         </label>
 
         <label className="text-xs">
-          Precio (en {service.currency})
+          Price (in {service.currency})
           <input
             type="number"
             step="1"
@@ -435,7 +438,7 @@ function ServiceCard({
         </label>
 
         <label className="text-xs">
-          Duración (minutos)
+          Duration (minutes)
           <input
             type="number"
             step="5"
@@ -447,7 +450,7 @@ function ServiceCard({
         </label>
 
         <label className="text-xs">
-          Tipo
+          Type
           <select
             value={billingType}
             onChange={(e) =>
@@ -455,13 +458,13 @@ function ServiceCard({
             }
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white"
           >
-            <option value="ONE_TIME">Pago único</option>
-            <option value="MONTHLY">Mensual</option>
+            <option value="ONE_TIME">One-time payment</option>
+            <option value="MONTHLY">Monthly</option>
           </select>
         </label>
 
         <label className="text-xs sm:col-span-2">
-          Descripción
+          Description
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -471,7 +474,7 @@ function ServiceCard({
         </label>
 
         <label className="text-xs">
-          Orden de aparición
+          Display order
           <input
             type="number"
             step="1"
@@ -489,7 +492,7 @@ function ServiceCard({
             onChange={(e) => setActive(e.target.checked)}
             className="h-4 w-4 mb-2 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
           />
-          <span className="mb-1.5">Activo (visible al público)</span>
+          <span className="mb-1.5">Active (visible to the public)</span>
         </label>
       </div>
 
@@ -507,7 +510,7 @@ function ServiceCard({
           disabled={submitting}
           className="text-sm text-gray-600 hover:text-gray-900"
         >
-          Cancelar
+          Cancel
         </button>
         <button
           type="button"
@@ -515,7 +518,7 @@ function ServiceCard({
           disabled={submitting}
           className="rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 px-5 py-2 text-sm font-medium text-white"
         >
-          {submitting ? "Guardando…" : "Guardar cambios"}
+          {submitting ? "Saving…" : "Save changes"}
         </button>
       </div>
     </div>

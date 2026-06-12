@@ -25,8 +25,7 @@ export const SERVICES: Service[] = [
       "Revisión de historial y hábitos",
       "Estrategia personalizada",
     ],
-    image:
-      "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=900&q=80",
+    image: "/consultainicial.png",
     highlighted: true,
   },
   {
@@ -41,8 +40,7 @@ export const SERVICES: Service[] = [
       "Ajuste del plan",
       "Resolución de dificultades",
     ],
-    image:
-      "https://images.unsplash.com/photo-1490818387583-1baba5e638af?auto=format&fit=crop&w=900&q=80",
+    image: "/consultaseguimiento.png",
   },
   {
     slug: "coaching-nutricional",
@@ -56,8 +54,7 @@ export const SERVICES: Service[] = [
       "Mejor relación con la comida",
       "Estrategias prácticas",
     ],
-    image:
-      "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=900&q=80",
+    image: "/coachingnutricional.png",
   },
   {
     slug: "nutricion-deportiva",
@@ -71,8 +68,7 @@ export const SERVICES: Service[] = [
       "Suplementación basada en evidencia",
       "Rendimiento y recuperación",
     ],
-    image:
-      "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=900&q=80",
+    image: "/nutriciondeportiva.png",
   },
 ];
 
@@ -170,16 +166,6 @@ export const TESTIMONIALS: Testimonial[] = [
       "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80",
   },
   {
-    name: "Carlos Méndez",
-    location: "Quetzaltenango",
-    quote:
-      "Tenía problemas de azúcar alta y no sabía cómo comer bien. El plan que me dieron fue claro, con recetas fáciles de hacer. Ya estoy viendo mejoras en mis análisis.",
-    plan: "Nutrición Deportiva",
-    rating: 5,
-    avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-  },
-  {
     name: "Sofía Alvarado",
     location: "México",
     quote:
@@ -198,14 +184,14 @@ export interface FAQItem {
 
 export const FAQS: FAQItem[] = [
   {
-    question: "¿Cómo se realiza la consulta?",
+    question: "¿Las consultas son realmente online?",
     answer:
-      "Las consultas son 100% online por videollamada (Google Meet o Zoom). Recibirás el enlace por correo electrónico antes de la cita con instrucciones claras.",
+      "Sí. Las consultas son 100% online por videollamada (Google Meet o Zoom). Recibirás el enlace por correo electrónico antes de la cita con instrucciones claras.",
   },
   {
-    question: "¿Cómo realizo el pago?",
+    question: "¿Qué necesito para mi consulta?",
     answer:
-      "Realizas el pago por transferencia o depósito bancario y subes el comprobante en el formulario inicial. Verificamos el pago manualmente en máximo 24 horas.",
+      "Una conexión estable a internet, un dispositivo con cámara y micrófono, y de ser posible tus análisis de laboratorio recientes. Te enviamos un formulario inicial para conocer tu historial y objetivos.",
   },
   {
     question: "¿Cuánto dura la consulta?",
@@ -213,29 +199,14 @@ export const FAQS: FAQItem[] = [
       "La Consulta Inicial, el Coaching Nutricional y la Nutrición Deportiva duran 60 minutos. La Consulta de Seguimiento dura 45 minutos.",
   },
   {
-    question: "¿Qué incluye el plan nutricional?",
+    question: "¿Recibiré un plan de alimentación?",
     answer:
-      "Plan alimentario personalizado en PDF, lista de compras, recetas adaptadas a tus gustos y presupuesto, y recomendaciones de hidratación y suplementación si es necesario.",
+      "Sí. Tras la consulta recibes un plan personalizado en PDF, adaptado a tus gustos, presupuesto y objetivos, con recomendaciones de hidratación y suplementación si es necesario.",
   },
   {
-    question: "¿Puedo consultar desde otro país?",
+    question: "¿Puedo agendar si estoy fuera de Guatemala?",
     answer:
-      "¡Claro! La plataforma ajusta automáticamente tu zona horaria. He atendido pacientes desde México, Estados Unidos, España y varios países de Centroamérica.",
-  },
-  {
-    question: "¿Con cuánta anticipación debo agendar?",
-    answer:
-      "Recomendamos agendar con al menos 48 horas de anticipación para asegurar disponibilidad. En temporadas altas puede requerirse más tiempo.",
-  },
-  {
-    question: "¿Hay seguimiento después de la consulta?",
-    answer:
-      "Sí. Recibirás correos de seguimiento y puedes agendar consultas de seguimiento o sesiones de coaching nutricional para acompañamiento continuo.",
-  },
-  {
-    question: "¿Atienden casos con enfermedades específicas?",
-    answer:
-      "Sí. Tengo experiencia en diabetes, hipertensión, SOP, problemas digestivos y nutrición deportiva. Si tu caso requiere atención médica especializada, te lo indicaré.",
+      "¡Claro! La plataforma ajusta automáticamente tu zona horaria. Atendemos pacientes desde México, Estados Unidos, España y varios países de Centroamérica.",
   },
 ];
 
@@ -250,6 +221,7 @@ export const NAV_LINKS = [
 export const SITE = {
   name: "Plenha",
   fullName: "Plenha Nutrition",
+  tagline: "Nutrición que transforma hábitos y vidas",
   email: "hola@plenhanutrition.com",
   location: "Guatemala, C.A. (UTC-6)",
   whatsappNumber: "+502 3070 6592",

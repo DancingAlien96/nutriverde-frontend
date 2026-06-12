@@ -48,7 +48,7 @@ function Content() {
         `expediente-${patient.fullName.replace(/\s+/g, "_")}`,
       );
     } catch (err) {
-      alert(err instanceof Error ? err.message : "No se pudo descargar el PDF");
+      alert(err instanceof Error ? err.message : "Could not download the PDF");
     } finally {
       setDownloadingPdf(false);
     }
@@ -88,7 +88,7 @@ function Content() {
     };
   }, [id]);
 
-  if (loading) return <div className="text-sm text-gray-500">Cargando…</div>;
+  if (loading) return <div className="text-sm text-gray-500">Loading…</div>;
   if (error)
     return (
       <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
@@ -107,8 +107,8 @@ function Content() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          <span className="hidden sm:inline">Volver al listado</span>
-          <span className="sm:hidden">Volver</span>
+          <span className="hidden sm:inline">Back to list</span>
+          <span className="sm:hidden">Back</span>
         </Link>
         <button
           type="button"
@@ -119,7 +119,7 @@ function Content() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
           </svg>
-          {downloadingPdf ? "Generando…" : "Descargar PDF"}
+          {downloadingPdf ? "Generating…" : "Download PDF"}
         </button>
       </div>
 
@@ -131,20 +131,20 @@ function Content() {
               {patient.fullName}
             </h1>
             <dl className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-gray-700">
-              <InfoRow label="Correo" value={patient.email} />
+              <InfoRow label="Email" value={patient.email} />
               <InfoRow
                 label={DOCUMENT_TYPE_LABEL[patient.documentType]}
                 value={patient.documentId ?? "—"}
                 mono
               />
-              <InfoRow label="Teléfono" value={patient.phone ?? "—"} />
-              <InfoRow label="Zona horaria" value={patient.timezone} />
+              <InfoRow label="Phone" value={patient.phone ?? "—"} />
+              <InfoRow label="Time zone" value={patient.timezone} />
               <InfoRow
                 label="WhatsApp"
-                value={patient.whatsappNotify ? "Sí" : "No"}
+                value={patient.whatsappNotify ? "Yes" : "No"}
               />
               <InfoRow
-                label="Registrado"
+                label="Registered"
                 value={formatDate(patient.createdAt)}
               />
             </dl>
@@ -153,11 +153,11 @@ function Content() {
             <div className="grid grid-cols-3 gap-3 sm:gap-4 sm:shrink-0">
               <Stat
                 value={stats.totalAppointments.toString()}
-                label="Citas totales"
+                label="Total appointments"
               />
               <Stat
                 value={stats.completedAppointments.toString()}
-                label="Realizadas"
+                label="Completed"
               />
               <Stat
                 value={
@@ -165,52 +165,52 @@ function Content() {
                     ? formatCents(stats.totalPaidCents, "GTQ")
                     : "Q0"
                 }
-                label="Pagado"
+                label="Paid"
               />
             </div>
           )}
         </div>
       </section>
 
-      {/* Datos clínicos estáticos */}
+      {/* Static clinical data */}
       <StaticHealthSection patient={patient} onSaved={reload} />
 
-      {/* Diagnóstico y metas */}
+      {/* Diagnosis and goals */}
       <DiagnosesSection
         patientId={patient.id}
         diagnoses={patient.diagnoses}
         onChanged={reload}
       />
 
-      {/* Entrenamiento */}
+      {/* Training */}
       <TrainingsSection
         patientId={patient.id}
         trainings={patient.trainings}
         onChanged={reload}
       />
 
-      {/* Mediciones antropométricas */}
+      {/* Anthropometric measurements */}
       <MeasurementsSection
         patientId={patient.id}
         measurements={patient.measurements}
         onChanged={reload}
       />
 
-      {/* Gráficas de evolución */}
+      {/* Progress charts */}
       <ProgressCharts measurements={patient.measurements} />
 
-      {/* Plan alimentario estructurado */}
+      {/* Structured meal plan */}
       <MealPlansSection
         patientId={patient.id}
         mealPlans={patient.mealPlans}
         onChanged={reload}
       />
 
-      {/* Citas */}
+      {/* Appointments */}
       <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
-        <h2 className="font-semibold text-gray-900 mb-4">Citas y consultas</h2>
+        <h2 className="font-semibold text-gray-900 mb-4">Appointments and consultations</h2>
         {patient.appointments.length === 0 ? (
-          <p className="text-sm text-gray-500">Sin citas registradas.</p>
+          <p className="text-sm text-gray-500">No appointments recorded.</p>
         ) : (
           <ul className="space-y-3">
             {patient.appointments.map((a) => (
@@ -226,7 +226,7 @@ function Content() {
                     <p className="text-xs text-gray-500 mt-0.5">
                       {a.scheduledAt
                         ? formatDate(a.scheduledAt)
-                        : "Sin horario asignado"}
+                        : "No time scheduled"}
                       {" · "}
                       {a.durationMin} min
                     </p>
@@ -236,7 +236,7 @@ function Content() {
 
                 {a.payment && (
                   <p className="mt-2 text-xs text-gray-600">
-                    Pago: {paymentStatusLabel(a.payment.status)} ·{" "}
+                    Payment: {paymentStatusLabel(a.payment.status)} ·{" "}
                     {formatCents(a.payment.amountCents, a.payment.currency)}
                     {a.payment.id && (
                       <>
@@ -245,7 +245,7 @@ function Content() {
                           href={`/admin/payments/${a.payment.id}`}
                           className="text-brand-700 hover:underline"
                         >
-                          ver pago →
+                          view payment →
                         </Link>
                       </>
                     )}
@@ -268,7 +268,7 @@ function Content() {
 
                 {a.nutritionPlan && (
                   <p className="mt-1 text-xs text-brand-700">
-                    📄 Plan enviado: {a.nutritionPlan.title}
+                    📄 Plan sent: {a.nutritionPlan.title}
                   </p>
                 )}
               </li>
@@ -277,11 +277,11 @@ function Content() {
         )}
       </section>
 
-      {/* Formularios de intake */}
+      {/* Intake forms */}
       {patient.intakeForms.length > 0 && (
         <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
           <h2 className="font-semibold text-gray-900 mb-4">
-            Formularios enviados
+            Submitted forms
           </h2>
           <ul className="space-y-4">
             {patient.intakeForms.map((f) => (
@@ -290,17 +290,17 @@ function Content() {
                 className="rounded-xl border border-gray-100 p-4 text-sm"
               >
                 <p className="text-xs text-gray-500">
-                  {formatDate(f.submittedAt)} · servicio: {f.serviceSlug}
+                  {formatDate(f.submittedAt)} · service: {f.serviceSlug}
                 </p>
                 <dl className="mt-2 space-y-2">
                   {f.data.goal && (
-                    <BlockField label="Objetivo" value={f.data.goal} />
+                    <BlockField label="Goal" value={f.data.goal} />
                   )}
                   {f.data.conditions && (
-                    <BlockField label="Condiciones" value={f.data.conditions} />
+                    <BlockField label="Conditions" value={f.data.conditions} />
                   )}
                   {f.data.notes && (
-                    <BlockField label="Notas" value={f.data.notes} />
+                    <BlockField label="Notes" value={f.data.notes} />
                   )}
                 </dl>
               </li>
@@ -309,10 +309,10 @@ function Content() {
         </section>
       )}
 
-      {/* Pagos */}
+      {/* Payments */}
       {patient.payments.length > 0 && (
         <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
-          <h2 className="font-semibold text-gray-900 mb-4">Historial de pagos</h2>
+          <h2 className="font-semibold text-gray-900 mb-4">Payment history</h2>
           <ul className="space-y-2">
             {patient.payments.map((p) => (
               <li
@@ -334,7 +334,7 @@ function Content() {
                     href={`/admin/payments/${p.id}`}
                     className="text-xs text-brand-700 hover:underline"
                   >
-                    Ver →
+                    View →
                   </Link>
                 </div>
               </li>
@@ -345,7 +345,7 @@ function Content() {
 
       {patient.nutritionPlans.length > 0 && (
         <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6">
-          <h2 className="font-semibold text-gray-900 mb-4">Planes nutricionales</h2>
+          <h2 className="font-semibold text-gray-900 mb-4">Nutrition plans</h2>
           <ul className="space-y-2 text-sm">
             {patient.nutritionPlans.map((np) => (
               <li
@@ -356,8 +356,8 @@ function Content() {
                   <p className="font-medium text-gray-900">{np.title}</p>
                   <p className="text-xs text-gray-500">
                     {np.sentAt
-                      ? `Enviado ${formatDate(np.sentAt)}`
-                      : "Pendiente de envío"}
+                      ? `Sent ${formatDate(np.sentAt)}`
+                      : "Pending submission"}
                   </p>
                 </div>
               </li>
@@ -434,19 +434,19 @@ function AppointmentStatusPill({ status }: { status: string }) {
 function appointmentStatusLabel(status: string): string {
   switch (status) {
     case "AWAITING_PAYMENT":
-      return "Esperando pago";
+      return "Awaiting payment";
     case "PAYMENT_APPROVED":
-      return "Pendiente horario";
+      return "Pending scheduling";
     case "PENDING_CONFIRMATION":
-      return "Por confirmar";
+      return "To be confirmed";
     case "SCHEDULED":
-      return "Agendada";
+      return "Scheduled";
     case "COMPLETED":
-      return "Realizada";
+      return "Completed";
     case "CANCELED":
-      return "Cancelada";
+      return "Canceled";
     case "NO_SHOW":
-      return "No asistió";
+      return "No-show";
     default:
       return status;
   }
@@ -455,18 +455,18 @@ function appointmentStatusLabel(status: string): string {
 function paymentStatusLabel(status: string): string {
   switch (status) {
     case "PENDING_REVIEW":
-      return "Pendiente";
+      return "Pending";
     case "APPROVED":
-      return "Aprobado";
+      return "Approved";
     case "REJECTED":
-      return "Rechazado";
+      return "Rejected";
     default:
       return status;
   }
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString("es-GT", {
+  return new Date(iso).toLocaleString("en-US", {
     year: "numeric",
     month: "short",
     day: "2-digit",

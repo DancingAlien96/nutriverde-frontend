@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { MonthAvailability } from "../lib/api";
+import { useT } from "../lib/i18n";
 
 interface Props {
   /** Función que obtiene la disponibilidad de un mes. Permite reutilizar el
@@ -10,22 +11,6 @@ interface Props {
   selectedDate: string | null;
   onSelect: (date: string) => void;
 }
-
-const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"]; // empieza en lunes
-const MONTH_NAMES = [
-  "enero",
-  "febrero",
-  "marzo",
-  "abril",
-  "mayo",
-  "junio",
-  "julio",
-  "agosto",
-  "septiembre",
-  "octubre",
-  "noviembre",
-  "diciembre",
-];
 
 function currentMonthGT(): string {
   // Mes actual en GT (UTC-6). Usamos un Date "ahora menos 6h" y leemos UTC.
@@ -45,6 +30,7 @@ function addMonths(month: string, delta: number): string {
 }
 
 export function MonthCalendar({ fetchAvailability, selectedDate, onSelect }: Props) {
+  const { calendar } = useT();
   const [month, setMonth] = useState<string>(currentMonthGT());
   const [availability, setAvailability] = useState<MonthAvailability | null>(null);
   const [loading, setLoading] = useState(false);
@@ -83,7 +69,7 @@ export function MonthCalendar({ fetchAvailability, selectedDate, onSelect }: Pro
           onClick={() => setMonth(addMonths(month, -1))}
           disabled={month <= minMonth}
           className="h-8 w-8 rounded-full border border-gray-200 hover:border-brand-300 flex items-center justify-center text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
-          aria-label="Mes anterior"
+          aria-label={calendar.prevMonth}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 18l-6-6 6-6" />
@@ -91,14 +77,14 @@ export function MonthCalendar({ fetchAvailability, selectedDate, onSelect }: Pro
         </button>
 
         <p className="text-sm font-semibold text-gray-900 capitalize">
-          {MONTH_NAMES[monthNum - 1]} {year}
+          {calendar.months[monthNum - 1]} {year}
         </p>
 
         <button
           type="button"
           onClick={() => setMonth(addMonths(month, 1))}
           className="h-8 w-8 rounded-full border border-gray-200 hover:border-brand-300 flex items-center justify-center text-gray-700"
-          aria-label="Mes siguiente"
+          aria-label={calendar.nextMonth}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 18l6-6-6-6" />
@@ -108,7 +94,7 @@ export function MonthCalendar({ fetchAvailability, selectedDate, onSelect }: Pro
 
       {/* Weekday header */}
       <div className="grid grid-cols-7 gap-1 mb-1">
-        {WEEKDAYS.map((d, i) => (
+        {calendar.weekdays.map((d, i) => (
           <div key={`${d}-${i}`} className="text-center text-[10px] font-semibold uppercase tracking-wider text-gray-500 py-1">
             {d}
           </div>
@@ -168,10 +154,10 @@ export function MonthCalendar({ fetchAvailability, selectedDate, onSelect }: Pro
             >
               <span className="font-medium">{cell.day}</span>
               {state === "full" && (
-                <span className="text-[8px] uppercase tracking-wide">lleno</span>
+                <span className="text-[8px] uppercase tracking-wide">{calendar.fullBadge}</span>
               )}
               {state === "blocked" && (
-                <span className="text-[8px] uppercase tracking-wide">bloq.</span>
+                <span className="text-[8px] uppercase tracking-wide">{calendar.blockedBadge}</span>
               )}
             </button>
           );
@@ -182,15 +168,15 @@ export function MonthCalendar({ fetchAvailability, selectedDate, onSelect }: Pro
       <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-500">
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm border border-gray-200 bg-white" />
-          Disponible
+          {calendar.available}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm border border-red-100 bg-red-50" />
-          Lleno
+          {calendar.full}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm border border-amber-100 bg-amber-50" />
-          Bloqueado
+          {calendar.blocked}
         </span>
       </div>
     </div>

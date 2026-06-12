@@ -20,23 +20,23 @@ type Series = {
 };
 
 const COMPOSITION_SERIES: Series[] = [
-  { key: "weightKg", label: "Peso (kg)", color: "#95593a" },
-  { key: "leanMassKg", label: "Masa magra (kg)", color: "#7a8c5a" },
+  { key: "weightKg", label: "Weight (kg)", color: "#95593a" },
+  { key: "leanMassKg", label: "Lean mass (kg)", color: "#7a8c5a" },
 ];
 
 const BODY_FAT_SERIES: Series[] = [
-  { key: "fatPercent", label: "% grasa corporal", color: "#95593a" },
-  { key: "waterPercent", label: "% agua", color: "#4f8c8e" },
-  { key: "caliperFatPercent", label: "% grasa cáliper", color: "#c68c56" },
+  { key: "fatPercent", label: "Body fat %", color: "#95593a" },
+  { key: "waterPercent", label: "Water %", color: "#4f8c8e" },
+  { key: "caliperFatPercent", label: "Caliper body fat %", color: "#c68c56" },
 ];
 
 const CIRCUMFERENCE_SERIES: Series[] = [
-  { key: "waistCm", label: "Cintura", color: "#95593a" },
+  { key: "waistCm", label: "Waist", color: "#95593a" },
   { key: "abdomenCm", label: "Abdomen", color: "#c68c56" },
-  { key: "hipCm", label: "Cadera", color: "#7a8c5a" },
-  { key: "chestCm", label: "Pecho", color: "#4f8c8e" },
-  { key: "armCm", label: "Brazo", color: "#d7a878" },
-  { key: "thighCm", label: "Muslo", color: "#74442e" },
+  { key: "hipCm", label: "Hip", color: "#7a8c5a" },
+  { key: "chestCm", label: "Chest", color: "#4f8c8e" },
+  { key: "armCm", label: "Arm", color: "#d7a878" },
+  { key: "thighCm", label: "Thigh", color: "#74442e" },
 ];
 
 type TabKey = "weight" | "fat" | "circ";
@@ -48,7 +48,7 @@ export function ProgressCharts({
 }) {
   const [tab, setTab] = useState<TabKey>("weight");
 
-  // Recharts necesita la serie ordenada ascendente por fecha
+  // Recharts needs the series sorted ascending by date
   const data = useMemo(() => {
     return [...measurements]
       .sort(
@@ -58,7 +58,7 @@ export function ProgressCharts({
       .map((m, i) => ({
         ...m,
         label: m.visitNumber ? `#${m.visitNumber}` : `V${i + 1}`,
-        date: new Date(m.measuredAt).toLocaleDateString("es-GT", {
+        date: new Date(m.measuredAt).toLocaleDateString("en-US", {
           day: "2-digit",
           month: "short",
         }),
@@ -72,7 +72,7 @@ export function ProgressCharts({
         ? BODY_FAT_SERIES
         : CIRCUMFERENCE_SERIES;
 
-  // Filtramos solo series que tienen al menos un dato no-nulo
+  // Keep only series that have at least one non-null value
   const seriesWithData = activeSeries.filter((s) =>
     data.some((d) => d[s.key as keyof typeof d] != null),
   );
@@ -80,10 +80,9 @@ export function ProgressCharts({
   if (data.length < 2) {
     return (
       <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
-        <h2 className="font-semibold text-gray-900 mb-2">Evolución</h2>
+        <h2 className="font-semibold text-gray-900 mb-2">Progress</h2>
         <p className="text-sm text-gray-500">
-          Necesitas al menos 2 mediciones registradas para ver gráficas de
-          evolución.
+          You need at least 2 recorded measurements to view progress charts.
         </p>
       </section>
     );
@@ -92,13 +91,13 @@ export function ProgressCharts({
   return (
     <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <h2 className="font-semibold text-gray-900">Evolución</h2>
+        <h2 className="font-semibold text-gray-900">Progress</h2>
         <div className="flex sm:inline-flex rounded-full bg-cream-100 p-1 text-xs font-medium overflow-x-auto -mx-1 sm:mx-0">
           {(
             [
-              { key: "weight", label: "Peso & masa magra" },
-              { key: "fat", label: "% grasa & agua" },
-              { key: "circ", label: "Circunferencias" },
+              { key: "weight", label: "Weight & lean mass" },
+              { key: "fat", label: "Body fat & water %" },
+              { key: "circ", label: "Circumferences" },
             ] as { key: TabKey; label: string }[]
           ).map((t) => (
             <button
@@ -119,7 +118,7 @@ export function ProgressCharts({
 
       {seriesWithData.length === 0 ? (
         <p className="text-sm text-gray-500">
-          No hay datos para este indicador en las mediciones registradas.
+          No data available for this indicator in the recorded measurements.
         </p>
       ) : (
         <div className="h-72 sm:h-80">

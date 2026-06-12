@@ -52,11 +52,11 @@ function Content() {
       <div className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <h1 className="font-serif-display text-2xl sm:text-3xl text-gray-900">
-            Pacientes
+            Patients
           </h1>
           <p className="text-sm text-gray-600 mt-1">
-            Busca por nombre, correo, DPI o teléfono. Click en un paciente para
-            ver su expediente.
+            Search by name, email, ID or phone. Click a patient to view their
+            record.
           </p>
         </div>
         <div className="sm:max-w-xs sm:w-72">
@@ -64,7 +64,7 @@ function Content() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar…"
+            placeholder="Search…"
             className="w-full rounded-full border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
@@ -77,10 +77,10 @@ function Content() {
       )}
 
       {loading ? (
-        <div className="text-sm text-gray-500">Cargando…</div>
+        <div className="text-sm text-gray-500">Loading…</div>
       ) : patients.length === 0 ? (
         <div className="rounded-2xl bg-white border border-gray-200 p-10 text-center text-sm text-gray-500">
-          {query ? "No hay pacientes que coincidan." : "Aún no hay pacientes."}
+          {query ? "No matching patients." : "No patients yet."}
         </div>
       ) : (
         <>
@@ -101,7 +101,7 @@ function Content() {
                     </div>
                     <span className="shrink-0 text-xs text-gray-500">
                       {p._count.appointments}{" "}
-                      {p._count.appointments === 1 ? "cita" : "citas"}
+                      {p._count.appointments === 1 ? "appt" : "appts"}
                     </span>
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-3 text-xs">
@@ -114,14 +114,14 @@ function Content() {
                           <span className="font-mono">{p.documentId}</span>
                         </>
                       ) : (
-                        "Sin documento"
+                        "No ID"
                       )}
                     </span>
                     {p.phone && (
                       <span className="text-gray-500 shrink-0">{p.phone}</span>
                     )}
                   </div>
-                  <p className="mt-3 text-xs font-medium text-brand-700">Ver →</p>
+                  <p className="mt-3 text-xs font-medium text-brand-700">View →</p>
                 </Link>
               </li>
             ))}
@@ -132,14 +132,14 @@ function Content() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium">Paciente</th>
-                  <th className="text-left px-4 py-3 font-medium">Documento</th>
+                  <th className="text-left px-4 py-3 font-medium">Patient</th>
+                  <th className="text-left px-4 py-3 font-medium">ID</th>
                   <th className="text-left px-4 py-3 font-medium hidden md:table-cell">
-                    Teléfono
+                    Phone
                   </th>
-                  <th className="text-center px-4 py-3 font-medium">Citas</th>
+                  <th className="text-center px-4 py-3 font-medium">Appts</th>
                   <th className="text-left px-4 py-3 font-medium hidden md:table-cell">
-                    Última actividad
+                    Last activity
                   </th>
                   <th className="px-4 py-3" />
                 </tr>
@@ -179,7 +179,7 @@ function Content() {
                         href={`/admin/patients/${p.id}`}
                         className="text-xs font-medium text-brand-700 hover:text-brand-800"
                       >
-                        Ver →
+                        View →
                       </Link>
                     </td>
                   </tr>
@@ -194,7 +194,7 @@ function Content() {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString("es-GT", {
+  return new Date(iso).toLocaleString("en-US", {
     year: "numeric",
     month: "short",
     day: "2-digit",
