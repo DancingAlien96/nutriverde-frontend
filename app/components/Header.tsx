@@ -47,7 +47,7 @@ export function Header() {
           </span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-7">
+        <div className="hidden lg:flex items-center gap-7">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -75,7 +75,7 @@ export function Header() {
             onClick={() => setOpen((v) => !v)}
             aria-label={t.header.openMenu}
             aria-expanded={open}
-            className="md:hidden h-10 w-10 rounded-full border border-brand-200 text-ink-800 flex items-center justify-center"
+            className="lg:hidden h-10 w-10 rounded-full border border-brand-200 text-ink-800 flex items-center justify-center"
           >
             {open ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -91,7 +91,7 @@ export function Header() {
       </nav>
 
       {open && (
-        <div className="md:hidden mx-4 mb-4 rounded-2xl bg-white border border-cream-200 shadow-xl p-2">
+        <div className="lg:hidden mx-4 mb-4 rounded-2xl bg-white border border-cream-200 shadow-xl p-2">
           <ul className="flex flex-col">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>

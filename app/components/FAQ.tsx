@@ -20,7 +20,7 @@ export function FAQ() {
         width={520}
         height={520}
         aria-hidden
-        className="pointer-events-none hidden md:block absolute -top-4 right-0 lg:right-8 w-72 lg:w-[24rem] h-auto object-contain z-0"
+        className="pointer-events-none block absolute -top-2 -right-4 w-32 sm:w-56 md:w-72 md:top-[-1rem] md:right-0 lg:right-8 lg:w-[24rem] h-auto object-contain z-0"
       />
 
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 relative z-10">

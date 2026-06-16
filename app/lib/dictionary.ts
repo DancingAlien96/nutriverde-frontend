@@ -181,20 +181,20 @@ const en: Dict = {
     faq: "FAQ",
   },
   header: {
-    tagline: "Nutrition that transforms habits and lives",
+    tagline: "Build habits. Live fully.",
     agendar: "Book my appointment",
     agendarShort: "Book",
     openMenu: "Open menu",
   },
   hero: {
-    titleLead: "Hi, I'm your",
-    titleEmphasis: "nutritionist",
+    titleLead: "Take the first step toward your",
+    titleEmphasis: "wellbeing.",
     paragraph:
-      "I believe in evidence-based nutrition — no restrictive diets, no quick fixes. My goal is to help you build sustainable habits that fit your lifestyle and bring you closer to your well-being.",
+      "Personalized nutrition to help you build healthy habits and live a fuller, more balanced life.",
     italic: "I'm here to support you.",
     ctaPrimary: "Book my appointment",
     ctaSecondary: "How it works",
-    imageAlt: "A space for wellness and mindful eating",
+    imageAlt: "A balanced, nutritious meal on a calm table",
   },
   services: {
     eyebrow: "Services",
@@ -367,7 +367,7 @@ const en: Dict = {
     photoAlt: "Dulce Menzel, clinical nutritionist",
   },
   footer: {
-    tagline: "Nutrition that transforms habits and lives",
+    tagline: "Build habits. Live fully.",
     location: "Guatemala, C.A. (UTC-6) · Dulce Menzel, clinical nutritionist",
     rights: "Plenha Nutrition. All rights reserved.",
   },
@@ -512,20 +512,20 @@ const es: Dict = {
     faq: "FAQ",
   },
   header: {
-    tagline: "Nutrición que transforma hábitos y vidas",
+    tagline: "Crea hábitos. Vive plenamente.",
     agendar: "Agendar mi cita",
     agendarShort: "Agendar",
     openMenu: "Abrir menú",
   },
   hero: {
-    titleLead: "Hola, soy tu",
-    titleEmphasis: "nutricionista",
+    titleLead: "Da el primer paso hacia tu",
+    titleEmphasis: "bienestar.",
     paragraph:
-      "Creo en una nutrición basada en evidencia, sin dietas restrictivas ni soluciones temporales. Mi objetivo es ayudarte a construir hábitos sostenibles que se adapten a tu estilo de vida y te acerquen a tu bienestar.",
+      "Nutrición personalizada para ayudarte a crear hábitos saludables y vivir una vida más plena y equilibrada.",
     italic: "Estoy aquí para acompañarte.",
     ctaPrimary: "Agendar mi cita",
     ctaSecondary: "Cómo funciona",
-    imageAlt: "Espacio de bienestar y alimentación consciente",
+    imageAlt: "Una comida equilibrada y nutritiva sobre una mesa serena",
   },
   services: {
     eyebrow: "Servicios",
@@ -698,7 +698,7 @@ const es: Dict = {
     photoAlt: "Dulce Menzel, nutricionista clínica",
   },
   footer: {
-    tagline: "Nutrición que transforma hábitos y vidas",
+    tagline: "Crea hábitos. Vive plenamente.",
     location: "Guatemala, C.A. (UTC-6) · Dulce Menzel, nutricionista clínica",
     rights: "Plenha Nutrition. Todos los derechos reservados.",
   },

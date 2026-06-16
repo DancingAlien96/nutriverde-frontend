@@ -584,6 +584,7 @@ export interface ServiceAdmin {
   slug: string;
   name: string;
   description: string;
+  imageUrl: string | null;
   priceCents: number;
   currency: string;
   durationMin: number;
@@ -622,6 +623,20 @@ export async function createAdminService(input: {
   const res = await authFetch("/api/admin/services", {
     method: "POST",
     body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
+/** Sube/reemplaza la imagen pública de un servicio. */
+export async function uploadServiceImage(
+  id: string,
+  file: File,
+): Promise<{ service: ServiceAdmin }> {
+  const data = new FormData();
+  data.append("image", file);
+  const res = await authFetch(`/api/admin/services/${id}/image`, {
+    method: "POST",
+    body: data,
   });
   return parseJson(res);
 }

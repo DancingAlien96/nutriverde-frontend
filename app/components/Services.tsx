@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Blob, LeafIcon } from "./decor";
 import { useLocale } from "../lib/i18n";
-import { fetchServices, localizedService, type ApiService } from "../lib/api";
+import {
+  fetchServices,
+  localizedService,
+  backendImageSrc,
+  type ApiService,
+} from "../lib/api";
 
 // Imágenes por slug (la BD no guarda imágenes de marketing).
 const SERVICE_IMAGES: Record<string, string> = {
@@ -152,7 +156,10 @@ function ServiceCard({
   description: string;
   monthlyLabel: string;
 }) {
-  const image = SERVICE_IMAGES[service.slug] ?? FALLBACK_IMAGE;
+  const image =
+    backendImageSrc(service.imageUrl) ??
+    SERVICE_IMAGES[service.slug] ??
+    FALLBACK_IMAGE;
   const meta =
     service.billingType === "MONTHLY"
       ? monthlyLabel
@@ -162,12 +169,11 @@ function ServiceCard({
       {/* Imagen redondeada con círculo-ícono superpuesto */}
       <div className="relative px-4 pt-4">
         <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-brand-100">
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={image}
             alt={name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 25vw"
+            className="absolute inset-0 h-full w-full object-cover"
           />
         </div>
         <span className="absolute left-1/2 -bottom-5 -translate-x-1/2 h-11 w-11 rounded-full bg-brand-400 text-white flex items-center justify-center shadow-md ring-4 ring-cream-50">

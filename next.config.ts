@@ -11,6 +11,16 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "plus.unsplash.com",
       },
+      // Imágenes de servicios servidas por el backend
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "4001",
+      },
+      {
+        protocol: "https",
+        hostname: "backendnutriverde.pruebascunori.shop",
+      },
     ],
   },
 };

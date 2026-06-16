@@ -7,8 +7,10 @@ import {
   deleteAdminService,
   listAdminServices,
   updateAdminService,
+  uploadServiceImage,
   type ServiceAdmin,
 } from "../../lib/admin";
+import { backendImageSrc } from "../../lib/api";
 
 export default function ServicesPage() {
   return (
@@ -125,6 +127,7 @@ function NewServiceForm({
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   function handleNameChange(value: string) {
     setName(value);
@@ -142,7 +145,7 @@ function NewServiceForm({
 
     setSubmitting(true);
     try {
-      await createAdminService({
+      const { service } = await createAdminService({
         slug: slug.trim(),
         name: name.trim(),
         description: description.trim(),
@@ -150,6 +153,7 @@ function NewServiceForm({
         durationMin,
         billingType,
       });
+      if (imageFile) await uploadServiceImage(service.id, imageFile);
       await onCreated();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
@@ -242,6 +246,21 @@ function NewServiceForm({
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm resize-none"
           />
         </label>
+
+        <label className="text-xs sm:col-span-2">
+          Image (optional)
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+            className="block w-full text-sm text-gray-600 mt-1 file:mr-3 file:rounded-full file:border-0 file:bg-brand-100 file:px-4 file:py-1.5 file:text-xs file:font-medium file:text-brand-700 hover:file:bg-brand-200"
+          />
+          {imageFile && (
+            <span className="block text-[10px] text-gray-500 mt-1">
+              {imageFile.name}
+            </span>
+          )}
+        </label>
       </div>
 
       {error && <p className="mt-3 text-xs text-red-700">{error}</p>}
@@ -292,6 +311,7 @@ function ServiceCard({
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   async function handleDelete() {
     if (
@@ -346,6 +366,8 @@ function ServiceCard({
         active,
         sortOrder: Number(sortOrder) || 0,
       });
+      if (imageFile) await uploadServiceImage(service.id, imageFile);
+      setImageFile(null);
       setEditing(false);
       await onSaved();
     } catch (err) {
@@ -356,8 +378,19 @@ function ServiceCard({
   }
 
   if (!editing) {
+    const thumb = backendImageSrc(service.imageUrl);
     return (
       <div className="rounded-2xl bg-white border border-cream-200 p-5 flex flex-col h-full">
+        {thumb && (
+          <div className="relative -mx-5 -mt-5 mb-4 h-32 overflow-hidden rounded-t-2xl bg-cream-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={thumb}
+              alt={service.name}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </div>
+        )}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -472,6 +505,31 @@ function ServiceCard({
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm resize-none"
           />
         </label>
+
+        <div className="text-xs sm:col-span-2">
+          Image
+          <div className="mt-1 flex items-center gap-3">
+            {backendImageSrc(service.imageUrl) && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={backendImageSrc(service.imageUrl) as string}
+                alt={service.name}
+                className="h-16 w-16 rounded-lg object-cover border border-gray-200"
+              />
+            )}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+              className="block text-sm text-gray-600 file:mr-3 file:rounded-full file:border-0 file:bg-brand-100 file:px-4 file:py-1.5 file:text-xs file:font-medium file:text-brand-700 hover:file:bg-brand-200"
+            />
+          </div>
+          {imageFile && (
+            <span className="block text-[10px] text-gray-500 mt-1">
+              New: {imageFile.name}
+            </span>
+          )}
+        </div>
 
         <label className="text-xs">
           Display order

@@ -11,11 +11,21 @@ export interface ApiService {
   nameEs?: string | null;
   descriptionEn?: string | null;
   descriptionEs?: string | null;
+  imageUrl?: string | null;
   priceCents: number;
   currency: string;
   durationMin: number;
   billingType: "ONE_TIME" | "MONTHLY";
   priceFormatted: string;
+}
+
+/** Construye la URL absoluta de una imagen servida por el backend (/uploads/..). */
+export function backendImageSrc(
+  imageUrl: string | null | undefined,
+): string | null {
+  if (!imageUrl) return null;
+  if (/^https?:\/\//.test(imageUrl)) return imageUrl;
+  return `${API_URL}${imageUrl}`;
 }
 
 /** Devuelve el nombre/descripción del servicio en el idioma pedido. */
