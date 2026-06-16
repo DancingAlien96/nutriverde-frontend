@@ -211,18 +211,18 @@ export function Services() {
         </div>
 
         {/* Features */}
-        <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-y-5">
+        <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-4 max-w-xs sm:max-w-none mx-auto">
           {t.services.features.map((f, i) => (
             <div
               key={f.key}
-              className={`flex items-center justify-center gap-2 text-xs text-ink-600 px-3 ${
+              className={`flex items-center gap-3 text-sm text-ink-600 sm:justify-center sm:px-3 ${
                 i > 0 ? "lg:border-l lg:border-cream-300" : ""
               }`}
             >
               <span className="text-brand-600 shrink-0">
                 <FeatureIcon name={f.key} />
               </span>
-              <span className="text-center sm:text-left">{f.label}</span>
+              <span className="sm:text-center lg:text-left">{f.label}</span>
             </div>
           ))}
         </div>
