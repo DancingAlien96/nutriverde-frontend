@@ -46,23 +46,29 @@ export interface Dict {
     titleLead: string;
     titleEmphasis: string;
     subtitle: string;
-    cta: string;
     online: string;
-    items: ServiceItem[];
+    minutes: string;
+    perfectLabel: string;
+    cards: Record<string, { description: string; perfectIfYou: string }>;
+    banner: { question: string; text: string; cta: string };
+    features: {
+      key: "leaf" | "person" | "heart" | "globe" | "pin";
+      label: string;
+    }[];
   };
   howItWorks: { eyebrow: string; titleLead: string; titleEmphasis: string; steps: StepItem[] };
   testimonials: { eyebrow: string; titleLead: string; titleEmphasis: string; subtitle: string; items: TestimonialItem[] };
   faq: { eyebrow: string; titleLead: string; titleEmphasis: string; subtitle: string; items: FaqItem[] };
   about: {
     eyebrow: string;
+    greeting: string;
     name: string;
     role: string;
-    paragraphs: string[];
-    languages: string;
-    specialties: { label: string; icon: string }[];
+    paragraphs: { text: string; hl?: boolean }[][];
+    features: { key: "leaf" | "plan" | "heart"; label: string }[];
     photoAlt: string;
   };
-  footer: { tagline: string; location: string; rights: string };
+  footer: { tagline: string; location: string; worldwide: string; rights: string };
   agendar: {
     page: {
       eyebrow: string;
@@ -84,6 +90,7 @@ export interface Dict {
       skip: string;
     };
     service: { title: string; subtitle: string; monthly: string; min: string };
+    region: { title: string; gt: string; intl: string; hint: string };
     data: {
       title: string;
       subtitle: string;
@@ -117,6 +124,9 @@ export interface Dict {
       bankValue: string;
       accountLabel: string;
       nameLabel: string;
+      depositTitleIntl: string;
+      methodLabel: string;
+      methodValue: string;
     };
     schedule: {
       title: string;
@@ -170,7 +180,6 @@ const AVATARS = {
     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
 };
 
-const SPECIALTY_ICONS = ["🩺", "💪", "🩸", "🏃", "🥗", "🌱"];
 
 const en: Dict = {
   nav: {
@@ -198,49 +207,50 @@ const en: Dict = {
   },
   services: {
     eyebrow: "Services",
-    titleLead: "Personalized nutrition,",
-    titleEmphasis: "for you",
+    titleLead: "Nutrition services",
+    titleEmphasis: "designed around you",
     subtitle:
-      "Every service is designed to fit your goals, needs, and lifestyle.",
-    cta: "Book now",
-    online: "100% online consultations",
-    items: [
-      {
-        slug: "consulta-inicial",
-        image: "/consultainicial.png",
-        name: "Initial Consultation",
+      "Every consultation is personalized to your lifestyle, preferences, and health objectives.",
+    online: "Online",
+    minutes: "minutes",
+    perfectLabel: "Perfect if you:",
+    cards: {
+      "consulta-inicial": {
         description:
-          "A comprehensive assessment of your health, habits, lifestyle, and goals. We'll review your medical history, current diet, routine, and specific needs to build a personalized, sustainable nutrition strategy.",
-        duration: "60 min",
-        price: "Q350",
+          "A comprehensive assessment of your health, lifestyle, and goals to create a personalized nutrition plan just for you.",
+        perfectIfYou:
+          "Are looking for personalized guidance and a plan tailored to your needs.",
       },
-      {
-        slug: "consulta-seguimiento",
-        image: "/consultaseguimiento.png",
-        name: "Follow-up Consultation",
+      "consulta-seguimiento": {
         description:
-          "Designed to assess your progress, work through challenges, and make the adjustments needed to keep moving toward your goals in a realistic, sustainable way.",
-        duration: "45 min",
-        price: "Q250",
+          "Review your progress, adjust your plan, and overcome any challenges to keep you moving forward.",
+        perfectIfYou:
+          "Have an existing plan and want to track progress and make adjustments.",
       },
-      {
-        slug: "coaching-nutricional",
-        image: "/coachingnutricional.png",
-        name: "Nutrition Coaching & Habit Change",
+      "coaching-nutricional": {
         description:
-          "A space focused on helping you make lasting changes to your eating and lifestyle. Ideal for improving your relationship with food, building healthy habits, and maintaining results long term.",
-        duration: "60 min",
-        price: "Q0",
+          "Build sustainable habits, improve your relationship with food, and create lasting lifestyle changes.",
+        perfectIfYou:
+          "Want ongoing support and accountability to build long-term healthy habits.",
       },
-      {
-        slug: "nutricion-deportiva",
-        image: "/nutriciondeportiva.png",
-        name: "Sports Nutrition",
+      "nutricion-deportiva": {
         description:
-          "For runners, athletes, and anyone preparing for competitions or endurance events. Evidence-based fueling, hydration, and supplementation strategies to optimize performance and recovery.",
-        duration: "60 min",
-        price: "Q0",
+          "Optimize your performance, recovery, and results with a nutrition plan designed for your training and competition goals.",
+        perfectIfYou:
+          "Are an athlete or active individual looking to improve performance.",
       },
+    },
+    banner: {
+      question: "Not sure which service is right for you?",
+      text: "Get in touch and I'd be happy to help you choose the best option.",
+      cta: "Contact me",
+    },
+    features: [
+      { key: "leaf", label: "Evidence-based approach" },
+      { key: "person", label: "Personalized nutrition plans" },
+      { key: "heart", label: "Sustainable habits for lasting results" },
+      { key: "globe", label: "Online consultations" },
+      { key: "pin", label: "Worldwide support" },
     ],
   },
   howItWorks: {
@@ -348,27 +358,42 @@ const en: Dict = {
     ],
   },
   about: {
-    eyebrow: "Meet your nutritionist",
+    eyebrow: "About me",
+    greeting: "Hi, I'm",
     name: "Dulce Menzel",
-    role: "Clinical Nutritionist · MSc in Nutritional Coaching",
+    role: "Registered Nutritionist and Founder of PLENHA.",
     paragraphs: [
-      "Clinical nutritionist who graduated Cum Laude from Universidad del Valle de Guatemala (UVG), with a Master's in Nutritional Coaching and New Approaches to Care endorsed by the University of Barcelona. I'm trained in sports nutrition and in nutritional care for children with autism spectrum disorder (ASD).",
-      "My approach combines scientific evidence, nutritional education, and sustainable habits to help you reach your health, body composition, and performance goals in a practical, personalized way.",
+      [
+        {
+          text: "I believe nutrition should be practical, personalized, and sustainable—not restrictive.",
+        },
+      ],
+      [
+        { text: "My mission is to help you build " },
+        { text: "healthy habits", hl: true },
+        { text: " that fit your lifestyle and support your " },
+        { text: "long-term wellbeing", hl: true },
+        { text: " through evidence-based nutrition and compassionate guidance." },
+      ],
+      [
+        {
+          text: "At PLENHA, every plan is designed around your goals, preferences, and daily routine—because ",
+        },
+        { text: "lasting results", hl: true },
+        { text: " come from habits you can truly maintain." },
+      ],
     ],
-    languages: "Languages: Spanish and English.",
-    specialties: [
-      { label: "Clinical nutrition", icon: SPECIALTY_ICONS[0] },
-      { label: "Body recomposition", icon: SPECIALTY_ICONS[1] },
-      { label: "Insulin resistance", icon: SPECIALTY_ICONS[2] },
-      { label: "Athletic performance", icon: SPECIALTY_ICONS[3] },
-      { label: "Metabolic health", icon: SPECIALTY_ICONS[4] },
-      { label: "Sustainable habits", icon: SPECIALTY_ICONS[5] },
+    features: [
+      { key: "leaf", label: "Evidence-based approach" },
+      { key: "plan", label: "Personalized nutrition plans" },
+      { key: "heart", label: "Sustainable habits for lasting results" },
     ],
-    photoAlt: "Dulce Menzel, clinical nutritionist",
+    photoAlt: "Dulce Menzel, nutritionist",
   },
   footer: {
     tagline: "Build habits. Live fully.",
-    location: "Guatemala, C.A. (UTC-6) · Dulce Menzel, clinical nutritionist",
+    location: "Guatemala",
+    worldwide: "Online consultations worldwide.",
     rights: "Plenha Nutrition. All rights reserved.",
   },
   agendar: {
@@ -398,6 +423,12 @@ const en: Dict = {
       subtitle: "Select the type of consultation that best fits you.",
       monthly: "Monthly",
       min: "min",
+    },
+    region: {
+      title: "Where are you booking from?",
+      gt: "Guatemala",
+      intl: "Other country",
+      hint: "We charge in Quetzales (Q) in Guatemala and in US dollars (US$) for other countries.",
     },
     data: {
       title: "Tell us about yourself",
@@ -440,11 +471,14 @@ const en: Dict = {
       summary: "Summary",
       monthly: "Monthly",
       min: "min",
-      depositTitle: "Deposit details:",
+      depositTitle: "Deposit details (Guatemala):",
       bankLabel: "Bank:",
       bankValue: "(to configure) — complete in production",
       accountLabel: "Account:",
       nameLabel: "Name:",
+      depositTitleIntl: "International payment (USD):",
+      methodLabel: "Method:",
+      methodValue: "PayPal / Wise (to configure)",
     },
     schedule: {
       title: "Choose your time (optional)",
@@ -529,49 +563,50 @@ const es: Dict = {
   },
   services: {
     eyebrow: "Servicios",
-    titleLead: "Nutrición personalizada,",
-    titleEmphasis: "para ti",
+    titleLead: "Servicios de nutrición",
+    titleEmphasis: "diseñados para ti",
     subtitle:
-      "Cada servicio está diseñado para adaptarse a tus objetivos, necesidades y estilo de vida.",
-    cta: "Reservar ahora",
-    online: "Consultas 100% online",
-    items: [
-      {
-        slug: "consulta-inicial",
-        image: "/consultainicial.png",
-        name: "Consulta Inicial",
+      "Cada consulta se personaliza según tu estilo de vida, preferencias y objetivos de salud.",
+    online: "Online",
+    minutes: "minutos",
+    perfectLabel: "Perfecto si:",
+    cards: {
+      "consulta-inicial": {
         description:
-          "Una evaluación integral de tu salud, hábitos, estilo de vida y objetivos. Revisaremos tu historial médico, alimentación actual, rutina y necesidades específicas para desarrollar una estrategia nutricional personalizada y sostenible.",
-        duration: "60 min",
-        price: "Q350",
+          "Una evaluación integral de tu salud, estilo de vida y objetivos para crear un plan de nutrición personalizado solo para ti.",
+        perfectIfYou:
+          "Buscas orientación personalizada y un plan adaptado a tus necesidades.",
       },
-      {
-        slug: "consulta-seguimiento",
-        image: "/consultaseguimiento.png",
-        name: "Consulta de Seguimiento",
+      "consulta-seguimiento": {
         description:
-          "Diseñadas para evaluar avances, resolver dificultades y realizar los ajustes necesarios para continuar progresando hacia tus objetivos de manera realista y sostenible.",
-        duration: "45 min",
-        price: "Q250",
+          "Revisamos tus avances, ajustamos tu plan y resolvemos cualquier dificultad para que sigas progresando.",
+        perfectIfYou:
+          "Ya tienes un plan y quieres dar seguimiento y hacer ajustes.",
       },
-      {
-        slug: "coaching-nutricional",
-        image: "/coachingnutricional.png",
-        name: "Coaching Nutricional y Cambio de Hábitos",
+      "coaching-nutricional": {
         description:
-          "Un espacio enfocado en ayudarte a implementar cambios duraderos en tu alimentación y estilo de vida. Ideal para mejorar tu relación con la comida, fortalecer hábitos saludables y mantener resultados a largo plazo.",
-        duration: "60 min",
-        price: "Q0",
+          "Construye hábitos sostenibles, mejora tu relación con la comida y logra cambios duraderos en tu estilo de vida.",
+        perfectIfYou:
+          "Quieres acompañamiento continuo para crear hábitos saludables a largo plazo.",
       },
-      {
-        slug: "nutricion-deportiva",
-        image: "/nutriciondeportiva.png",
-        name: "Nutrición Deportiva",
+      "nutricion-deportiva": {
         description:
-          "Para corredores, atletas y personas que se preparan para competencias o eventos de resistencia. Estrategias de alimentación, hidratación y suplementación basadas en evidencia para optimizar el rendimiento y la recuperación.",
-        duration: "60 min",
-        price: "Q0",
+          "Optimiza tu rendimiento, recuperación y resultados con un plan diseñado para tu entrenamiento y objetivos de competencia.",
+        perfectIfYou:
+          "Eres atleta o persona activa que busca mejorar su rendimiento.",
       },
+    },
+    banner: {
+      question: "¿No sabes cuál servicio es para ti?",
+      text: "Escríbeme y con gusto te ayudo a elegir la mejor opción.",
+      cta: "Escríbeme",
+    },
+    features: [
+      { key: "leaf", label: "Enfoque basado en evidencia" },
+      { key: "person", label: "Planes de nutrición personalizados" },
+      { key: "heart", label: "Hábitos sostenibles para resultados duraderos" },
+      { key: "globe", label: "Consultas online" },
+      { key: "pin", label: "Soporte en todo el mundo" },
     ],
   },
   howItWorks: {
@@ -679,27 +714,42 @@ const es: Dict = {
     ],
   },
   about: {
-    eyebrow: "Conoce a tu nutricionista",
+    eyebrow: "Sobre mí",
+    greeting: "Hola, soy",
     name: "Dulce Menzel",
-    role: "Nutricionista Clínica · MSc. Coaching Nutricional",
+    role: "Nutricionista colegiada y fundadora de PLENHA.",
     paragraphs: [
-      "Nutricionista clínica graduada Cum Laude de la Universidad del Valle de Guatemala (UVG), con una Maestría en Coaching Nutricional y Nuevos Enfoques de Atención avalada por la Universidad de Barcelona. Cuento con formación en nutrición deportiva y abordaje nutricional para niños con trastorno del espectro autista (TEA).",
-      "Mi enfoque combina evidencia científica, educación nutricional y hábitos sostenibles para ayudarte a alcanzar tus objetivos de salud, composición corporal y rendimiento de una manera práctica y personalizada.",
+      [
+        {
+          text: "Creo que la nutrición debe ser práctica, personalizada y sostenible—no restrictiva.",
+        },
+      ],
+      [
+        { text: "Mi misión es ayudarte a crear " },
+        { text: "hábitos saludables", hl: true },
+        { text: " que se adapten a tu estilo de vida y cuiden tu " },
+        { text: "bienestar a largo plazo", hl: true },
+        { text: " con nutrición basada en evidencia y un acompañamiento cercano." },
+      ],
+      [
+        {
+          text: "En PLENHA, cada plan se diseña según tus objetivos, preferencias y rutina diaria—porque los ",
+        },
+        { text: "resultados duraderos", hl: true },
+        { text: " vienen de hábitos que de verdad puedes mantener." },
+      ],
     ],
-    languages: "Idiomas: Español e Inglés.",
-    specialties: [
-      { label: "Nutrición clínica", icon: SPECIALTY_ICONS[0] },
-      { label: "Recomposición corporal", icon: SPECIALTY_ICONS[1] },
-      { label: "Resistencia a la insulina", icon: SPECIALTY_ICONS[2] },
-      { label: "Rendimiento deportivo", icon: SPECIALTY_ICONS[3] },
-      { label: "Salud metabólica", icon: SPECIALTY_ICONS[4] },
-      { label: "Hábitos sostenibles", icon: SPECIALTY_ICONS[5] },
+    features: [
+      { key: "leaf", label: "Enfoque basado en evidencia" },
+      { key: "plan", label: "Planes de nutrición personalizados" },
+      { key: "heart", label: "Hábitos sostenibles para resultados duraderos" },
     ],
-    photoAlt: "Dulce Menzel, nutricionista clínica",
+    photoAlt: "Dulce Menzel, nutricionista",
   },
   footer: {
     tagline: "Crea hábitos. Vive plenamente.",
-    location: "Guatemala, C.A. (UTC-6) · Dulce Menzel, nutricionista clínica",
+    location: "Guatemala",
+    worldwide: "Consultas online en todo el mundo.",
     rights: "Plenha Nutrition. Todos los derechos reservados.",
   },
   agendar: {
@@ -729,6 +779,12 @@ const es: Dict = {
       subtitle: "Selecciona el tipo de consulta que mejor se adapte a ti.",
       monthly: "Mensual",
       min: "min",
+    },
+    region: {
+      title: "¿Desde dónde agendas?",
+      gt: "Guatemala",
+      intl: "Otro país",
+      hint: "En Guatemala cobramos en quetzales (Q) y para otros países en dólares (US$).",
     },
     data: {
       title: "Cuéntanos sobre ti",
@@ -771,11 +827,14 @@ const es: Dict = {
       summary: "Resumen",
       monthly: "Mensual",
       min: "min",
-      depositTitle: "Datos para el depósito:",
+      depositTitle: "Datos para el depósito (Guatemala):",
       bankLabel: "Banco:",
       bankValue: "(configurar) — completar en producción",
       accountLabel: "Cuenta:",
       nameLabel: "Nombre:",
+      depositTitleIntl: "Pago internacional (USD):",
+      methodLabel: "Método:",
+      methodValue: "PayPal / Wise (configurar)",
     },
     schedule: {
       title: "Elige tu horario (opcional)",

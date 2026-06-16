@@ -13,10 +13,20 @@ export interface ApiService {
   descriptionEs?: string | null;
   imageUrl?: string | null;
   priceCents: number;
+  priceUsdCents?: number | null;
   currency: string;
   durationMin: number;
   billingType: "ONE_TIME" | "MONTHLY";
   priceFormatted: string;
+  priceUsdFormatted?: string | null;
+}
+
+export type Region = "GT" | "INTL";
+
+/** Precio formateado del servicio según la región (GT = Q, INTL = US$). */
+export function regionPrice(s: ApiService, region: Region): string {
+  if (region === "INTL" && s.priceUsdFormatted) return s.priceUsdFormatted;
+  return s.priceFormatted;
 }
 
 /** Construye la URL absoluta de una imagen servida por el backend (/uploads/..). */

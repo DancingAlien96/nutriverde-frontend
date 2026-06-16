@@ -121,6 +121,7 @@ function NewServiceForm({
   const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [priceUsd, setPriceUsd] = useState("");
   const [duration, setDuration] = useState("60");
   const [billingType, setBillingType] = useState<"ONE_TIME" | "MONTHLY">(
     "ONE_TIME",
@@ -145,11 +146,13 @@ function NewServiceForm({
 
     setSubmitting(true);
     try {
+      const usd = priceUsd.trim();
       const { service } = await createAdminService({
         slug: slug.trim(),
         name: name.trim(),
         description: description.trim(),
         priceCents,
+        priceUsdCents: usd ? Math.round(Number(usd) * 100) : null,
         durationMin,
         billingType,
       });
@@ -198,14 +201,27 @@ function NewServiceForm({
         </label>
 
         <label className="text-xs">
-          Price (Q) *
+          Price Guatemala (Q) *
           <input
             type="number"
             step="1"
             min="0"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
-            placeholder="350"
+            placeholder="400"
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+        </label>
+
+        <label className="text-xs">
+          Price international (US$)
+          <input
+            type="number"
+            step="1"
+            min="0"
+            value={priceUsd}
+            onChange={(e) => setPriceUsd(e.target.value)}
+            placeholder="69"
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
         </label>
@@ -302,6 +318,9 @@ function ServiceCard({
   const [name, setName] = useState(service.name);
   const [description, setDescription] = useState(service.description);
   const [price, setPrice] = useState((service.priceCents / 100).toString());
+  const [priceUsd, setPriceUsd] = useState(
+    service.priceUsdCents != null ? (service.priceUsdCents / 100).toString() : "",
+  );
   const [duration, setDuration] = useState(service.durationMin.toString());
   const [billingType, setBillingType] = useState<"ONE_TIME" | "MONTHLY">(
     service.billingType,
@@ -335,6 +354,9 @@ function ServiceCard({
     setName(service.name);
     setDescription(service.description);
     setPrice((service.priceCents / 100).toString());
+    setPriceUsd(
+      service.priceUsdCents != null ? (service.priceUsdCents / 100).toString() : "",
+    );
     setDuration(service.durationMin.toString());
     setBillingType(service.billingType);
     setActive(service.active);
@@ -357,10 +379,12 @@ function ServiceCard({
 
     setSubmitting(true);
     try {
+      const usd = priceUsd.trim();
       await updateAdminService(service.id, {
         name: name.trim(),
         description: description.trim(),
         priceCents,
+        priceUsdCents: usd ? Math.round(Number(usd) * 100) : null,
         durationMin,
         billingType,
         active,
@@ -459,13 +483,26 @@ function ServiceCard({
         </label>
 
         <label className="text-xs">
-          Price (in {service.currency})
+          Price Guatemala (Q)
           <input
             type="number"
             step="1"
             min="0"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+        </label>
+
+        <label className="text-xs">
+          Price international (US$)
+          <input
+            type="number"
+            step="1"
+            min="0"
+            value={priceUsd}
+            onChange={(e) => setPriceUsd(e.target.value)}
+            placeholder="—"
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
         </label>

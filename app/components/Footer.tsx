@@ -28,8 +28,11 @@ export function Footer() {
             </span>
           </Link>
 
-          <p className="mt-6 text-xs text-brand-900/60">{t.footer.location}</p>
-          <p className="mt-1 text-xs text-brand-900/50">
+          <p className="mt-6 text-xs text-brand-900/60">
+            <span aria-hidden>📍</span> {t.footer.location}
+          </p>
+          <p className="mt-0.5 text-xs text-brand-900/60">{t.footer.worldwide}</p>
+          <p className="mt-3 text-xs text-brand-900/50">
             © {new Date().getFullYear()} {t.footer.rights}
           </p>
         </div>

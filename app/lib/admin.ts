@@ -586,6 +586,7 @@ export interface ServiceAdmin {
   description: string;
   imageUrl: string | null;
   priceCents: number;
+  priceUsdCents: number | null;
   currency: string;
   durationMin: number;
   billingType: "ONE_TIME" | "MONTHLY";
@@ -614,6 +615,7 @@ export async function createAdminService(input: {
   name: string;
   description: string;
   priceCents: number;
+  priceUsdCents?: number | null;
   durationMin: number;
   billingType: "ONE_TIME" | "MONTHLY";
   currency?: string;

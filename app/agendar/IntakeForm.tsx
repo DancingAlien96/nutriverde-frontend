@@ -7,7 +7,9 @@ import {
   fetchServiceSlots,
   submitIntake,
   localizedService,
+  regionPrice,
   type ApiService,
+  type Region,
 } from "../lib/api";
 import { MonthCalendar } from "../components/MonthCalendar";
 import { useT, useLocale } from "../lib/i18n";
@@ -48,8 +50,6 @@ const DOCUMENT_VALIDATORS: { type: DocumentType; validate: (v: string) => boolea
   { type: "OTHER", validate: (v) => v.replace(/[\s-]/g, "").length >= 3 },
 ];
 
-const DOC_TYPES: DocumentType[] = ["DPI", "CURP", "PASSPORT", "OTHER"];
-
 function validatorFor(type: DocumentType) {
   return (
     DOCUMENT_VALIDATORS.find((d) => d.type === type) ?? DOCUMENT_VALIDATORS[0]
@@ -74,9 +74,16 @@ const initialForm: FormState = {
   scheduledAt: null,
 };
 
-export function IntakeForm({ services }: { services: ApiService[] }) {
+export function IntakeForm({
+  services,
+  initialRegion = "GT",
+}: {
+  services: ApiService[];
+  initialRegion?: Region;
+}) {
   const { t, locale } = useLocale();
   const [step, setStep] = useState<Step>(1);
+  const [region, setRegion] = useState<Region>(initialRegion);
   const [form, setForm] = useState<FormState>(initialForm);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -89,6 +96,21 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  // Cambiar la región ajusta el tipo de documento: Guatemala exige DPI;
+  // internacional no permite DPI (se pasa a pasaporte).
+  function handleRegionChange(r: Region) {
+    setRegion(r);
+    setForm((prev) => {
+      if (r === "GT" && prev.documentType !== "DPI") {
+        return { ...prev, documentType: "DPI", documentId: "" };
+      }
+      if (r === "INTL" && prev.documentType === "DPI") {
+        return { ...prev, documentType: "PASSPORT", documentId: "" };
+      }
+      return prev;
+    });
   }
 
   function canAdvance(): boolean {
@@ -113,6 +135,7 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
       if (!form.receipt) throw new Error(t.agendar.errors.missingReceipt);
       const data = new FormData();
       data.append("serviceSlug", form.serviceSlug);
+      data.append("region", region);
       data.append("fullName", form.fullName.trim());
       data.append("email", form.email.trim());
       data.append("documentType", form.documentType);
@@ -153,13 +176,22 @@ export function IntakeForm({ services }: { services: ApiService[] }) {
           services={services}
           selected={form.serviceSlug}
           onSelect={(slug) => updateField("serviceSlug", slug)}
+          region={region}
+          onRegionChange={handleRegionChange}
         />
       )}
 
-      {step === 2 && <StepData form={form} onChange={updateField} />}
+      {step === 2 && (
+        <StepData form={form} onChange={updateField} region={region} />
+      )}
 
       {step === 3 && (
-        <StepPayment form={form} service={selectedService} onChange={updateField} />
+        <StepPayment
+          form={form}
+          service={selectedService}
+          onChange={updateField}
+          region={region}
+        />
       )}
 
       {step === 4 && selectedService && (
@@ -282,10 +314,14 @@ function StepService({
   services,
   selected,
   onSelect,
+  region,
+  onRegionChange,
 }: {
   services: ApiService[];
   selected: string;
   onSelect: (slug: string) => void;
+  region: Region;
+  onRegionChange: (r: Region) => void;
 }) {
   const { t, locale } = useLocale();
   return (
@@ -294,6 +330,30 @@ function StepService({
         {t.agendar.service.title}
       </h2>
       <p className="mt-2 text-sm text-gray-600">{t.agendar.service.subtitle}</p>
+
+      {/* Selector de región (define la moneda del precio) */}
+      <div className="mt-5 rounded-2xl bg-cream-100 border border-cream-200 p-4">
+        <p className="text-xs font-semibold text-gray-700">
+          {t.agendar.region.title}
+        </p>
+        <div className="mt-2 inline-flex rounded-full bg-white border border-gray-200 p-1 text-sm">
+          {(["GT", "INTL"] as const).map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => onRegionChange(r)}
+              className={`px-4 py-1.5 rounded-full font-medium transition-colors ${
+                region === r
+                  ? "bg-brand-600 text-white"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              {r === "GT" ? t.agendar.region.gt : t.agendar.region.intl}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-gray-500">{t.agendar.region.hint}</p>
+      </div>
 
       <div className="mt-6 space-y-3">
         {services.map((s) => {
@@ -324,7 +384,7 @@ function StepService({
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-serif-display text-2xl text-brand-700">
-                    {s.priceFormatted}
+                    {regionPrice(s, region)}
                   </p>
                 </div>
               </div>
@@ -339,12 +399,18 @@ function StepService({
 function StepData({
   form,
   onChange,
+  region,
 }: {
   form: FormState;
   onChange: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+  region: Region;
 }) {
   const t = useT();
   const doc = t.agendar.documents[form.documentType];
+  // Documentos permitidos según la región: Guatemala solo DPI; internacional
+  // CURP / pasaporte / otro (DPI queda reservado al precio local).
+  const allowedDocTypes: DocumentType[] =
+    region === "GT" ? ["DPI"] : ["CURP", "PASSPORT", "OTHER"];
   return (
     <div>
       <h2 className="font-serif-display text-2xl sm:text-3xl text-gray-900">
@@ -379,7 +445,7 @@ function StepData({
             onChange={(e) => onChange("documentType", e.target.value as DocumentType)}
             className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           >
-            {DOC_TYPES.map((type) => (
+            {allowedDocTypes.map((type) => (
               <option key={type} value={type}>
                 {t.agendar.documents[type].label}
               </option>
@@ -454,10 +520,12 @@ function StepPayment({
   form,
   service,
   onChange,
+  region,
 }: {
   form: FormState;
   service: ApiService | undefined;
   onChange: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+  region: Region;
 }) {
   const { t, locale } = useLocale();
   const serviceName = service ? localizedService(service, locale).name : "";
@@ -482,24 +550,40 @@ function StepPayment({
             </p>
           </div>
           <p className="font-serif-display text-3xl text-brand-700">
-            {service?.priceFormatted}
+            {service ? regionPrice(service, region) : ""}
           </p>
         </div>
       </div>
 
       <div className="mt-6 rounded-2xl bg-gray-50 border border-gray-200 p-5 text-sm text-gray-700">
-        <p className="font-semibold mb-2">{t.agendar.payment.depositTitle}</p>
-        <ul className="space-y-1 text-xs">
-          <li>
-            <strong>{t.agendar.payment.bankLabel}</strong> {t.agendar.payment.bankValue}
-          </li>
-          <li>
-            <strong>{t.agendar.payment.accountLabel}</strong> 000-00000-0
-          </li>
-          <li>
-            <strong>{t.agendar.payment.nameLabel}</strong> Plenha Nutrition
-          </li>
-        </ul>
+        {region === "GT" ? (
+          <>
+            <p className="font-semibold mb-2">{t.agendar.payment.depositTitle}</p>
+            <ul className="space-y-1 text-xs">
+              <li>
+                <strong>{t.agendar.payment.bankLabel}</strong> {t.agendar.payment.bankValue}
+              </li>
+              <li>
+                <strong>{t.agendar.payment.accountLabel}</strong> 000-00000-0
+              </li>
+              <li>
+                <strong>{t.agendar.payment.nameLabel}</strong> Plenha Nutrition
+              </li>
+            </ul>
+          </>
+        ) : (
+          <>
+            <p className="font-semibold mb-2">{t.agendar.payment.depositTitleIntl}</p>
+            <ul className="space-y-1 text-xs">
+              <li>
+                <strong>{t.agendar.payment.methodLabel}</strong> {t.agendar.payment.methodValue}
+              </li>
+              <li>
+                <strong>{t.agendar.payment.nameLabel}</strong> Plenha Nutrition
+              </li>
+            </ul>
+          </>
+        )}
       </div>
 
       <div className="mt-6">

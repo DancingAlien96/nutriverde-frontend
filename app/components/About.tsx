@@ -1,70 +1,155 @@
 "use client";
 
 import Image from "next/image";
-import { Blob, Squiggle } from "./decor";
 import { useT } from "../lib/i18n";
+
+// Foto de prueba actual (se reemplaza luego por la real de Dulce).
+const PHOTO =
+  "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=1000&q=80";
 
 export function About() {
   const t = useT();
   return (
     <section
       id="sobre-mi"
-      className="relative isolate overflow-hidden bg-cream-50 py-16 sm:py-24 lg:py-28"
+      className="relative isolate overflow-hidden bg-cream-50"
     >
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-        {/* Imagen + blob */}
-        <div className="order-1 relative flex justify-center">
-          <Blob
-            className="absolute -z-10 w-[115%] max-w-none top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-            fill="var(--color-brand-200)"
+      {/* Foto derecha con arco, sangra al borde (tablet y desktop) */}
+      <div className="hidden md:block absolute inset-y-0 right-0 w-[46%] lg:w-[47%]">
+        <div className="relative h-full w-full overflow-hidden rounded-tl-[55%] rounded-bl-[22%]">
+          <Image
+            src={PHOTO}
+            alt={t.about.photoAlt}
+            fill
+            priority
+            className="object-cover"
+            sizes="50vw"
           />
-          <div className="relative aspect-[4/5] w-72 sm:w-96 rounded-[2.5rem] overflow-hidden shadow-xl">
+        </div>
+      </div>
+
+      {/* Ramita decorativa */}
+      <Branch className="hidden lg:block absolute left-3 bottom-24 h-44 w-auto text-brand-300/50" />
+
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-28">
+        <div className="md:max-w-[48%]">
+          {/* Foto (solo móvil) */}
+          <div className="md:hidden mb-8 relative aspect-[4/3] overflow-hidden rounded-[2rem] shadow-md">
             <Image
-              src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80"
+              src={PHOTO}
               alt={t.about.photoAlt}
               fill
               className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 50vw"
+              sizes="100vw"
             />
           </div>
-        </div>
 
-        {/* Contenido */}
-        <div className="order-2">
-          <p className="text-xs font-medium uppercase tracking-widest-2 text-brand-600">
+          <p className="text-xs font-semibold uppercase tracking-widest-2 text-brand-600">
             {t.about.eyebrow}
           </p>
-          <h2 className="font-serif-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-medium leading-tight text-ink-900">
-            {t.about.name}
+          <h2 className="font-serif-display mt-4 text-4xl sm:text-5xl lg:text-[3.25rem] font-medium leading-[1.08] text-ink-900">
+            {t.about.greeting} {t.about.name}.
           </h2>
-          <p className="mt-2 text-sm text-brand-700 font-medium">{t.about.role}</p>
+          <p className="mt-4 font-serif-display italic text-lg sm:text-xl text-ink-600">
+            {t.about.role}
+          </p>
 
-          <div className="mt-6 space-y-4 text-ink-700 leading-relaxed">
-            {t.about.paragraphs.map((p, i) => (
-              <p key={i}>{p}</p>
+          <span className="block h-px w-12 bg-ink-300 my-7" aria-hidden />
+
+          <div className="space-y-5 max-w-md text-ink-600 leading-relaxed">
+            {t.about.paragraphs.map((segments, i) => (
+              <p key={i}>
+                {segments.map((s, j) =>
+                  s.hl ? (
+                    <span key={j} className="text-brand-600 font-medium">
+                      {s.text}
+                    </span>
+                  ) : (
+                    <span key={j}>{s.text}</span>
+                  ),
+                )}
+              </p>
             ))}
           </div>
 
-          <p className="mt-5 font-serif-display italic text-ink-700">
-            {t.about.languages}
-          </p>
-          <Squiggle className="mt-3 w-40 h-10" />
-
-          <ul className="mt-8 grid sm:grid-cols-2 gap-2.5">
-            {t.about.specialties.map((s) => (
-              <li
-                key={s.label}
-                className="flex items-center gap-3 rounded-2xl bg-cream-100 border border-cream-200 px-4 py-3"
+          {/* Features */}
+          <div className="mt-10 grid grid-cols-3 max-w-md">
+            {t.about.features.map((f, i) => (
+              <div
+                key={f.key}
+                className={`flex flex-col items-center text-center px-2 sm:px-3 ${
+                  i > 0 ? "border-l border-cream-300" : ""
+                }`}
               >
-                <span className="text-base" aria-hidden>
-                  {s.icon}
+                <span className="h-14 w-14 rounded-full bg-cream-200/70 text-ink-700 flex items-center justify-center">
+                  <FeatureIcon name={f.key} />
                 </span>
-                <span className="text-sm font-medium text-ink-700">{s.label}</span>
-              </li>
+                <span className="mt-3 text-xs text-ink-600 leading-snug">
+                  {f.label}
+                </span>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function FeatureIcon({ name }: { name: "leaf" | "plan" | "heart" }) {
+  const common = {
+    width: 24,
+    height: 24,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.6,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  if (name === "leaf") {
+    return (
+      <svg {...common}>
+        <path d="M11 20A7 7 0 0 1 4 13c0-5 5-9 16-9 0 9-4 16-9 16Z" />
+        <path d="M4 13c5-1 9-3 12-7" />
+      </svg>
+    );
+  }
+  if (name === "plan") {
+    return (
+      <svg {...common}>
+        <path d="M4 13h16a8 8 0 0 1-16 0Z" />
+        <path d="M12 13c0-3 1.5-5 4-6-0.5 2.5-2 4.5-4 6Z" />
+        <path d="M12 13c0-2.5-1.2-4.3-3.5-5 .5 2.2 1.7 3.9 3.5 5Z" />
+        <path d="M12 13V8" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...common}>
+      <path d="M12 20s-7-4.4-7-9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 7 3.5C19 15.6 12 20 12 20Z" />
+    </svg>
+  );
+}
+
+/** Ramita decorativa de olivo (line-art). */
+function Branch({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 80 200"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M40 198V20" />
+      <path d="M40 60c-16 2-26-6-28-22 16-2 26 6 28 22Z" />
+      <path d="M40 96c16 2 26-6 28-22-16-2-26 6-28 22Z" />
+      <path d="M40 132c-16 2-26-6-28-22 16-2 26 6 28 22Z" />
+      <path d="M40 40c12 1 19-5 21-17-12-1-19 5-21 17Z" />
+    </svg>
   );
 }

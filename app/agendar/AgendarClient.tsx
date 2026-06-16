@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import type { ApiService } from "../lib/api";
+import type { ApiService, Region } from "../lib/api";
 import { IntakeForm } from "./IntakeForm";
 import { useT } from "../lib/i18n";
 
-export function AgendarClient({ services }: { services: ApiService[] }) {
+export function AgendarClient({
+  services,
+  initialRegion,
+}: {
+  services: ApiService[];
+  initialRegion?: Region;
+}) {
   const t = useT();
   return (
     <main className="min-h-screen bg-cream-50 flex-1">
@@ -39,7 +45,7 @@ export function AgendarClient({ services }: { services: ApiService[] }) {
           </p>
         </div>
 
-        <IntakeForm services={services} />
+        <IntakeForm services={services} initialRegion={initialRegion} />
 
         <p className="mt-8 text-center text-xs text-gray-500">
           {t.agendar.page.troublePrefix}{" "}
