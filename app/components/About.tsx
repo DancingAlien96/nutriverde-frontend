@@ -1,11 +1,6 @@
 "use client";
 
-import Image from "next/image";
 import { useT } from "../lib/i18n";
-
-// Foto de prueba actual (se reemplaza luego por la real de Dulce).
-const PHOTO =
-  "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=1000&q=80";
 
 export function About() {
   const t = useT();
@@ -14,36 +9,17 @@ export function About() {
       id="sobre-mi"
       className="relative isolate overflow-hidden bg-cream-50"
     >
-      {/* Foto derecha con arco, sangra al borde (tablet y desktop) */}
-      <div className="hidden md:block absolute inset-y-0 right-0 w-[46%] lg:w-[47%]">
-        <div className="relative h-full w-full overflow-hidden rounded-tl-[55%] rounded-bl-[22%]">
-          <Image
-            src={PHOTO}
-            alt={t.about.photoAlt}
-            fill
-            priority
-            className="object-cover"
-            sizes="50vw"
-          />
-        </div>
-      </div>
+      {/* Ramitas decorativas — enmarcan el bloque centrado y ocupan el aire
+          que antes llenaba la foto. Solo desde lg para no apretar el texto. */}
+      <Branch
+        className="hidden lg:block absolute left-4 xl:left-12 top-1/2 -translate-y-1/2 h-52 w-auto text-brand-300/40"
+      />
+      <Branch
+        className="hidden lg:block absolute right-4 xl:right-12 top-1/2 -translate-y-1/2 h-52 w-auto text-brand-300/40 -scale-x-100"
+      />
 
-      {/* Ramita decorativa */}
-      <Branch className="hidden lg:block absolute left-3 bottom-24 h-44 w-auto text-brand-300/50" />
-
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-28">
-        <div className="md:max-w-[48%]">
-          {/* Foto (solo móvil) */}
-          <div className="md:hidden mb-8 relative aspect-[4/3] overflow-hidden rounded-[2rem] shadow-md">
-            <Image
-              src={PHOTO}
-              alt={t.about.photoAlt}
-              fill
-              className="object-cover"
-              sizes="100vw"
-            />
-          </div>
-
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32">
+        <div className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-widest-2 text-brand-600">
             {t.about.eyebrow}
           </p>
@@ -54,9 +30,9 @@ export function About() {
             {t.about.role}
           </p>
 
-          <span className="block h-px w-12 bg-ink-300 my-7" aria-hidden />
+          <span className="block h-px w-12 bg-ink-300 my-7 mx-auto" aria-hidden />
 
-          <div className="space-y-5 max-w-md text-ink-600 leading-relaxed">
+          <div className="mx-auto max-w-xl space-y-5 text-ink-600 leading-relaxed">
             {t.about.paragraphs.map((segments, i) => (
               <p key={i}>
                 {segments.map((s, j) =>
@@ -73,7 +49,7 @@ export function About() {
           </div>
 
           {/* Features */}
-          <div className="mt-10 grid grid-cols-3 max-w-md">
+          <div className="mt-12 grid grid-cols-3 max-w-md mx-auto">
             {t.about.features.map((f, i) => (
               <div
                 key={f.key}
