@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "backendnutriverde.pruebascunori.shop",
       },
+      {
+        protocol: "https",
+        hostname: "api.plenhanutrition.com",
+      },
     ],
   },
 };
