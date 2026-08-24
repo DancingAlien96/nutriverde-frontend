@@ -8,8 +8,10 @@ import {
   submitIntake,
   localizedService,
   regionPrice,
+  fetchPaymentSettings,
   type ApiService,
   type Region,
+  type PublicPaymentSettings,
 } from "../lib/api";
 import { MonthCalendar } from "../components/MonthCalendar";
 import { useT, useLocale } from "../lib/i18n";
@@ -555,36 +557,7 @@ function StepPayment({
         </div>
       </div>
 
-      <div className="mt-6 rounded-2xl bg-gray-50 border border-gray-200 p-5 text-sm text-gray-700">
-        {region === "GT" ? (
-          <>
-            <p className="font-semibold mb-2">{t.agendar.payment.depositTitle}</p>
-            <ul className="space-y-1 text-xs">
-              <li>
-                <strong>{t.agendar.payment.bankLabel}</strong> {t.agendar.payment.bankValue}
-              </li>
-              <li>
-                <strong>{t.agendar.payment.accountLabel}</strong> 000-00000-0
-              </li>
-              <li>
-                <strong>{t.agendar.payment.nameLabel}</strong> Plenha Nutrition
-              </li>
-            </ul>
-          </>
-        ) : (
-          <>
-            <p className="font-semibold mb-2">{t.agendar.payment.depositTitleIntl}</p>
-            <ul className="space-y-1 text-xs">
-              <li>
-                <strong>{t.agendar.payment.methodLabel}</strong> {t.agendar.payment.methodValue}
-              </li>
-              <li>
-                <strong>{t.agendar.payment.nameLabel}</strong> Plenha Nutrition
-              </li>
-            </ul>
-          </>
-        )}
-      </div>
+      <BankDetails />
 
       <div className="mt-6">
         <FileDrop file={form.receipt} onFile={(f) => onChange("receipt", f)} />
@@ -889,6 +862,78 @@ function SuccessView({
       >
         ← {t.agendar.success.backHome}
       </Link>
+    </div>
+  );
+}
+
+/**
+ * Datos para el deposito. Vienen del panel (tabla payment_settings) en vez de
+ * estar escritos aqui, para que la nutricionista pueda cambiar la cuenta sin
+ * redesplegar. Mientras no los configure mostramos un aviso en lugar de datos
+ * de relleno: nadie deberia transferir a una cuenta inventada.
+ */
+function BankDetails() {
+  const t = useT();
+  const [bank, setBank] = useState<PublicPaymentSettings | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPaymentSettings()
+      .then((s) => {
+        if (!cancelled) setBank(s);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (failed || (bank && !bank.configured)) {
+    return (
+      <div className="mt-6 rounded-2xl bg-amber-50 border border-amber-200 p-5 text-sm text-amber-900">
+        {t.agendar.payment.depositUnavailable}
+      </div>
+    );
+  }
+
+  if (!bank) {
+    return (
+      <div className="mt-6 rounded-2xl bg-gray-50 border border-gray-200 p-5 text-sm text-gray-500">
+        {t.agendar.payment.depositLoading}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 rounded-2xl bg-gray-50 border border-gray-200 p-5 text-sm text-gray-700">
+      <p className="font-semibold mb-2">{t.agendar.payment.depositTitle}</p>
+      <ul className="space-y-1 text-xs">
+        <li>
+          <strong>{t.agendar.payment.bankLabel}</strong> {bank.bankName}
+        </li>
+        {bank.accountType && (
+          <li>
+            <strong>{t.agendar.payment.accountTypeLabel}</strong>{" "}
+            {bank.accountType}
+          </li>
+        )}
+        <li>
+          <strong>{t.agendar.payment.accountLabel}</strong> {bank.accountNumber}
+        </li>
+        {bank.accountHolder && (
+          <li>
+            <strong>{t.agendar.payment.nameLabel}</strong> {bank.accountHolder}
+          </li>
+        )}
+      </ul>
+      {bank.instructions && (
+        <p className="mt-3 text-xs text-gray-600 whitespace-pre-line">
+          {bank.instructions}
+        </p>
+      )}
     </div>
   );
 }

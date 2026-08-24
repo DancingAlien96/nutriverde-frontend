@@ -120,13 +120,12 @@ export interface Dict {
       monthly: string;
       min: string;
       depositTitle: string;
+      accountTypeLabel: string;
+      depositLoading: string;
+      depositUnavailable: string;
       bankLabel: string;
-      bankValue: string;
       accountLabel: string;
       nameLabel: string;
-      depositTitleIntl: string;
-      methodLabel: string;
-      methodValue: string;
     };
     schedule: {
       title: string;
@@ -471,14 +470,14 @@ const en: Dict = {
       summary: "Summary",
       monthly: "Monthly",
       min: "min",
-      depositTitle: "Deposit details (Guatemala):",
+      depositTitle: "Deposit details:",
       bankLabel: "Bank:",
-      bankValue: "(to configure) — complete in production",
+      accountTypeLabel: "Account type:",
       accountLabel: "Account:",
       nameLabel: "Name:",
-      depositTitleIntl: "International payment (USD):",
-      methodLabel: "Method:",
-      methodValue: "PayPal / Wise (to configure)",
+      depositLoading: "Loading deposit details…",
+      depositUnavailable:
+        "Deposit details are not available right now. Please contact us before paying.",
     },
     schedule: {
       title: "Choose your time (optional)",
@@ -827,14 +826,14 @@ const es: Dict = {
       summary: "Resumen",
       monthly: "Mensual",
       min: "min",
-      depositTitle: "Datos para el depósito (Guatemala):",
+      depositTitle: "Datos para el depósito:",
       bankLabel: "Banco:",
-      bankValue: "(configurar) — completar en producción",
+      accountTypeLabel: "Tipo de cuenta:",
       accountLabel: "Cuenta:",
       nameLabel: "Nombre:",
-      depositTitleIntl: "Pago internacional (USD):",
-      methodLabel: "Método:",
-      methodValue: "PayPal / Wise (configurar)",
+      depositLoading: "Cargando datos para el depósito…",
+      depositUnavailable:
+        "Los datos para el depósito no están disponibles en este momento. Contáctanos antes de pagar.",
     },
     schedule: {
       title: "Elige tu horario (opcional)",

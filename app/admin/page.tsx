@@ -67,7 +67,7 @@ function InicioContent() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-7">
         <div>
           <h1 className="font-serif-display text-2xl sm:text-3xl text-ink-900">
-            Welcome{firstName ? `, ${firstName}` : ""}! <span aria-hidden>🌿</span>
+            Welcome, {firstName || "Dulce"}! <span aria-hidden>🌿</span>
           </h1>
           <p className="text-sm text-ink-500 mt-1">
             Here's a summary of your practice.

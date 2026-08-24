@@ -29,6 +29,26 @@ export function regionPrice(s: ApiService, region: Region): string {
   return s.priceFormatted;
 }
 
+/** Datos bancarios para el depósito (endpoint público, sin auth). */
+export interface PublicPaymentSettings {
+  bankName: string;
+  accountType: string;
+  accountNumber: string;
+  accountHolder: string;
+  instructions: string | null;
+  /** false mientras la nutricionista no los haya configurado en el panel. */
+  configured: boolean;
+}
+
+export async function fetchPaymentSettings(): Promise<PublicPaymentSettings> {
+  const res = await fetch(`${API_URL}/api/payment-settings`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = (await res.json()) as { settings: PublicPaymentSettings };
+  return data.settings;
+}
+
 /** Construye la URL absoluta de una imagen servida por el backend (/uploads/..). */
 export function backendImageSrc(
   imageUrl: string | null | undefined,

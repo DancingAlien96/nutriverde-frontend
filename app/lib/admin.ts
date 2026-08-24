@@ -138,6 +138,32 @@ export async function rejectPayment(
 // Disponibilidad
 // ============================================================
 
+// ── Datos bancarios para el depósito ───────────────────────────────
+export interface PaymentSettings {
+  bankName: string;
+  accountType: string;
+  accountNumber: string;
+  accountHolder: string;
+  instructions: string | null;
+}
+
+export async function getPaymentSettings(): Promise<{
+  settings: PaymentSettings;
+}> {
+  const res = await authFetch("/api/admin/payment-settings");
+  return parseJson(res);
+}
+
+export async function updatePaymentSettings(
+  patch: PaymentSettings,
+): Promise<{ settings: PaymentSettings }> {
+  const res = await authFetch("/api/admin/payment-settings", {
+    method: "PUT",
+    body: JSON.stringify(patch),
+  });
+  return parseJson(res);
+}
+
 export interface AvailabilitySlot {
   id: string;
   dayOfWeek: number; // 0..6 (0 = domingo)

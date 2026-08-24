@@ -6,7 +6,10 @@ import { AdminShell } from "../AdminShell";
 import {
   listPayments,
   formatCents,
+  getPaymentSettings,
+  updatePaymentSettings,
   type PaymentListItem,
+  type PaymentSettings,
 } from "../../lib/admin";
 
 type StatusFilter = "PENDING_REVIEW" | "APPROVED" | "REJECTED";
@@ -86,6 +89,8 @@ function PagosContent() {
           ))}
         </div>
       </div>
+
+      <BankSettings />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4">
@@ -212,4 +217,173 @@ function formatDate(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+/**
+ * Datos bancarios que ve la paciente al subir su comprobante.
+ * Antes estaban escritos a mano en el frontend, asi que cambiarlos exigia
+ * redesplegar; ahora viven en la BD y se editan aqui.
+ */
+function BankSettings() {
+  const [form, setForm] = useState<PaymentSettings | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getPaymentSettings()
+      .then(({ settings }) => {
+        if (!cancelled) setForm(settings);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function field(key: keyof PaymentSettings, value: string) {
+    setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
+    setMsg(null);
+  }
+
+  async function save() {
+    if (!form) return;
+    setSaving(true);
+    setError(null);
+    setMsg(null);
+    try {
+      const { settings } = await updatePaymentSettings(form);
+      setForm(settings);
+      setMsg("Saved.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const incomplete = form && !(form.bankName && form.accountNumber);
+
+  return (
+    <section className="rounded-2xl bg-white border border-gray-200 p-4 sm:p-6 mb-6">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between gap-3 text-left"
+      >
+        <span>
+          <span className="font-semibold text-gray-900">Bank account</span>
+          <span className="block text-xs text-gray-500 mt-1">
+            Shown to patients on the booking form when they upload their receipt.
+          </span>
+        </span>
+        <span className="flex items-center gap-2 shrink-0">
+          {incomplete && (
+            <span className="text-[11px] font-medium rounded-full bg-amber-100 text-amber-800 px-2 py-1">
+              Not configured
+            </span>
+          )}
+          <span className="text-gray-400 text-sm">{open ? "−" : "+"}</span>
+        </span>
+      </button>
+
+      {open && (
+        <div className="mt-5">
+          {!form && !error && (
+            <p className="text-sm text-gray-500">Loading…</p>
+          )}
+
+          {form && (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Bank"
+                  value={form.bankName}
+                  placeholder="Banrural"
+                  onChange={(v) => field("bankName", v)}
+                />
+                <Field
+                  label="Account type"
+                  value={form.accountType}
+                  placeholder="Monetaria"
+                  onChange={(v) => field("accountType", v)}
+                />
+                <Field
+                  label="Account number"
+                  value={form.accountNumber}
+                  placeholder="3-456-78901-2"
+                  onChange={(v) => field("accountNumber", v)}
+                />
+                <Field
+                  label="Account holder"
+                  value={form.accountHolder}
+                  placeholder="Dulce Menzel"
+                  onChange={(v) => field("accountHolder", v)}
+                />
+              </div>
+
+              <label className="block mt-4">
+                <span className="text-xs font-medium text-gray-700">
+                  Extra instructions (optional)
+                </span>
+                <textarea
+                  value={form.instructions ?? ""}
+                  onChange={(e) => field("instructions", e.target.value)}
+                  rows={2}
+                  placeholder="SWIFT code for international transfers, crediting times, etc."
+                  className="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+              </label>
+
+              <div className="mt-4 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={save}
+                  disabled={saving}
+                  className="rounded-full bg-brand-600 text-white text-sm font-medium px-5 py-2 hover:bg-brand-700 disabled:opacity-50"
+                >
+                  {saving ? "Saving…" : "Save"}
+                </button>
+                {msg && <span className="text-sm text-brand-700">{msg}</span>}
+                {error && <span className="text-sm text-red-600">{error}</span>}
+              </div>
+            </>
+          )}
+
+          {error && !form && (
+            <p className="text-sm text-red-600">{error}</p>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Field({
+  label,
+  value,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder?: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-gray-700">{label}</span>
+      <input
+        type="text"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+      />
+    </label>
+  );
 }
