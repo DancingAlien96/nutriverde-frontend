@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../AdminShell";
 import {
   listAppointments,
+  declineAppointmentTime,
   formatCents,
   type AppointmentItem,
   type AppointmentStatus,
@@ -60,6 +61,8 @@ function CitasContent() {
     return new Date(n.getFullYear(), n.getMonth(), n.getDate());
   });
   const [appts, setAppts] = useState<AppointmentItem[]>([]);
+  // Se incrementa al rechazar un horario para forzar la recarga del calendario.
+  const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -92,7 +95,7 @@ function CitasContent() {
     return () => {
       cancelled = true;
     };
-  }, [gridStart]);
+  }, [gridStart, reloadKey]);
 
   // Agrupa por día local (YYYY-MM-DD).
   const byDay = useMemo(() => {
@@ -300,6 +303,14 @@ function CitasContent() {
                           Join the video call →
                         </a>
                       )}
+
+                      {(a.status === "SCHEDULED" ||
+                        a.status === "PENDING_CONFIRMATION") && (
+                        <DeclineTime
+                          appointment={a}
+                          onDone={() => setReloadKey((k) => k + 1)}
+                        />
+                      )}
                     </li>
                   ))}
               </ul>
@@ -326,6 +337,88 @@ function CitasContent() {
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * "No puedo este horario": devuelve la cita a pendiente de horario y le
+ * reenvia a la paciente el link para que elija otro. Pide confirmacion porque
+ * dispara un correo y libera el slot.
+ */
+function DeclineTime({
+  appointment,
+  onDone,
+}: {
+  appointment: AppointmentItem;
+  onDone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    setSaving(true);
+    setError(null);
+    try {
+      await declineAppointmentTime(appointment.id, reason.trim() || undefined);
+      setOpen(false);
+      setReason("");
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-2 block text-xs font-medium text-amber-700 hover:text-amber-800"
+      >
+        I can&apos;t make this time
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-xl bg-amber-50 border border-amber-200 p-3">
+      <p className="text-[11px] text-amber-900 leading-snug">
+        {appointment.patient.fullName} will get an email with a link to pick a
+        new time. The payment stays approved.
+      </p>
+      <textarea
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        rows={2}
+        placeholder="Reason (optional) — shown to the patient"
+        className="mt-2 w-full rounded-lg border border-amber-300 bg-white px-2 py-1.5 text-xs focus:border-amber-500 focus:outline-none"
+      />
+      {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
+      <div className="mt-2 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={saving}
+          className="rounded-full bg-amber-600 text-white text-xs font-medium px-3 py-1.5 hover:bg-amber-700 disabled:opacity-50"
+        >
+          {saving ? "Sending…" : "Confirm and notify"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+            setError(null);
+          }}
+          className="text-xs text-ink-500 hover:text-ink-700"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }
 

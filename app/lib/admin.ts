@@ -241,6 +241,51 @@ export async function deleteSlot(id: string): Promise<void> {
   }
 }
 
+/**
+ * Resultado de intentar crear un bloqueo.
+ *
+ * El backend responde 409 cuando hay citas dentro del rango. `parseJson`
+ * convertiria eso en un Error y se perderia la lista, que es justo lo que el
+ * panel necesita mostrar, asi que ese caso se maneja aparte.
+ */
+export type CreateBlockResult =
+  | { ok: true; block: AvailabilityBlock; conflicts: BlockConflict[] }
+  | { ok: false; conflicts: BlockConflict[]; error: string };
+
+export async function createBlockChecked(input: {
+  startsAt: string;
+  endsAt: string;
+  reason?: string;
+  acknowledgeConflicts?: boolean;
+}): Promise<CreateBlockResult> {
+  const res = await authFetch("/api/admin/availability/blocks", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const data = (await res.json().catch(() => ({}))) as {
+    block?: AvailabilityBlock;
+    conflicts?: BlockConflict[];
+    error?: string;
+  };
+
+  if (res.status === 409) {
+    return {
+      ok: false,
+      conflicts: data.conflicts ?? [],
+      error: data.error ?? "Hay citas dentro de ese rango.",
+    };
+  }
+  if (!res.ok) {
+    if (res.status === 401) clearToken();
+    throw new Error(data.error ?? `HTTP ${res.status}`);
+  }
+  return {
+    ok: true,
+    block: data.block as AvailabilityBlock,
+    conflicts: data.conflicts ?? [],
+  };
+}
+
 export async function createBlock(input: {
   startsAt: string;
   endsAt: string;
@@ -763,6 +808,42 @@ export async function listAppointments(range?: {
 // ============================================================
 // Recordatorios / tareas (admin)
 // ============================================================
+
+/** Cita que choca con una ventana de bloqueo. */
+export interface BlockConflict {
+  id: string;
+  scheduledAt: string;
+  durationMin: number;
+  status: AppointmentStatus;
+  patient: { id: string; fullName: string; email: string };
+  service: { name: string };
+}
+
+/**
+ * La nutricionista no puede atender ese horario. Devuelve la cita a
+ * "pago aprobado, falta horario" y le reenvía a la paciente el link de
+ * auto-agenda. El pago no se toca.
+ */
+export async function declineAppointmentTime(
+  appointmentId: string,
+  reason?: string,
+): Promise<{ ok: true }> {
+  const res = await authFetch(`/api/admin/appointments/${appointmentId}/decline-time`, {
+    method: "POST",
+    body: JSON.stringify({ reason: reason ?? "" }),
+  });
+  return parseJson(res);
+}
+
+/** Citas que quedarían dentro de una ventana, para avisar antes de bloquear. */
+export async function getBlockConflicts(
+  startsAt: string,
+  endsAt: string,
+): Promise<{ conflicts: BlockConflict[] }> {
+  const qs = new URLSearchParams({ startsAt, endsAt });
+  const res = await authFetch(`/api/admin/availability/blocks/conflicts?${qs}`);
+  return parseJson(res);
+}
 
 export interface Reminder {
   id: string;

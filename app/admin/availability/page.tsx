@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { AdminShell } from "../AdminShell";
 import {
-  createBlock,
+  createBlockChecked,
+  declineAppointmentTime,
   createSlot,
   deleteBlock,
   deleteSlot,
@@ -13,6 +14,8 @@ import {
   type AvailabilityBlock,
   type AvailabilitySlot,
   type SchedulingSettings,
+  type BlockConflict,
+  type CreateBlockResult,
 } from "../../lib/admin";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -117,8 +120,9 @@ function Content() {
 
         <BlockForm
           onCreate={async (input) => {
-            await createBlock(input);
-            await reload();
+            const result = await createBlockChecked(input);
+            if (result.ok) await reload();
+            return result;
           }}
         />
 
@@ -417,15 +421,26 @@ function BlockForm({
     startsAt: string;
     endsAt: string;
     reason?: string;
-  }) => Promise<void>;
+    acknowledgeConflicts?: boolean;
+  }) => Promise<CreateBlockResult>;
 }) {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Citas que caen dentro del rango. Mientras haya, no se crea el bloqueo:
+  // primero hay que verlas y decidir.
+  const [conflicts, setConflicts] = useState<BlockConflict[] | null>(null);
 
-  async function handle() {
+  function clear() {
+    setStart("");
+    setEnd("");
+    setReason("");
+    setConflicts(null);
+  }
+
+  async function handle(acknowledgeConflicts = false) {
     setError(null);
     if (!start || !end) {
       setError("Enter start and end date and time.");
@@ -437,14 +452,17 @@ function BlockForm({
       // Lo interpretamos como hora GT (UTC-6) y convertimos a UTC.
       const startsAt = gtLocalToUtcIso(start);
       const endsAt = gtLocalToUtcIso(end);
-      await onCreate({
+      const result = await onCreate({
         startsAt,
         endsAt,
         reason: reason.trim() || undefined,
+        acknowledgeConflicts,
       });
-      setStart("");
-      setEnd("");
-      setReason("");
+      if (result.ok) {
+        clear();
+      } else {
+        setConflicts(result.conflicts);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
     } finally {
@@ -485,7 +503,7 @@ function BlockForm({
       <div className="sm:col-span-2 flex items-center gap-3">
         <button
           type="button"
-          onClick={handle}
+          onClick={() => handle(false)}
           disabled={submitting}
           className="rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 px-5 py-2 text-sm font-medium text-white"
         >
@@ -493,7 +511,109 @@ function BlockForm({
         </button>
         {error && <p className="text-xs text-red-700">{error}</p>}
       </div>
+
+      {conflicts && (
+        <div className="sm:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-semibold text-amber-900">
+            {conflicts.length === 1
+              ? "1 appointment falls"
+              : `${conflicts.length} appointments fall`}{" "}
+            inside that range
+          </p>
+          <p className="mt-1 text-xs text-amber-800">
+            Blocking prevents <em>new</em> bookings but does not cancel these.
+            Reschedule them first, or block anyway and handle them yourself.
+          </p>
+
+          <ul className="mt-3 space-y-2">
+            {conflicts.map((c) => (
+              <ConflictRow
+                key={c.id}
+                conflict={c}
+                onResolved={() =>
+                  setConflicts((prev) =>
+                    (prev ?? []).filter((x) => x.id !== c.id),
+                  )
+                }
+              />
+            ))}
+          </ul>
+
+          <div className="mt-4 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => handle(true)}
+              disabled={submitting}
+              className="rounded-full bg-amber-600 hover:bg-amber-700 disabled:opacity-60 px-4 py-1.5 text-xs font-medium text-white"
+            >
+              {submitting ? "Adding…" : "Block anyway"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConflicts(null)}
+              className="text-xs text-ink-500 hover:text-ink-700"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+/** Una cita en conflicto, con la accion de liberarla notificando a la paciente. */
+function ConflictRow({
+  conflict,
+  onResolved,
+}: {
+  conflict: BlockConflict;
+  onResolved: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const when = new Date(conflict.scheduledAt).toLocaleString("en-US", {
+    timeZone: "America/Guatemala",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  async function reschedule() {
+    setBusy(true);
+    setError(null);
+    try {
+      await declineAppointmentTime(conflict.id);
+      onResolved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <li className="flex items-center justify-between gap-3 rounded-lg bg-white border border-amber-200 px-3 py-2">
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-gray-900 truncate">
+          {when} · {conflict.patient.fullName}
+        </p>
+        <p className="text-[11px] text-gray-500 truncate">
+          {conflict.service.name} · {conflict.durationMin} min
+        </p>
+        {error && <p className="text-[11px] text-red-600">{error}</p>}
+      </div>
+      <button
+        type="button"
+        onClick={reschedule}
+        disabled={busy}
+        className="shrink-0 rounded-full border border-amber-300 px-3 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+      >
+        {busy ? "Notifying…" : "Notify & reschedule"}
+      </button>
+    </li>
   );
 }
 
