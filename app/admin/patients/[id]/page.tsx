@@ -206,6 +206,46 @@ function Content() {
         onChanged={reload}
       />
 
+      {/* Session packages */}
+      {(patient.packages ?? []).length > 0 && (
+        <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
+          <h2 className="font-semibold text-gray-900 mb-4">Session packages</h2>
+          <ul className="space-y-2">
+            {patient.packages.map((p) => (
+              <li
+                key={p.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3"
+              >
+                <div>
+                  <p className="font-medium text-gray-900">{p.serviceName}</p>
+                  <p className="text-xs text-gray-500">
+                    Purchased {formatDate(p.createdAt)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-2 w-32 rounded-full bg-gray-200 overflow-hidden">
+                    <div
+                      className={`h-full ${p.remaining === 0 ? "bg-amber-500" : "bg-brand-500"}`}
+                      style={{
+                        width: `${Math.min(100, (p.usedSessions / p.totalSessions) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <span
+                    className={`text-xs font-medium ${
+                      p.remaining === 0 ? "text-amber-700" : "text-gray-700"
+                    }`}
+                  >
+                    {p.usedSessions}/{p.totalSessions} used ·{" "}
+                    {p.remaining === 0 ? "complete, renew" : `${p.remaining} left`}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* Appointments */}
       <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
         <h2 className="font-semibold text-gray-900 mb-4">Appointments and consultations</h2>
@@ -222,6 +262,11 @@ function Content() {
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900">
                       {a.service.name}
+                      {a.package && (
+                        <span className="ml-2 rounded-full bg-cream-100 text-ink-600 text-[10px] font-medium px-2 py-0.5 align-middle">
+                          package of {a.package.totalSessions}
+                        </span>
+                      )}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {a.scheduledAt

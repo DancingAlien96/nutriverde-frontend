@@ -302,6 +302,21 @@ function CitasContent() {
                         {a.patient.fullName}
                       </p>
                       <p className="text-xs text-ink-500">{a.service.name}</p>
+                      {a.package && a.package.sessionNumber && (
+                        <p
+                          className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                            a.package.sessionNumber >= a.package.totalSessions
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-cream-100 text-ink-600"
+                          }`}
+                        >
+                          {t.packages.session} {a.package.sessionNumber} {t.packages.of}{" "}
+                          {a.package.totalSessions}
+                          {a.package.sessionNumber >= a.package.totalSessions
+                            ? ` · ${t.packages.lastSession}`
+                            : ""}
+                        </p>
+                      )}
                       {a.payment && (
                         <p className="text-xs text-ink-500 mt-0.5">
                           {formatCents(a.payment.amountCents, a.payment.currency)}

@@ -404,7 +404,21 @@ export interface MealPlanRecord {
   createdAt: string;
 }
 
+/** Paquete de sesiones de una paciente con su uso (calculado en el servidor). */
+export interface PatientPackage {
+  id: string;
+  serviceId: string;
+  serviceName: string;
+  totalSessions: number;
+  usedSessions: number;
+  remaining: number;
+  createdAt: string;
+  notes: string | null;
+}
+
 export interface PatientDetail {
+  /** Paquetes de sesiones con su uso. */
+  packages: PatientPackage[];
   id: string;
   fullName: string;
   email: string;
@@ -452,6 +466,7 @@ export interface PatientDetail {
     meetingProvider: "GOOGLE_MEET" | "ZOOM" | null;
     createdAt: string;
     service: { id: string; name: string; slug: string };
+    package: { id: string; totalSessions: number } | null;
     payment: {
       id: string;
       status: string;
@@ -673,6 +688,8 @@ export interface ServiceAdmin {
   priceUsdCents: number | null;
   currency: string;
   durationMin: number;
+  /** Consultas incluidas (1 = cita suelta, 4/6 = programa). */
+  sessions: number;
   billingType: "ONE_TIME" | "MONTHLY";
   active: boolean;
   sortOrder: number;
@@ -701,6 +718,7 @@ export async function createAdminService(input: {
   priceCents: number;
   priceUsdCents?: number | null;
   durationMin: number;
+  sessions?: number;
   billingType: "ONE_TIME" | "MONTHLY";
   currency?: string;
   active?: boolean;
@@ -804,6 +822,13 @@ export interface AppointmentItem {
     amountCents: number;
     currency: string;
   } | null;
+  /** Paquete del que descuenta (null = cita suelta). */
+  package: {
+    id: string;
+    totalSessions: number;
+    usedSessions: number;
+    sessionNumber: number | null;
+  } | null;
 }
 
 export async function listAppointments(range?: {
@@ -833,6 +858,7 @@ export interface PendingAppointment {
   meetingUrl: string | null;
   meetingProvider: "GOOGLE_MEET" | "ZOOM" | null;
   updatedAt: string;
+  package: { id: string; totalSessions: number } | null;
   patient: {
     id: string;
     fullName: string;
@@ -933,7 +959,7 @@ export interface PatientLookup {
 
 export async function lookupPatientByEmail(
   email: string,
-): Promise<{ patient: PatientLookup | null }> {
+): Promise<{ patient: PatientLookup | null; packages: PatientPackage[] }> {
   const res = await authFetch(
     `/api/admin/appointments/patient-lookup?email=${encodeURIComponent(email)}`,
   );
@@ -950,6 +976,8 @@ export async function createManualAppointment(input: {
   phone?: string;
   timezone?: string;
   serviceId: string;
+  /** Paquete del que descuenta la cita; si va, el servicio es el del paquete. */
+  packageId?: string;
   scheduledAt: string;
   meetingUrl: string;
   meetingProvider?: "GOOGLE_MEET" | "ZOOM";

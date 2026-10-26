@@ -16,6 +16,8 @@ export interface ApiService {
   priceUsdCents?: number | null;
   currency: string;
   durationMin: number;
+  /** Consultas incluidas (1 = cita suelta, 4/6 = programa). */
+  sessions?: number;
   billingType: "ONE_TIME" | "MONTHLY";
   priceFormatted: string;
   priceUsdFormatted?: string | null;

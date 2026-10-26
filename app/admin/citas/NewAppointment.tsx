@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   createManualAppointment,
   lookupPatientByEmail,
+  type PatientPackage,
 } from "../../lib/admin";
 import {
   fetchServiceAvailability,
@@ -57,6 +58,9 @@ export function NewAppointment({
   const [timezone, setTimezone] = useState(BUSINESS_TZ);
   const [existing, setExisting] = useState<{ fullName: string } | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
+  // Paquetes de la paciente encontrada y cual descuenta esta cita ("" = ninguno).
+  const [packages, setPackages] = useState<PatientPackage[]>([]);
+  const [packageId, setPackageId] = useState<string>("");
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [slots, setSlots] = useState<string[] | null>(null);
@@ -126,18 +130,31 @@ export function NewAppointment({
     if (!e || !e.includes("@")) return;
     setLookingUp(true);
     try {
-      const { patient } = await lookupPatientByEmail(e);
+      const { patient, packages: pkgs } = await lookupPatientByEmail(e);
       if (patient) {
         setExisting({ fullName: patient.fullName });
         setFullName(patient.fullName);
         if (patient.phone) setPhone(patient.phone);
         if (patient.timezone) setTimezone(patient.timezone);
+        setPackages(pkgs);
+        // Por defecto descuenta del primer paquete con sesiones; si el
+        // servicio del paquete existe en la lista, lo seleccionamos.
+        const withLeft = pkgs.find((p) => p.remaining > 0);
+        setPackageId(withLeft?.id ?? "");
+        if (withLeft) {
+          const svc = services.find((s) => s.id === withLeft.serviceId);
+          if (svc) handleServiceChange(svc.slug);
+        }
       } else {
         setExisting(null);
+        setPackages([]);
+        setPackageId("");
       }
     } catch {
       // La busqueda es solo una ayuda; si falla seguimos como paciente nueva.
       setExisting(null);
+      setPackages([]);
+      setPackageId("");
     } finally {
       setLookingUp(false);
     }
@@ -162,6 +179,7 @@ export function NewAppointment({
         phone: phone.trim() || undefined,
         timezone: timezone.trim() || BUSINESS_TZ,
         serviceId: service.id,
+        packageId: packageId || undefined,
         scheduledAt: pickedSlot,
         meetingUrl: meetingUrl.trim(),
         notes: notes.trim() || undefined,
@@ -247,13 +265,68 @@ export function NewAppointment({
             </Field>
           </div>
 
+          {existing && (
+            <div className="rounded-2xl border border-cream-200 bg-cream-50/60 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">
+                {t.packages.patientPackages}
+              </p>
+              {packages.length === 0 ? (
+                <p className="mt-1 text-xs text-ink-500">{t.packages.noPackages}</p>
+              ) : (
+                <>
+                  {packages.every((p) => p.remaining === 0) && (
+                    <p className="mt-2 rounded-lg bg-amber-100 text-amber-900 text-xs px-3 py-2">
+                      {t.packages.noneLeft}
+                    </p>
+                  )}
+                  <div className="mt-2 space-y-1.5">
+                    {packages.map((p) => (
+                      <label
+                        key={p.id}
+                        className={`flex items-center gap-2 text-xs ${
+                          p.remaining === 0 ? "text-ink-400" : "text-ink-800"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="nv-package"
+                          disabled={p.remaining === 0}
+                          checked={packageId === p.id}
+                          onChange={() => {
+                            setPackageId(p.id);
+                            const svc = services.find((s) => s.id === p.serviceId);
+                            if (svc) handleServiceChange(svc.slug);
+                          }}
+                        />
+                        <span className="font-medium">{p.serviceName}</span>
+                        <span>
+                          · {p.usedSessions}/{p.totalSessions} · {p.remaining} {t.packages.remaining}
+                        </span>
+                      </label>
+                    ))}
+                    <label className="flex items-center gap-2 text-xs text-ink-800">
+                      <input
+                        type="radio"
+                        name="nv-package"
+                        checked={packageId === ""}
+                        onChange={() => setPackageId("")}
+                      />
+                      {t.packages.noPackage}
+                    </label>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           <p className="text-xs font-semibold uppercase tracking-wider text-ink-500 pt-2">
             {t.newAppt.step2}
           </p>
           <select
             value={serviceSlug}
             onChange={(e) => handleServiceChange(e.target.value)}
-            className={inputCls}
+            disabled={!!packageId}
+            className={`${inputCls} ${packageId ? "bg-cream-50 text-ink-600" : ""}`}
           >
             {services.map((s) => (
               <option key={s.id} value={s.slug}>
@@ -356,6 +429,12 @@ export function NewAppointment({
           {submitting ? t.newAppt.creating : t.newAppt.create}
         </button>
         <span className="text-xs text-ink-500">
+          {packageId && (
+            <span className="block text-brand-700">
+              {t.packages.deducting}{" "}
+              {packages.find((p) => p.id === packageId)?.serviceName ?? ""}.
+            </span>
+          )}
           {pickedSlot
             ? `${service?.name ?? ""} · ${fmtDateTime(pickedSlot, BUSINESS_TZ, dl)}${
                 timezone && timezone !== BUSINESS_TZ

@@ -123,6 +123,7 @@ function NewServiceForm({
   const [price, setPrice] = useState("");
   const [priceUsd, setPriceUsd] = useState("");
   const [duration, setDuration] = useState("60");
+  const [sessions, setSessions] = useState("1");
   const [billingType, setBillingType] = useState<"ONE_TIME" | "MONTHLY">(
     "ONE_TIME",
   );
@@ -143,6 +144,8 @@ function NewServiceForm({
     if (!slug.trim()) return setError("Slug is required.");
     if (Number.isNaN(priceCents) || priceCents < 0) return setError("Invalid price.");
     if (Number.isNaN(durationMin) || durationMin < 0) return setError("Invalid duration.");
+    const sessionsNum = Number(sessions);
+    if (!Number.isInteger(sessionsNum) || sessionsNum < 1) return setError("Sessions must be 1 or more.");
 
     setSubmitting(true);
     try {
@@ -154,6 +157,7 @@ function NewServiceForm({
         priceCents,
         priceUsdCents: usd ? Math.round(Number(usd) * 100) : null,
         durationMin,
+        sessions: sessionsNum,
         billingType,
       });
       if (imageFile) await uploadServiceImage(service.id, imageFile);
@@ -236,6 +240,21 @@ function NewServiceForm({
             onChange={(e) => setDuration(e.target.value)}
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
+        </label>
+
+        <label className="text-xs">
+          Sessions included *
+          <input
+            type="number"
+            step="1"
+            min="1"
+            value={sessions}
+            onChange={(e) => setSessions(e.target.value)}
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+          <span className="block text-[11px] text-gray-500 mt-1">
+            1 = single appointment. 4 or 6 = package; each booked appointment deducts one.
+          </span>
         </label>
 
         <label className="text-xs">
@@ -322,6 +341,7 @@ function ServiceCard({
     service.priceUsdCents != null ? (service.priceUsdCents / 100).toString() : "",
   );
   const [duration, setDuration] = useState(service.durationMin.toString());
+  const [sessions, setSessions] = useState((service.sessions ?? 1).toString());
   const [billingType, setBillingType] = useState<"ONE_TIME" | "MONTHLY">(
     service.billingType,
   );
@@ -358,6 +378,7 @@ function ServiceCard({
       service.priceUsdCents != null ? (service.priceUsdCents / 100).toString() : "",
     );
     setDuration(service.durationMin.toString());
+    setSessions((service.sessions ?? 1).toString());
     setBillingType(service.billingType);
     setActive(service.active);
     setSortOrder(service.sortOrder.toString());
@@ -376,6 +397,11 @@ function ServiceCard({
       setError("Invalid duration.");
       return;
     }
+    const sessionsNum = Number(sessions);
+    if (!Number.isInteger(sessionsNum) || sessionsNum < 1) {
+      setError("Sessions must be 1 or more.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -386,6 +412,7 @@ function ServiceCard({
         priceCents,
         priceUsdCents: usd ? Math.round(Number(usd) * 100) : null,
         durationMin,
+        sessions: sessionsNum,
         billingType,
         active,
         sortOrder: Number(sortOrder) || 0,
@@ -436,6 +463,7 @@ function ServiceCard({
               {service.billingType === "MONTHLY"
                 ? "Monthly"
                 : `${service.durationMin} min`}
+              {(service.sessions ?? 1) > 1 ? ` · ${service.sessions} sessions` : ""}
             </p>
           </div>
         </div>
@@ -515,6 +543,18 @@ function ServiceCard({
             min="0"
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+        </label>
+
+        <label className="text-xs">
+          Sessions included
+          <input
+            type="number"
+            step="1"
+            min="1"
+            value={sessions}
+            onChange={(e) => setSessions(e.target.value)}
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
         </label>
