@@ -908,6 +908,7 @@ export async function updateAdminUser(
   id: string,
   patch: {
     fullName?: string;
+    email?: string;
     role?: AdminRole;
     locale?: AdminLocale;
     active?: boolean;

@@ -131,6 +131,10 @@ function UserRow({
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  // Edición de nombre y correo (formulario en línea bajo la fila).
+  const [editing, setEditing] = useState(false);
+  const [draftName, setDraftName] = useState(user.fullName);
+  const [draftEmail, setDraftEmail] = useState(user.email);
 
   async function patch(data: Parameters<typeof updateAdminUser>[1]) {
     setBusy(true);
@@ -160,6 +164,27 @@ function UserRow({
     await patch({ password: newPassword });
     setNewPassword("");
     setShowPassword(false);
+  }
+
+  function openEdit() {
+    setDraftName(user.fullName);
+    setDraftEmail(user.email);
+    setShowPassword(false);
+    setError(null);
+    setEditing((v) => !v);
+  }
+
+  const detailsChanged =
+    draftName.trim() !== user.fullName || draftEmail.trim().toLowerCase() !== user.email;
+  const canSaveDetails =
+    detailsChanged && draftName.trim().length >= 2 && draftEmail.includes("@") && !busy;
+
+  async function saveDetails() {
+    const data: Parameters<typeof updateAdminUser>[1] = {};
+    if (draftName.trim() !== user.fullName) data.fullName = draftName.trim();
+    if (draftEmail.trim().toLowerCase() !== user.email) data.email = draftEmail.trim().toLowerCase();
+    await patch(data);
+    setEditing(false);
   }
 
   const selectCls =
@@ -220,8 +245,17 @@ function UserRow({
         <td className="px-4 py-3 text-right whitespace-nowrap">
           <button
             type="button"
+            onClick={openEdit}
+            disabled={busy}
+            className="text-xs font-medium text-brand-700 hover:text-brand-800 mr-3"
+          >
+            {editing ? t.common.close : t.users.edit}
+          </button>
+          <button
+            type="button"
             onClick={() => {
               setShowPassword((v) => !v);
+              setEditing(false);
               setError(null);
             }}
             disabled={busy}
@@ -243,9 +277,45 @@ function UserRow({
           )}
         </td>
       </tr>
-      {(showPassword || error) && (
+      {(editing || showPassword || error) && (
         <tr className="border-t border-cream-50 bg-cream-50/50">
           <td colSpan={5} className="px-4 py-3">
+            {editing && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-brand-700 mb-2">
+                  {t.users.editTitle}
+                </p>
+                <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-2 items-end max-w-2xl">
+                  <label className="block">
+                    <span className="block text-xs text-ink-600 mb-1">{t.users.fullName}</span>
+                    <input
+                      type="text"
+                      value={draftName}
+                      onChange={(e) => setDraftName(e.target.value)}
+                      className={inputCls}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="block text-xs text-ink-600 mb-1">{t.users.email}</span>
+                    <input
+                      type="email"
+                      value={draftEmail}
+                      onChange={(e) => setDraftEmail(e.target.value)}
+                      autoComplete="off"
+                      className={inputCls}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={saveDetails}
+                    disabled={!canSaveDetails}
+                    className="rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white text-xs font-medium px-4 py-2.5"
+                  >
+                    {busy ? t.users.saving : t.users.save}
+                  </button>
+                </div>
+              </div>
+            )}
             {showPassword && (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <input
