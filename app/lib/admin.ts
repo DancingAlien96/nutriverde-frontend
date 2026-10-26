@@ -9,12 +9,15 @@ const TOKEN_KEY = "nutriverde_admin_token";
  * horario + link de videollamada y dispara el correo. Nada más.
  */
 export type AdminRole = "NUTRITIONIST" | "STAFF" | "SECRETARY";
+/** Idioma del panel para ese usuario (lo fija la nutricionista). */
+export type AdminLocale = "EN" | "ES";
 
 export interface Admin {
   id: string;
   email: string;
   fullName: string;
   role: AdminRole | string;
+  locale?: AdminLocale | string;
 }
 
 export function isSecretary(role?: string | null): boolean {
@@ -864,6 +867,57 @@ export async function getAppointmentSlots(
   const res = await authFetch(
     `/api/admin/appointments/${appointmentId}/slots?date=${date}`,
   );
+  return parseJson(res);
+}
+
+// ============================================================
+// Usuarios del panel (solo nutricionista)
+// ============================================================
+
+export interface AdminUserItem {
+  id: string;
+  email: string;
+  fullName: string;
+  role: AdminRole;
+  locale: AdminLocale;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function listAdminUsers(): Promise<{ users: AdminUserItem[] }> {
+  const res = await authFetch("/api/admin/users");
+  return parseJson(res);
+}
+
+export async function createAdminUser(input: {
+  fullName: string;
+  email: string;
+  password: string;
+  role: AdminRole;
+  locale?: AdminLocale;
+}): Promise<{ user: AdminUserItem }> {
+  const res = await authFetch("/api/admin/users", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
+export async function updateAdminUser(
+  id: string,
+  patch: {
+    fullName?: string;
+    role?: AdminRole;
+    locale?: AdminLocale;
+    active?: boolean;
+    password?: string;
+  },
+): Promise<{ user: AdminUserItem }> {
+  const res = await authFetch(`/api/admin/users/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
   return parseJson(res);
 }
 

@@ -10,6 +10,7 @@ import {
 } from "../../lib/admin";
 import { MonthCalendar } from "../../components/MonthCalendar";
 import { ClockIcon } from "../icons";
+import { useAdminT } from "../../lib/admin-i18n";
 
 const BUSINESS_TZ = "America/Guatemala";
 
@@ -22,6 +23,7 @@ const BUSINESS_TZ = "America/Guatemala";
  * la paciente recibe el correo con fecha y enlace.
  */
 export function PendingScheduling({ onScheduled }: { onScheduled: () => void }) {
+  const t = useAdminT();
   const [items, setItems] = useState<PendingAppointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,8 +42,7 @@ export function PendingScheduling({ onScheduled }: { onScheduled: () => void }) 
         }
       })
       .catch((err) => {
-        if (!cancelled)
-          setError(err instanceof Error ? err.message : "Could not load pending appointments.");
+        if (!cancelled) setError(err instanceof Error ? err.message : t.pending.loadError);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -49,7 +50,7 @@ export function PendingScheduling({ onScheduled }: { onScheduled: () => void }) 
     return () => {
       cancelled = true;
     };
-  }, [reloadKey]);
+  }, [reloadKey, t.pending.loadError]);
 
   function handleScheduled() {
     setOpenId(null);
@@ -60,7 +61,7 @@ export function PendingScheduling({ onScheduled }: { onScheduled: () => void }) 
   if (loading && items.length === 0) {
     return (
       <div className="mb-5 rounded-3xl bg-white border border-cream-200 p-5">
-        <p className="text-xs text-ink-400">Loading pending appointments…</p>
+        <p className="text-xs text-ink-400">{t.pending.loading}</p>
       </div>
     );
   }
@@ -70,14 +71,12 @@ export function PendingScheduling({ onScheduled }: { onScheduled: () => void }) 
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xs uppercase tracking-wider font-semibold text-ink-500">
-            To schedule
+            {t.pending.title}
           </h2>
-          <p className="text-sm text-ink-500 mt-1">
-            Paid consultations waiting for a confirmed time and video call link.
-          </p>
+          <p className="text-sm text-ink-500 mt-1">{t.pending.subtitle}</p>
         </div>
         <span className="shrink-0 rounded-full bg-amber-100 text-amber-800 text-xs font-medium px-3 py-1">
-          {items.length} pending
+          {items.length} {t.pending.count}
         </span>
       </div>
 
@@ -88,9 +87,7 @@ export function PendingScheduling({ onScheduled }: { onScheduled: () => void }) 
       )}
 
       {items.length === 0 ? (
-        <p className="text-sm text-ink-400 py-6 text-center">
-          Nothing to schedule right now.
-        </p>
+        <p className="text-sm text-ink-400 py-6 text-center">{t.pending.empty}</p>
       ) : (
         <ul className="mt-4 divide-y divide-cream-100">
           {items.map((a) => (
@@ -108,11 +105,11 @@ export function PendingScheduling({ onScheduled }: { onScheduled: () => void }) 
                   {a.scheduledAt ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 text-[11px] font-medium px-2.5 py-1">
                       <ClockIcon className="h-3.5 w-3.5" />
-                      Proposed: {fmtDateTime(a.scheduledAt, BUSINESS_TZ)}
+                      {t.pending.proposed} {fmtDateTime(a.scheduledAt, BUSINESS_TZ, t.dateLocale)}
                     </span>
                   ) : (
                     <span className="rounded-full bg-cream-100 text-ink-600 text-[11px] font-medium px-2.5 py-1">
-                      No time chosen yet
+                      {t.pending.noTime}
                     </span>
                   )}
                   <button
@@ -120,7 +117,7 @@ export function PendingScheduling({ onScheduled }: { onScheduled: () => void }) 
                     onClick={() => setOpenId(openId === a.id ? null : a.id)}
                     className="rounded-full bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium px-4 py-2"
                   >
-                    {openId === a.id ? "Close" : "Schedule"}
+                    {openId === a.id ? t.common.close : t.pending.schedule}
                   </button>
                 </div>
               </div>
@@ -143,6 +140,7 @@ function ScheduleForm({
   appointment: PendingAppointment;
   onDone: () => void;
 }) {
+  const t = useAdminT();
   const proposed = appointment.scheduledAt;
   // Si la paciente ya propuso hora, por defecto se acepta esa. Siempre se
   // puede cambiar eligiendo otro dia/hora.
@@ -190,12 +188,12 @@ function ScheduleForm({
 
   async function submit() {
     if (!effectiveTime) {
-      setError("Pick a date and time first.");
+      setError(t.pending.pickFirst);
       return;
     }
     const url = meetingUrl.trim();
     if (!url) {
-      setError("The video call link is required.");
+      setError(t.pending.linkRequired);
       return;
     }
     setSubmitting(true);
@@ -208,19 +206,20 @@ function ScheduleForm({
       });
       onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSubmitting(false);
     }
   }
 
   const patientTz = appointment.patient.timezone;
+  const dl = t.dateLocale;
 
   return (
     <div className="mt-3 rounded-2xl border border-brand-200 bg-brand-50/40 p-4">
       {/* Paso 1: horario */}
       <p className="text-xs font-semibold uppercase tracking-wider text-brand-700">
-        1 · Date and time (Guatemala)
+        {t.pending.step1}
       </p>
 
       {proposed && (
@@ -234,7 +233,7 @@ function ScheduleForm({
                 : "border-cream-200 bg-white text-ink-700 hover:border-brand-300"
             }`}
           >
-            Accept proposed: {fmtDateTime(proposed, BUSINESS_TZ)}
+            {t.pending.acceptProposed} {fmtDateTime(proposed, BUSINESS_TZ, dl)}
           </button>
           <button
             type="button"
@@ -245,7 +244,7 @@ function ScheduleForm({
                 : "border-cream-200 bg-white text-ink-700 hover:border-brand-300"
             }`}
           >
-            Choose another time
+            {t.pending.chooseAnother}
           </button>
         </div>
       )}
@@ -261,15 +260,11 @@ function ScheduleForm({
           </div>
           <div className="rounded-2xl bg-white border border-cream-200 p-3">
             {!selectedDate ? (
-              <p className="text-sm text-ink-400 py-6 text-center">
-                Select a day to see free times.
-              </p>
+              <p className="text-sm text-ink-400 py-6 text-center">{t.pending.selectDay}</p>
             ) : slotsLoading ? (
-              <p className="text-sm text-ink-400 py-6 text-center">Looking for free times…</p>
+              <p className="text-sm text-ink-400 py-6 text-center">{t.pending.lookingSlots}</p>
             ) : !slots || slots.length === 0 ? (
-              <p className="text-sm text-ink-400 py-6 text-center">
-                No free times that day. Pick another date.
-              </p>
+              <p className="text-sm text-ink-400 py-6 text-center">{t.pending.noSlots}</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {slots.map((iso) => {
@@ -285,10 +280,10 @@ function ScheduleForm({
                           : "border-cream-200 bg-white text-ink-900 hover:border-brand-400"
                       }`}
                     >
-                      <span className="font-medium">{fmtTime(iso, BUSINESS_TZ)}</span>
+                      <span className="font-medium">{fmtTime(iso, BUSINESS_TZ, dl)}</span>
                       {patientTz !== BUSINESS_TZ && (
                         <span className={`ml-1.5 text-[11px] ${isPicked ? "text-white/80" : "text-ink-500"}`}>
-                          ({fmtTime(iso, patientTz)} patient)
+                          ({fmtTime(iso, patientTz, dl)} {t.common.patient})
                         </span>
                       )}
                     </button>
@@ -302,7 +297,7 @@ function ScheduleForm({
 
       {/* Paso 2: link */}
       <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-brand-700">
-        2 · Video call link (Meet / Zoom)
+        {t.pending.step2}
       </p>
       <input
         type="url"
@@ -324,24 +319,24 @@ function ScheduleForm({
           disabled={!canSubmit}
           className="rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white text-sm font-medium px-5 py-2.5"
         >
-          {submitting ? "Confirming…" : "Confirm appointment and email the patient"}
+          {submitting ? t.pending.confirming : t.pending.confirm}
         </button>
         <span className="text-xs text-ink-500">
           {effectiveTime
-            ? `Will confirm for ${fmtDateTime(effectiveTime, BUSINESS_TZ)}${
+            ? `${t.pending.willConfirm} ${fmtDateTime(effectiveTime, BUSINESS_TZ, dl)}${
                 patientTz !== BUSINESS_TZ
-                  ? ` (${fmtDateTime(effectiveTime, patientTz)} for the patient)`
+                  ? ` (${fmtDateTime(effectiveTime, patientTz, dl)} ${t.pending.forPatient})`
                   : ""
               }.`
-            : "No time selected yet."}
+            : t.pending.noTimeSelected}
         </span>
       </div>
     </div>
   );
 }
 
-function fmtDateTime(iso: string, tz: string): string {
-  return new Date(iso).toLocaleString("en-US", {
+function fmtDateTime(iso: string, tz: string, locale: string): string {
+  return new Date(iso).toLocaleString(locale, {
     timeZone: tz,
     weekday: "short",
     day: "numeric",
@@ -351,8 +346,8 @@ function fmtDateTime(iso: string, tz: string): string {
   });
 }
 
-function fmtTime(iso: string, tz: string): string {
-  return new Date(iso).toLocaleTimeString("en-US", {
+function fmtTime(iso: string, tz: string, locale: string): string {
+  return new Date(iso).toLocaleTimeString(locale, {
     timeZone: tz,
     hour: "numeric",
     minute: "2-digit",

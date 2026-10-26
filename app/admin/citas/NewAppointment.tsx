@@ -13,6 +13,7 @@ import {
 } from "../../lib/api";
 import { MonthCalendar } from "../../components/MonthCalendar";
 import { CloseIcon } from "../icons";
+import { useAdminT } from "../../lib/admin-i18n";
 
 const BUSINESS_TZ = "America/Guatemala";
 
@@ -45,6 +46,8 @@ export function NewAppointment({
   onClose: () => void;
   onCreated: (scheduledAt: string) => void;
 }) {
+  const t = useAdminT();
+  const dl = t.dateLocale;
   const [services, setServices] = useState<ApiService[]>([]);
   const [serviceSlug, setServiceSlug] = useState<string>("");
 
@@ -72,8 +75,8 @@ export function NewAppointment({
         setServices(list);
         if (list.length > 0) setServiceSlug(list[0].slug);
       })
-      .catch(() => setError("Could not load services."));
-  }, []);
+      .catch(() => setError(t.newAppt.servicesError));
+  }, [t.newAppt.servicesError]);
 
   const service = services.find((s) => s.slug === serviceSlug) ?? null;
 
@@ -165,7 +168,7 @@ export function NewAppointment({
       });
       onCreated(pickedSlot);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSubmitting(false);
     }
@@ -176,17 +179,14 @@ export function NewAppointment({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-xs uppercase tracking-wider font-semibold text-brand-700">
-            New appointment
+            {t.newAppt.title}
           </h2>
-          <p className="text-sm text-ink-500 mt-1">
-            Register the patient, pick a free time and send the confirmation
-            email. No payment is recorded for appointments created here.
-          </p>
+          <p className="text-sm text-ink-500 mt-1">{t.newAppt.subtitle}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t.common.close}
           className="h-8 w-8 shrink-0 rounded-full text-ink-500 hover:bg-cream-100 flex items-center justify-center"
         >
           <CloseIcon className="h-4 w-4" />
@@ -197,10 +197,13 @@ export function NewAppointment({
         {/* Columna izquierda: paciente + servicio */}
         <div className="space-y-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">
-            1 · Patient
+            {t.newAppt.step1}
           </p>
           <div className="grid sm:grid-cols-2 gap-3">
-            <Field label="Email *" hint={lookingUp ? "Checking…" : existing ? "Existing patient" : undefined}>
+            <Field
+              label={t.newAppt.email}
+              hint={lookingUp ? t.newAppt.checking : existing ? t.newAppt.existing : undefined}
+            >
               <input
                 type="email"
                 value={email}
@@ -210,7 +213,7 @@ export function NewAppointment({
                 className={inputCls}
               />
             </Field>
-            <Field label="Full name *">
+            <Field label={t.newAppt.fullName}>
               <input
                 type="text"
                 value={fullName}
@@ -219,7 +222,7 @@ export function NewAppointment({
                 className={`${inputCls} ${existing ? "bg-cream-50 text-ink-600" : ""}`}
               />
             </Field>
-            <Field label="Phone">
+            <Field label={t.newAppt.phone}>
               <input
                 type="tel"
                 value={phone}
@@ -228,7 +231,7 @@ export function NewAppointment({
                 className={inputCls}
               />
             </Field>
-            <Field label="Time zone">
+            <Field label={t.newAppt.timezone}>
               <input
                 type="text"
                 list="nv-timezones"
@@ -245,7 +248,7 @@ export function NewAppointment({
           </div>
 
           <p className="text-xs font-semibold uppercase tracking-wider text-ink-500 pt-2">
-            2 · Service
+            {t.newAppt.step2}
           </p>
           <select
             value={serviceSlug}
@@ -254,13 +257,13 @@ export function NewAppointment({
           >
             {services.map((s) => (
               <option key={s.id} value={s.slug}>
-                {s.name} · {s.durationMin > 0 ? `${s.durationMin} min` : "60 min"}
+                {s.name} · {s.durationMin > 0 ? s.durationMin : 60} {t.newAppt.min}
               </option>
             ))}
           </select>
 
           <p className="text-xs font-semibold uppercase tracking-wider text-ink-500 pt-2">
-            4 · Video call link (Meet / Zoom) *
+            {t.newAppt.step4}
           </p>
           <input
             type="url"
@@ -270,12 +273,12 @@ export function NewAppointment({
             className={inputCls}
           />
 
-          <Field label="Internal notes (optional)">
+          <Field label={t.newAppt.notes}>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              placeholder="e.g. Paid in cash at the clinic"
+              placeholder={t.newAppt.notesPh}
               className={inputCls}
             />
           </Field>
@@ -284,7 +287,7 @@ export function NewAppointment({
         {/* Columna derecha: dia + hora */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-ink-500 mb-3">
-            3 · Date and time (Guatemala)
+            {t.newAppt.step3}
           </p>
           <div className="space-y-3">
             <div className="rounded-2xl border border-cream-200 p-3 max-w-sm">
@@ -296,20 +299,16 @@ export function NewAppointment({
                   onSelect={handleDateSelect}
                 />
               ) : (
-                <p className="text-sm text-ink-400 py-6 text-center">Loading services…</p>
+                <p className="text-sm text-ink-400 py-6 text-center">{t.newAppt.loadingServices}</p>
               )}
             </div>
             <div className="rounded-2xl border border-cream-200 p-3">
               {!selectedDate ? (
-                <p className="text-sm text-ink-400 py-6 text-center">
-                  Select a day to see free times.
-                </p>
+                <p className="text-sm text-ink-400 py-6 text-center">{t.newAppt.selectDay}</p>
               ) : slotsLoading ? (
-                <p className="text-sm text-ink-400 py-6 text-center">Looking for free times…</p>
+                <p className="text-sm text-ink-400 py-6 text-center">{t.newAppt.lookingSlots}</p>
               ) : !slots || slots.length === 0 ? (
-                <p className="text-sm text-ink-400 py-6 text-center">
-                  No free times that day. Pick another date.
-                </p>
+                <p className="text-sm text-ink-400 py-6 text-center">{t.newAppt.noSlots}</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {slots.map((iso) => {
@@ -325,10 +324,10 @@ export function NewAppointment({
                             : "border-cream-200 bg-white text-ink-900 hover:border-brand-400"
                         }`}
                       >
-                        <span className="font-medium">{fmtTime(iso, BUSINESS_TZ)}</span>
+                        <span className="font-medium">{fmtTime(iso, BUSINESS_TZ, dl)}</span>
                         {timezone && timezone !== BUSINESS_TZ && (
                           <span className={`ml-1.5 text-[11px] ${isPicked ? "text-white/80" : "text-ink-500"}`}>
-                            ({safeFmtTime(iso, timezone)} patient)
+                            ({safeFmtTime(iso, timezone, dl)} {t.common.patient})
                           </span>
                         )}
                       </button>
@@ -354,16 +353,16 @@ export function NewAppointment({
           disabled={!canSubmit}
           className="rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white text-sm font-medium px-5 py-2.5"
         >
-          {submitting ? "Creating…" : "Create appointment and email the patient"}
+          {submitting ? t.newAppt.creating : t.newAppt.create}
         </button>
         <span className="text-xs text-ink-500">
           {pickedSlot
-            ? `${service?.name ?? ""} · ${fmtDateTime(pickedSlot, BUSINESS_TZ)}${
+            ? `${service?.name ?? ""} · ${fmtDateTime(pickedSlot, BUSINESS_TZ, dl)}${
                 timezone && timezone !== BUSINESS_TZ
-                  ? ` (${safeFmtDateTime(pickedSlot, timezone)} for the patient)`
+                  ? ` (${safeFmtDateTime(pickedSlot, timezone, dl)} ${t.newAppt.forPatient})`
                   : ""
               }`
-            : "Pick a service, a day and a time."}
+            : t.newAppt.pickAll}
         </span>
       </div>
     </div>
@@ -393,8 +392,8 @@ function Field({
   );
 }
 
-function fmtDateTime(iso: string, tz: string): string {
-  return new Date(iso).toLocaleString("en-US", {
+function fmtDateTime(iso: string, tz: string, locale: string): string {
+  return new Date(iso).toLocaleString(locale, {
     timeZone: tz,
     weekday: "short",
     day: "numeric",
@@ -404,8 +403,8 @@ function fmtDateTime(iso: string, tz: string): string {
   });
 }
 
-function fmtTime(iso: string, tz: string): string {
-  return new Date(iso).toLocaleTimeString("en-US", {
+function fmtTime(iso: string, tz: string, locale: string): string {
+  return new Date(iso).toLocaleTimeString(locale, {
     timeZone: tz,
     hour: "numeric",
     minute: "2-digit",
@@ -413,16 +412,16 @@ function fmtTime(iso: string, tz: string): string {
 }
 
 // La zona la escribe la secretaria; si no es valida no rompemos la pantalla.
-function safeFmtTime(iso: string, tz: string): string {
+function safeFmtTime(iso: string, tz: string, locale: string): string {
   try {
-    return fmtTime(iso, tz);
+    return fmtTime(iso, tz, locale);
   } catch {
     return "?";
   }
 }
-function safeFmtDateTime(iso: string, tz: string): string {
+function safeFmtDateTime(iso: string, tz: string, locale: string): string {
   try {
-    return fmtDateTime(iso, tz);
+    return fmtDateTime(iso, tz, locale);
   } catch {
     return "?";
   }

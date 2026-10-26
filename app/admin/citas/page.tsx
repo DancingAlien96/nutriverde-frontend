@@ -12,6 +12,7 @@ import {
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon } from "../icons";
 import { PendingScheduling } from "./PendingScheduling";
 import { NewAppointment } from "./NewAppointment";
+import { useAdminT } from "../../lib/admin-i18n";
 
 export default function CitasPage() {
   return (
@@ -21,38 +22,19 @@ export default function CitasPage() {
   );
 }
 
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-const STATUS: Record<
-  AppointmentStatus,
-  { label: string; chip: string; dot: string }
-> = {
-  SCHEDULED: { label: "Confirmed", chip: "bg-brand-100 text-brand-800", dot: "#8a9b67" },
-  PENDING_CONFIRMATION: {
-    label: "Pending confirmation",
-    chip: "bg-amber-100 text-amber-800",
-    dot: "#d9a441",
-  },
-  COMPLETED: { label: "Completed", chip: "bg-cream-200 text-ink-600", dot: "#a9a190" },
-  CANCELED: {
-    label: "Canceled",
-    chip: "bg-red-50 text-red-700 line-through",
-    dot: "#c27a63",
-  },
-  NO_SHOW: { label: "No show", chip: "bg-red-50 text-red-700", dot: "#c27a63" },
-  PAYMENT_APPROVED: {
-    label: "Payment approved",
-    chip: "bg-brand-50 text-brand-700",
-    dot: "#b7c393",
-  },
-  AWAITING_PAYMENT: {
-    label: "Awaiting payment",
-    chip: "bg-cream-100 text-ink-500",
-    dot: "#cbb58f",
-  },
+// Estilos por estado; las etiquetas viven en el diccionario (t.citas.status).
+const STATUS: Record<AppointmentStatus, { chip: string; dot: string }> = {
+  SCHEDULED: { chip: "bg-brand-100 text-brand-800", dot: "#8a9b67" },
+  PENDING_CONFIRMATION: { chip: "bg-amber-100 text-amber-800", dot: "#d9a441" },
+  COMPLETED: { chip: "bg-cream-200 text-ink-600", dot: "#a9a190" },
+  CANCELED: { chip: "bg-red-50 text-red-700 line-through", dot: "#c27a63" },
+  NO_SHOW: { chip: "bg-red-50 text-red-700", dot: "#c27a63" },
+  PAYMENT_APPROVED: { chip: "bg-brand-50 text-brand-700", dot: "#b7c393" },
+  AWAITING_PAYMENT: { chip: "bg-cream-100 text-ink-500", dot: "#cbb58f" },
 };
 
 function CitasContent() {
+  const t = useAdminT();
   // Primer día del mes enfocado.
   const [cursor, setCursor] = useState(() => {
     const n = new Date();
@@ -91,7 +73,7 @@ function CitasContent() {
       })
       .catch((err) => {
         if (!cancelled)
-          setError(err instanceof Error ? err.message : "Error al cargar citas.");
+          setError(err instanceof Error ? err.message : t.citas.loadError);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -99,7 +81,7 @@ function CitasContent() {
     return () => {
       cancelled = true;
     };
-  }, [gridStart, reloadKey]);
+  }, [gridStart, reloadKey, t.citas.loadError]);
 
   // Agrupa por día local (YYYY-MM-DD).
   const byDay = useMemo(() => {
@@ -130,10 +112,8 @@ function CitasContent() {
       {/* Encabezado */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-serif-display text-2xl sm:text-3xl text-ink-900">Appointments</h1>
-          <p className="text-sm text-ink-500 mt-1">
-            Calendar of scheduled consultations.
-          </p>
+          <h1 className="font-serif-display text-2xl sm:text-3xl text-ink-900">{t.citas.title}</h1>
+          <p className="text-sm text-ink-500 mt-1">{t.citas.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -145,26 +125,26 @@ function CitasContent() {
                 : "bg-brand-600 text-white hover:bg-brand-700"
             }`}
           >
-            {creating ? "Cancel" : "+ New appointment"}
+            {creating ? t.common.cancel : t.citas.newAppointment}
           </button>
           <button
             type="button"
             onClick={goToday}
             className="rounded-full border border-cream-200 bg-white px-4 h-9 text-sm font-medium text-ink-700 hover:bg-cream-50"
           >
-            Today
+            {t.common.today}
           </button>
           <div className="flex items-center rounded-full border border-cream-200 bg-white">
             <button
               type="button"
               onClick={() => goMonth(-1)}
-              aria-label="Previous month"
+              aria-label={t.common.prevMonth}
               className="h-9 w-9 flex items-center justify-center text-ink-600 hover:text-ink-900"
             >
               <ChevronLeftIcon className="h-5 w-5" />
             </button>
             <span className="px-2 text-sm font-medium text-ink-900 capitalize min-w-[8.5rem] text-center">
-              {cursor.toLocaleDateString("en-US", {
+              {cursor.toLocaleDateString(t.dateLocale, {
                 month: "long",
                 year: "numeric",
               })}
@@ -172,7 +152,7 @@ function CitasContent() {
             <button
               type="button"
               onClick={() => goMonth(1)}
-              aria-label="Next month"
+              aria-label={t.common.nextMonth}
               className="h-9 w-9 flex items-center justify-center text-ink-600 hover:text-ink-900"
             >
               <ChevronRightIcon className="h-5 w-5" />
@@ -210,7 +190,7 @@ function CitasContent() {
         <div className="rounded-3xl bg-white border border-cream-200 p-3 sm:p-4">
           {/* Cabecera de días */}
           <div className="grid grid-cols-7 mb-1">
-            {WEEKDAYS.map((d) => (
+            {t.citas.weekdays.map((d) => (
               <div
                 key={d}
                 className="text-center text-[11px] uppercase tracking-wider text-ink-400 font-medium py-1"
@@ -253,12 +233,12 @@ function CitasContent() {
                         key={a.id}
                         className={`truncate rounded px-1 py-0.5 text-[10px] leading-tight font-medium ${STATUS[a.status].chip}`}
                       >
-                        {formatTime(a.scheduledAt)} {a.patient.fullName.split(/\s+/)[0]}
+                        {formatTime(a.scheduledAt, t.dateLocale)} {a.patient.fullName.split(/\s+/)[0]}
                       </span>
                     ))}
                     {dayAppts.length > 3 && (
                       <span className="text-[10px] text-ink-500 px-1">
-                        +{dayAppts.length - 3} more
+                        +{dayAppts.length - 3} {t.citas.more}
                       </span>
                     )}
                   </div>
@@ -268,17 +248,17 @@ function CitasContent() {
           </div>
 
           {loading && (
-            <p className="text-xs text-ink-400 text-center mt-3">Loading appointments…</p>
+            <p className="text-xs text-ink-400 text-center mt-3">{t.citas.loading}</p>
           )}
         </div>
 
         {/* Panel del día seleccionado */}
         <div className="rounded-3xl bg-white border border-cream-200 p-5 flex flex-col">
           <p className="text-xs uppercase tracking-wider font-semibold text-ink-500">
-            {sameDay(selected, today) ? "Today" : "Selected day"}
+            {sameDay(selected, today) ? t.common.today : t.citas.selectedDay}
           </p>
           <p className="font-serif-display text-lg text-ink-900 mt-1 capitalize">
-            {selected.toLocaleDateString("en-US", {
+            {selected.toLocaleDateString(t.dateLocale, {
               weekday: "long",
               day: "numeric",
               month: "long",
@@ -288,7 +268,7 @@ function CitasContent() {
           <div className="mt-4 flex-1">
             {selectedAppts.length === 0 ? (
               <p className="text-sm text-ink-400 py-6 text-center">
-                No appointments this day.
+                {t.citas.none}
               </p>
             ) : (
               <ul className="space-y-3">
@@ -306,7 +286,7 @@ function CitasContent() {
                       <div className="flex items-center justify-between gap-2">
                         <span className="inline-flex items-center gap-1 text-sm font-semibold text-ink-900">
                           <ClockIcon className="h-4 w-4 text-ink-400" />
-                          {formatTime(a.scheduledAt)}
+                          {formatTime(a.scheduledAt, t.dateLocale)}
                           <span className="text-ink-400 font-normal">
                             · {a.durationMin} min
                           </span>
@@ -314,7 +294,7 @@ function CitasContent() {
                         <span
                           className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS[a.status].chip}`}
                         >
-                          {STATUS[a.status].label}
+                          {t.citas.status[a.status]}
                         </span>
                       </div>
                       <p className="mt-2 text-sm font-medium text-ink-900">
@@ -333,7 +313,7 @@ function CitasContent() {
                           rel="noopener noreferrer"
                           className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800"
                         >
-                          Join the video call →
+                          {t.citas.join}
                         </a>
                       )}
 
@@ -363,7 +343,7 @@ function CitasContent() {
                   className="h-2.5 w-2.5 rounded-full"
                   style={{ backgroundColor: STATUS[s].dot }}
                 />
-                {STATUS[s].label}
+                {t.citas.status[s]}
               </span>
             ))}
           </div>
@@ -389,6 +369,7 @@ function DeclineTime({
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useAdminT();
 
   async function submit() {
     setSaving(true);
@@ -399,7 +380,7 @@ function DeclineTime({
       setReason("");
       onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSaving(false);
     }
@@ -412,7 +393,7 @@ function DeclineTime({
         onClick={() => setOpen(true)}
         className="mt-2 block text-xs font-medium text-amber-700 hover:text-amber-800"
       >
-        I can&apos;t make this time
+        {t.citas.cantMake}
       </button>
     );
   }
@@ -420,14 +401,13 @@ function DeclineTime({
   return (
     <div className="mt-3 rounded-xl bg-amber-50 border border-amber-200 p-3">
       <p className="text-[11px] text-amber-900 leading-snug">
-        {appointment.patient.fullName} will get an email with a link to pick a
-        new time. The payment stays approved.
+        {appointment.patient.fullName} {t.citas.declineInfo}
       </p>
       <textarea
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         rows={2}
-        placeholder="Reason (optional) — shown to the patient"
+        placeholder={t.citas.declinePh}
         className="mt-2 w-full rounded-lg border border-amber-300 bg-white px-2 py-1.5 text-xs focus:border-amber-500 focus:outline-none"
       />
       {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
@@ -438,7 +418,7 @@ function DeclineTime({
           disabled={saving}
           className="rounded-full bg-amber-600 text-white text-xs font-medium px-3 py-1.5 hover:bg-amber-700 disabled:opacity-50"
         >
-          {saving ? "Sending…" : "Confirm and notify"}
+          {saving ? t.citas.sending : t.citas.declineSubmit}
         </button>
         <button
           type="button"
@@ -448,7 +428,7 @@ function DeclineTime({
           }}
           className="text-xs text-ink-500 hover:text-ink-700"
         >
-          Cancel
+          {t.common.cancel}
         </button>
       </div>
     </div>
@@ -471,9 +451,9 @@ function sameDay(a: Date, b: Date): boolean {
 function dateKey(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("en-US", {
-    hour: "2-digit",
+function formatTime(iso: string, locale: string): string {
+  return new Date(iso).toLocaleTimeString(locale, {
+    hour: "numeric",
     minute: "2-digit",
   });
 }

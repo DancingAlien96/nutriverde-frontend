@@ -4,9 +4,13 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { adminLogin, isSecretary } from "../../lib/admin";
+import { useLocale } from "../../lib/i18n";
+import { toSiteLocale, useAdminT } from "../../lib/admin-i18n";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const t = useAdminT();
+  const { setLocale } = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -19,10 +23,12 @@ export default function AdminLoginPage() {
     setSubmitting(true);
     try {
       const { admin } = await adminLogin(email.trim(), password);
+      // El idioma del panel lo decide el usuario (lo fija la nutricionista).
+      setLocale(toSiteLocale(admin.locale));
       // La secretaria aterriza directo en la agenda: es lo único que tiene.
       router.replace(isSecretary(admin.role) ? "/admin/citas" : "/admin");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : t.login.unknownError);
     } finally {
       setSubmitting(false);
     }
@@ -36,7 +42,7 @@ export default function AdminLoginPage() {
             Plenha
           </Link>
           <p className="mt-2 text-xs uppercase tracking-wider text-brand-700">
-            Administration panel
+            {t.login.title}
           </p>
         </div>
 
@@ -46,7 +52,7 @@ export default function AdminLoginPage() {
         >
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Email
+              {t.login.email}
             </label>
             <input
               type="email"
@@ -61,7 +67,7 @@ export default function AdminLoginPage() {
 
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Password
+              {t.login.password}
             </label>
             <div className="relative">
               <input
@@ -75,7 +81,7 @@ export default function AdminLoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t.login.hide : t.login.show}
                 tabIndex={-1}
                 className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-700"
               >
@@ -105,7 +111,7 @@ export default function AdminLoginPage() {
             disabled={submitting}
             className="w-full rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 px-4 py-2.5 text-sm font-medium text-white transition-colors"
           >
-            {submitting ? "Signing in…" : "Sign in"}
+            {submitting ? t.login.submitting : t.login.submit}
           </button>
         </form>
 
@@ -113,7 +119,7 @@ export default function AdminLoginPage() {
           href="/"
           className="mt-6 text-center text-xs text-gray-500 hover:text-gray-700 block"
         >
-          ← Back to public site
+          {t.login.back}
         </Link>
       </div>
     </main>
