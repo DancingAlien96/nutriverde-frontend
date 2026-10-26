@@ -1012,6 +1012,33 @@ export async function declineAppointmentTime(
   return parseJson(res);
 }
 
+/** Cancela una cita confirmada o propuesta; libera la hora y avisa a la paciente. */
+export async function cancelAppointment(
+  appointmentId: string,
+  reason?: string,
+): Promise<{ ok: true }> {
+  const res = await authFetch(`/api/admin/appointments/${appointmentId}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ reason: reason ?? "" }),
+  });
+  return parseJson(res);
+}
+
+/**
+ * Mueve una cita a otra fecha (o reactiva una cancelada) y avisa a la
+ * paciente. Si no se manda meetingUrl se conserva el que tenía.
+ */
+export async function rescheduleAppointment(
+  appointmentId: string,
+  input: { scheduledAt: string; meetingUrl?: string; meetingProvider?: "GOOGLE_MEET" | "ZOOM" },
+): Promise<{ ok: true; appointment: { id: string; status: string; scheduledAt: string } }> {
+  const res = await authFetch(`/api/admin/appointments/${appointmentId}/reschedule`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
 /** Citas que quedarían dentro de una ventana, para avisar antes de bloquear. */
 export async function getBlockConflicts(
   startsAt: string,

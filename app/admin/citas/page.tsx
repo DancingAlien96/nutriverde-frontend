@@ -12,6 +12,7 @@ import {
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon } from "../icons";
 import { PendingScheduling } from "./PendingScheduling";
 import { NewAppointment } from "./NewAppointment";
+import { AppointmentActions } from "./AppointmentActions";
 import { useAdminT } from "../../lib/admin-i18n";
 
 export default function CitasPage() {
@@ -324,6 +325,10 @@ function CitasContent() {
                           onDone={() => setReloadKey((k) => k + 1)}
                         />
                       )}
+                      <AppointmentActions
+                        appointment={a}
+                        onDone={() => setReloadKey((k) => k + 1)}
+                      />
                     </li>
                   ))}
               </ul>
