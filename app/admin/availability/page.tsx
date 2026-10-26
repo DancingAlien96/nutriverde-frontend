@@ -102,6 +102,10 @@ function Content() {
                 await updateSlot(id, { active });
                 await reload();
               }}
+              onEdit={async (id, startMinute, endMinute) => {
+                await updateSlot(id, { startMinute, endMinute });
+                await reload();
+              }}
               onDelete={async (id) => {
                 await deleteSlot(id);
                 await reload();
@@ -287,12 +291,14 @@ function DayRow({
   slots,
   onAdd,
   onToggle,
+  onEdit,
   onDelete,
 }: {
   dayOfWeek: number;
   slots: AvailabilitySlot[];
   onAdd: (startMinute: number, endMinute: number) => Promise<void>;
   onToggle: (id: string, active: boolean) => Promise<void>;
+  onEdit: (id: string, startMinute: number, endMinute: number) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const [adding, setAdding] = useState(false);
@@ -338,31 +344,13 @@ function DayRow({
       {slots.length > 0 && (
         <ul className="space-y-1.5">
           {slots.map((s) => (
-            <li
+            <SlotRow
               key={s.id}
-              className="flex items-center gap-3 text-sm"
-            >
-              <span
-                className={`inline-block w-2 h-2 rounded-full ${s.active ? "bg-brand-500" : "bg-gray-300"}`}
-              />
-              <span className="font-medium text-gray-900">
-                {fmtMin(s.startMinute)} – {fmtMin(s.endMinute)}
-              </span>
-              <button
-                type="button"
-                onClick={() => onToggle(s.id, !s.active)}
-                className="ml-auto text-xs text-gray-600 hover:text-gray-900"
-              >
-                {s.active ? "Pause" : "Activate"}
-              </button>
-              <button
-                type="button"
-                onClick={() => onDelete(s.id)}
-                className="text-xs text-red-700 hover:text-red-800"
-              >
-                Delete
-              </button>
-            </li>
+              slot={s}
+              onToggle={onToggle}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
           ))}
         </ul>
       )}
@@ -411,6 +399,133 @@ function DayRow({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Una franja del dia. Ademas de pausar y borrar, permite cambiar sus horas
+ * en linea: el "Edit" convierte la fila en dos campos de hora + Guardar.
+ */
+function SlotRow({
+  slot: s,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  slot: AvailabilitySlot;
+  onToggle: (id: string, active: boolean) => Promise<void>;
+  onEdit: (id: string, startMinute: number, endMinute: number) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [start, setStart] = useState(fmtMin(s.startMinute));
+  const [end, setEnd] = useState(fmtMin(s.endMinute));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function openEdit() {
+    setStart(fmtMin(s.startMinute));
+    setEnd(fmtMin(s.endMinute));
+    setError(null);
+    setEditing(true);
+  }
+
+  async function save() {
+    const sm = toMin(start);
+    const em = toMin(end);
+    if (!(sm < em)) {
+      setError("The start time must be before the end time.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await onEdit(s.id, sm, em);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <li className="flex flex-wrap items-end gap-2 text-sm">
+        <span
+          className={`inline-block w-2 h-2 rounded-full mb-2.5 ${s.active ? "bg-brand-500" : "bg-gray-300"}`}
+        />
+        <label className="text-xs">
+          From
+          <input
+            type="time"
+            value={start}
+            onChange={(e) => setStart(e.target.value)}
+            className="block rounded-lg border border-gray-300 px-2 py-1 text-sm w-28"
+          />
+        </label>
+        <label className="text-xs">
+          To
+          <input
+            type="time"
+            value={end}
+            onChange={(e) => setEnd(e.target.value)}
+            className="block rounded-lg border border-gray-300 px-2 py-1 text-sm w-28"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          className="rounded-full bg-gray-900 hover:bg-gray-800 disabled:opacity-60 px-4 py-1.5 text-xs font-medium text-white"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setEditing(false);
+            setError(null);
+          }}
+          className="text-xs text-gray-600 hover:text-gray-900"
+        >
+          Cancel
+        </button>
+        {error && <p className="w-full text-xs text-red-700">{error}</p>}
+      </li>
+    );
+  }
+
+  return (
+    <li className="flex items-center gap-3 text-sm">
+      <span
+        className={`inline-block w-2 h-2 rounded-full ${s.active ? "bg-brand-500" : "bg-gray-300"}`}
+      />
+      <span className="font-medium text-gray-900">
+        {fmtMin(s.startMinute)} – {fmtMin(s.endMinute)}
+      </span>
+      <button
+        type="button"
+        onClick={openEdit}
+        className="ml-auto text-xs text-brand-700 hover:text-brand-800 font-medium"
+      >
+        Edit
+      </button>
+      <button
+        type="button"
+        onClick={() => onToggle(s.id, !s.active)}
+        className="text-xs text-gray-600 hover:text-gray-900"
+      >
+        {s.active ? "Pause" : "Activate"}
+      </button>
+      <button
+        type="button"
+        onClick={() => onDelete(s.id)}
+        className="text-xs text-red-700 hover:text-red-800"
+      >
+        Delete
+      </button>
+    </li>
   );
 }
 
