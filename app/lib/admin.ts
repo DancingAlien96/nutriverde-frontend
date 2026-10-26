@@ -1,14 +1,24 @@
 "use client";
 
-import { API_URL } from "./api";
+import { API_URL, type MonthAvailability } from "./api";
 
 const TOKEN_KEY = "nutriverde_admin_token";
+
+/**
+ * Roles del panel. SECRETARY solo agenda citas: ve el calendario, confirma
+ * horario + link de videollamada y dispara el correo. Nada más.
+ */
+export type AdminRole = "NUTRITIONIST" | "STAFF" | "SECRETARY";
 
 export interface Admin {
   id: string;
   email: string;
   fullName: string;
-  role: string;
+  role: AdminRole | string;
+}
+
+export function isSecretary(role?: string | null): boolean {
+  return role === "SECRETARY";
 }
 
 export interface LoginResponse {
@@ -802,6 +812,118 @@ export async function listAppointments(range?: {
   if (range?.to) qs.set("to", range.to);
   const q = qs.toString();
   const res = await authFetch(`/api/admin/appointments${q ? `?${q}` : ""}`);
+  return parseJson(res);
+}
+
+/**
+ * Cita con pago aprobado que falta agendar. `scheduledAt` viene cuando la
+ * paciente ya propuso un horario (PENDING_CONFIRMATION); null cuando aún no
+ * ha elegido (PAYMENT_APPROVED).
+ */
+export interface PendingAppointment {
+  id: string;
+  status: "PAYMENT_APPROVED" | "PENDING_CONFIRMATION";
+  scheduledAt: string | null;
+  durationMin: number;
+  timezone: string;
+  scheduleToken: string | null;
+  meetingUrl: string | null;
+  meetingProvider: "GOOGLE_MEET" | "ZOOM" | null;
+  updatedAt: string;
+  patient: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string | null;
+    timezone: string;
+  };
+  service: { id: string; name: string; durationMin: number };
+}
+
+export async function listPendingAppointments(): Promise<{
+  appointments: PendingAppointment[];
+}> {
+  const res = await authFetch("/api/admin/appointments/pending");
+  return parseJson(res);
+}
+
+export async function getAppointmentAvailability(
+  appointmentId: string,
+  month: string,
+): Promise<MonthAvailability> {
+  const res = await authFetch(
+    `/api/admin/appointments/${appointmentId}/availability?month=${month}`,
+  );
+  return parseJson(res);
+}
+
+export async function getAppointmentSlots(
+  appointmentId: string,
+  date: string,
+): Promise<{ date: string; durationMin: number; slots: string[] }> {
+  const res = await authFetch(
+    `/api/admin/appointments/${appointmentId}/slots?date=${date}`,
+  );
+  return parseJson(res);
+}
+
+/** Paciente mínima para la cita manual (sin datos clínicos). */
+export interface PatientLookup {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  timezone: string;
+}
+
+export async function lookupPatientByEmail(
+  email: string,
+): Promise<{ patient: PatientLookup | null }> {
+  const res = await authFetch(
+    `/api/admin/appointments/patient-lookup?email=${encodeURIComponent(email)}`,
+  );
+  return parseJson(res);
+}
+
+/**
+ * Cita desde cero: crea (o reutiliza) la paciente, la cita nace SCHEDULED y
+ * se envía el correo. No genera registro de pago.
+ */
+export async function createManualAppointment(input: {
+  fullName: string;
+  email: string;
+  phone?: string;
+  timezone?: string;
+  serviceId: string;
+  scheduledAt: string;
+  meetingUrl: string;
+  meetingProvider?: "GOOGLE_MEET" | "ZOOM";
+  notes?: string;
+}): Promise<{
+  ok: true;
+  appointment: { id: string; status: string; scheduledAt: string };
+  patient: { id: string; fullName: string; email: string };
+}> {
+  const res = await authFetch("/api/admin/appointments", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
+/** Agenda la cita (horario + link) y envía el correo de confirmación. */
+export async function confirmAppointmentById(
+  appointmentId: string,
+  input: {
+    meetingUrl: string;
+    meetingProvider?: "GOOGLE_MEET" | "ZOOM";
+    scheduledAt?: string;
+  },
+): Promise<{ ok: true; appointment: { id: string; status: string; scheduledAt: string } }> {
+  const res = await authFetch(`/api/admin/appointments/${appointmentId}/confirm`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
   return parseJson(res);
 }
 

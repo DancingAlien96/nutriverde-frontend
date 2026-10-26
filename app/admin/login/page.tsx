@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { adminLogin } from "../../lib/admin";
+import { adminLogin, isSecretary } from "../../lib/admin";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -18,8 +18,9 @@ export default function AdminLoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await adminLogin(email.trim(), password);
-      router.replace("/admin");
+      const { admin } = await adminLogin(email.trim(), password);
+      // La secretaria aterriza directo en la agenda: es lo único que tiene.
+      router.replace(isSecretary(admin.role) ? "/admin/citas" : "/admin");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {

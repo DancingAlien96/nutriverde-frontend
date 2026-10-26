@@ -10,6 +10,8 @@ import {
   type AppointmentStatus,
 } from "../../lib/admin";
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon } from "../icons";
+import { PendingScheduling } from "./PendingScheduling";
+import { NewAppointment } from "./NewAppointment";
 
 export default function CitasPage() {
   return (
@@ -65,6 +67,8 @@ function CitasContent() {
   const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Formulario de cita desde cero (paciente nueva o existente).
+  const [creating, setCreating] = useState(false);
 
   // Rango visible del grid (6 semanas desde el lunes anterior al día 1).
   const { gridStart, days } = useMemo(() => {
@@ -134,6 +138,17 @@ function CitasContent() {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => setCreating((v) => !v)}
+            className={`rounded-full px-4 h-9 text-sm font-medium transition-colors ${
+              creating
+                ? "border border-cream-200 bg-white text-ink-700 hover:bg-cream-50"
+                : "bg-brand-600 text-white hover:bg-brand-700"
+            }`}
+          >
+            {creating ? "Cancel" : "+ New appointment"}
+          </button>
+          <button
+            type="button"
             onClick={goToday}
             className="rounded-full border border-cream-200 bg-white px-4 h-9 text-sm font-medium text-ink-700 hover:bg-cream-50"
           >
@@ -171,6 +186,24 @@ function CitasContent() {
           {error}
         </div>
       )}
+
+      {creating && (
+        <NewAppointment
+          onClose={() => setCreating(false)}
+          onCreated={(iso) => {
+            setCreating(false);
+            // Saltamos al dia de la cita recien creada y recargamos.
+            const d = new Date(iso);
+            setCursor(new Date(d.getFullYear(), d.getMonth(), 1));
+            setSelected(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+            setReloadKey((k) => k + 1);
+          }}
+        />
+      )}
+
+      {/* Citas con pago aprobado que faltan agendar. Al confirmar una se
+          recarga el calendario para que aparezca de inmediato. */}
+      <PendingScheduling onScheduled={() => setReloadKey((k) => k + 1)} />
 
       <div className="grid lg:grid-cols-[1fr_20rem] gap-5">
         {/* Calendario */}

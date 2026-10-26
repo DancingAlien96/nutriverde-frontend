@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { adminMe, clearToken, getToken, type Admin } from "../lib/admin";
+import { adminMe, clearToken, getToken, isSecretary, type Admin } from "../lib/admin";
 import {
   HomeIcon,
   CalendarIcon,
@@ -33,6 +33,29 @@ const NAV: NavItem[] = [
   { href: "/admin/services", label: "Services", icon: PlateIcon },
 ];
 
+// La secretaria solo tiene la agenda. Cualquier otra ruta del panel la manda
+// de vuelta a /admin/citas (el backend también la rechaza con 403, esto es
+// solo para que nunca vea una pantalla rota).
+const SECRETARY_HOME = "/admin/citas";
+const SECRETARY_ALLOWED = ["/admin/citas"];
+
+function navFor(admin: Admin | null): NavItem[] {
+  if (isSecretary(admin?.role)) {
+    return NAV.filter((n) => SECRETARY_ALLOWED.includes(n.href));
+  }
+  return NAV;
+}
+
+function homeFor(admin: Admin | null): string {
+  return isSecretary(admin?.role) ? SECRETARY_HOME : "/admin";
+}
+
+function canVisit(admin: Admin, pathname: string | null): boolean {
+  if (!isSecretary(admin.role)) return true;
+  if (!pathname) return true;
+  return SECRETARY_ALLOWED.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
 function isActive(pathname: string | null, item: NavItem): boolean {
   if (!pathname) return false;
   return item.exact ? pathname === item.href : pathname.startsWith(item.href);
@@ -54,10 +77,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     }
     adminMe()
       .then(({ admin: a }) => {
-        if (!cancelled) {
-          setAdmin(a);
-          setLoading(false);
+        if (cancelled) return;
+        if (!canVisit(a, pathname)) {
+          router.replace(homeFor(a));
+          return;
         }
+        setAdmin(a);
+        setLoading(false);
       })
       .catch(() => {
         if (!cancelled) {
@@ -91,7 +117,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const sidebar = (
     <div className="flex h-full flex-col">
       {/* Logo */}
-      <Link href="/admin" className="block px-6 pt-7 pb-6 leading-none">
+      <Link href={homeFor(admin)} className="block px-6 pt-7 pb-6 leading-none">
         <span className="block font-serif-display text-2xl tracking-[0.06em] text-ink-900">
           PLENHA
         </span>
@@ -102,7 +128,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
       {/* Navegación */}
       <nav className="flex-1 px-3 space-y-1">
-        {NAV.map((item) => {
+        {navFor(admin).map((item) => {
           const active = isActive(pathname, item);
           const Icon = item.icon;
           return (
@@ -161,7 +187,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
       {/* Barra superior móvil */}
       <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between bg-cream-50/95 backdrop-blur border-b border-cream-200 px-4 py-3">
-        <Link href="/admin" className="leading-none">
+        <Link href={homeFor(admin)} className="leading-none">
           <span className="font-serif-display text-xl tracking-[0.06em] text-ink-900">
             PLENHA
           </span>
@@ -216,8 +242,16 @@ function initials(name?: string): string {
 }
 
 function roleLabel(role?: string): string {
-  if (!role) return "Administrator";
-  if (role.toUpperCase() === "OWNER") return "Nutritionist";
-  if (role.toUpperCase() === "ADMIN") return "Administrator";
-  return role.toLowerCase();
+  switch ((role ?? "").toUpperCase()) {
+    case "NUTRITIONIST":
+    case "OWNER":
+      return "Nutritionist";
+    case "SECRETARY":
+      return "Secretary";
+    case "STAFF":
+    case "ADMIN":
+      return "Staff";
+    default:
+      return role ? role.toLowerCase() : "Administrator";
+  }
 }
