@@ -92,12 +92,32 @@ async function authFetch(path: string, init: RequestInit = {}): Promise<Response
 }
 
 async function parseJson<T>(res: Response): Promise<T> {
-  const data = (await res.json().catch(() => ({}))) as T & { error?: string };
+  const data = (await res.json().catch(() => ({}))) as T & {
+    error?: string;
+    issues?: Record<string, string[] | undefined>;
+  };
   if (!res.ok) {
     if (res.status === 401) clearToken();
-    throw new Error(data.error ?? `HTTP ${res.status}`);
+    throw new Error(readableError(data, res.status));
   }
   return data;
+}
+
+/**
+ * El backend responde "ValidationError" con un mapa campo -> mensajes. Al
+ * usuario hay que enseñarle el mensaje, no el nombre del error.
+ */
+function readableError(
+  data: { error?: string; issues?: Record<string, string[] | undefined> },
+  status: number,
+): string {
+  if (data.error === "ValidationError" && data.issues) {
+    const msgs = Object.values(data.issues)
+      .flatMap((m) => m ?? [])
+      .filter(Boolean);
+    if (msgs.length > 0) return msgs.join(" ");
+  }
+  return data.error ?? `HTTP ${status}`;
 }
 
 export async function adminLogin(email: string, password: string): Promise<LoginResponse> {
@@ -979,7 +999,8 @@ export async function createManualAppointment(input: {
   /** Paquete del que descuenta la cita; si va, el servicio es el del paquete. */
   packageId?: string;
   scheduledAt: string;
-  meetingUrl: string;
+  /** Opcional: la cita puede crearse sin enlace y enviarlo después. */
+  meetingUrl?: string;
   meetingProvider?: "GOOGLE_MEET" | "ZOOM";
   notes?: string;
 }): Promise<{
@@ -998,7 +1019,7 @@ export async function createManualAppointment(input: {
 export async function confirmAppointmentById(
   appointmentId: string,
   input: {
-    meetingUrl: string;
+    meetingUrl?: string;
     meetingProvider?: "GOOGLE_MEET" | "ZOOM";
     scheduledAt?: string;
   },

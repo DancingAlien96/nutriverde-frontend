@@ -184,7 +184,7 @@ function ScheduleForm({
   }, [appointment.id, selectedDate]);
 
   const effectiveTime = useProposed ? proposed : pickedSlot;
-  const canSubmit = !!effectiveTime && meetingUrl.trim().length > 0 && !submitting;
+  const canSubmit = !!effectiveTime && !submitting;
 
   async function submit() {
     if (!effectiveTime) {
@@ -192,15 +192,11 @@ function ScheduleForm({
       return;
     }
     const url = meetingUrl.trim();
-    if (!url) {
-      setError(t.pending.linkRequired);
-      return;
-    }
     setSubmitting(true);
     setError(null);
     try {
       await confirmAppointmentById(appointment.id, {
-        meetingUrl: url,
+        meetingUrl: url || undefined,
         // Solo mandamos scheduledAt si se eligio una hora distinta a la propuesta.
         scheduledAt: useProposed ? undefined : effectiveTime,
       });
@@ -309,6 +305,7 @@ function ScheduleForm({
         placeholder="https://meet.google.com/..."
         className="mt-2 w-full rounded-xl border border-cream-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
       />
+      <p className="mt-1 text-[11px] text-ink-500">{t.pending.linkHint}</p>
 
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
 

@@ -165,7 +165,6 @@ export function NewAppointment({
     email.trim().length > 3 &&
     fullName.trim().length >= 2 &&
     !!pickedSlot &&
-    meetingUrl.trim().length > 0 &&
     !submitting;
 
   async function submit() {
@@ -181,7 +180,7 @@ export function NewAppointment({
         serviceId: service.id,
         packageId: packageId || undefined,
         scheduledAt: pickedSlot,
-        meetingUrl: meetingUrl.trim(),
+        meetingUrl: meetingUrl.trim() || undefined,
         notes: notes.trim() || undefined,
       });
       onCreated(pickedSlot);
@@ -345,6 +344,7 @@ export function NewAppointment({
             placeholder="https://meet.google.com/..."
             className={inputCls}
           />
+          <p className="text-[11px] text-ink-500 -mt-2">{t.newAppt.linkHint}</p>
 
           <Field label={t.newAppt.notes}>
             <textarea
