@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   createManualAppointment,
   lookupPatientByEmail,
+  type EmailOutcome,
   type PatientPackage,
 } from "../../lib/admin";
 import {
@@ -43,16 +44,19 @@ const TIMEZONES = [
 export function NewAppointment({
   onClose,
   onCreated,
+  initialEmail,
 }: {
   onClose: () => void;
-  onCreated: (scheduledAt: string) => void;
+  onCreated: (scheduledAt: string, email: EmailOutcome) => void;
+  /** Correo con el que abrir el formulario ya buscado (desde "Por renovar"). */
+  initialEmail?: string;
 }) {
   const t = useAdminT();
   const dl = t.dateLocale;
   const [services, setServices] = useState<ApiService[]>([]);
   const [serviceSlug, setServiceSlug] = useState<string>("");
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail ?? "");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [timezone, setTimezone] = useState(BUSINESS_TZ);
@@ -73,14 +77,6 @@ export function NewAppointment({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchServices()
-      .then((list) => {
-        setServices(list);
-        if (list.length > 0) setServiceSlug(list[0].slug);
-      })
-      .catch(() => setError(t.newAppt.servicesError));
-  }, [t.newAppt.servicesError]);
 
   const service = services.find((s) => s.slug === serviceSlug) ?? null;
 
@@ -125,8 +121,12 @@ export function NewAppointment({
     };
   }, [serviceSlug, selectedDate]);
 
-  async function handleEmailBlur() {
-    const e = email.trim().toLowerCase();
+  function handleEmailBlur() {
+    return lookup(email, services);
+  }
+
+  async function lookup(raw: string, svcList: ApiService[]) {
+    const e = raw.trim().toLowerCase();
     if (!e || !e.includes("@")) return;
     setLookingUp(true);
     try {
@@ -142,7 +142,7 @@ export function NewAppointment({
         const withLeft = pkgs.find((p) => p.remaining > 0);
         setPackageId(withLeft?.id ?? "");
         if (withLeft) {
-          const svc = services.find((s) => s.id === withLeft.serviceId);
+          const svc = svcList.find((s) => s.id === withLeft.serviceId);
           if (svc) handleServiceChange(svc.slug);
         }
       } else {
@@ -160,6 +160,27 @@ export function NewAppointment({
     }
   }
 
+  // Carga de servicios. Va después de `lookup` porque la usa al abrir el
+  // formulario desde "Por renovar".
+  useEffect(() => {
+    let cancelled = false;
+    fetchServices()
+      .then((list) => {
+        if (cancelled) return;
+        setServices(list);
+        if (list.length > 0) setServiceSlug(list[0].slug);
+        // Si venimos de "Por renovar", buscamos a la paciente de una vez.
+        if (initialEmail) void lookup(initialEmail, list);
+      })
+      .catch(() => {
+        if (!cancelled) setError(t.newAppt.servicesError);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t.newAppt.servicesError, initialEmail]);
+
   const canSubmit =
     !!service &&
     email.trim().length > 3 &&
@@ -172,7 +193,7 @@ export function NewAppointment({
     setSubmitting(true);
     setError(null);
     try {
-      await createManualAppointment({
+      const result = await createManualAppointment({
         fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
         phone: phone.trim() || undefined,
@@ -183,7 +204,7 @@ export function NewAppointment({
         meetingUrl: meetingUrl.trim() || undefined,
         notes: notes.trim() || undefined,
       });
-      onCreated(pickedSlot);
+      onCreated(pickedSlot, result.email);
     } catch (err) {
       setError(err instanceof Error ? err.message : t.common.error);
     } finally {
@@ -333,6 +354,14 @@ export function NewAppointment({
               </option>
             ))}
           </select>
+
+          {!packageId && (service?.sessions ?? 1) > 1 && (
+            <div className="rounded-xl bg-brand-50 border border-brand-200 px-3 py-2 text-xs text-brand-900">
+              <span className="font-semibold">{t.packages.newPackage}</span>{" "}
+              {service?.name} · {service?.sessions} {t.packages.sessionsWord}. {t.packages.firstSession}{" "}
+              {service?.sessions}.
+            </div>
+          )}
 
           <p className="text-xs font-semibold uppercase tracking-wider text-ink-500 pt-2">
             {t.newAppt.step4}

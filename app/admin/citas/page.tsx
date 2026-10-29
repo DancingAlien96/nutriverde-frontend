@@ -5,14 +5,17 @@ import { AdminShell } from "../AdminShell";
 import {
   listAppointments,
   declineAppointmentTime,
+  setAppointmentInvoiced,
   formatCents,
   type AppointmentItem,
   type AppointmentStatus,
+  type EmailOutcome,
 } from "../../lib/admin";
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon } from "../icons";
 import { PendingScheduling } from "./PendingScheduling";
 import { NewAppointment } from "./NewAppointment";
 import { AppointmentActions } from "./AppointmentActions";
+import { RenewalsCard } from "./RenewalsCard";
 import { useAdminT } from "../../lib/admin-i18n";
 
 export default function CitasPage() {
@@ -50,8 +53,13 @@ function CitasContent() {
   const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Formulario de cita desde cero (paciente nueva o existente).
+  // Formulario de cita desde cero (paciente nueva o existente). createEmail
+  // viene de "Por renovar" para abrirlo con la paciente ya buscada.
   const [creating, setCreating] = useState(false);
+  const [createEmail, setCreateEmail] = useState<string | undefined>(undefined);
+  // Resultado del ultimo correo a una paciente (enviado o fallido), para que
+  // quien agenda vea de inmediato si el aviso salio.
+  const [notice, setNotice] = useState<EmailOutcome | null>(null);
 
   // Rango visible del grid (6 semanas desde el lunes anterior al día 1).
   const { gridStart, days } = useMemo(() => {
@@ -119,7 +127,10 @@ function CitasContent() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setCreating((v) => !v)}
+            onClick={() => {
+              setCreateEmail(undefined);
+              setCreating((v) => !v);
+            }}
             className={`rounded-full px-4 h-9 text-sm font-medium transition-colors ${
               creating
                 ? "border border-cream-200 bg-white text-ink-700 hover:bg-cream-50"
@@ -168,11 +179,41 @@ function CitasContent() {
         </div>
       )}
 
+      {notice && (
+        <div
+          className={`mb-4 flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${
+            notice.sent
+              ? "bg-brand-50 border-brand-200 text-brand-900"
+              : "bg-amber-50 border-amber-200 text-amber-900"
+          }`}
+        >
+          <p>
+            {notice.sent
+              ? `${t.mail.sentTo} ${notice.to}.`
+              : `${t.mail.failedTo} ${notice.to} ${t.mail.failedTail} ${notice.error ?? ""}`}
+          </p>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            className="shrink-0 text-xs font-medium underline-offset-2 hover:underline"
+          >
+            {t.mail.dismiss}
+          </button>
+        </div>
+      )}
+
       {creating && (
         <NewAppointment
-          onClose={() => setCreating(false)}
-          onCreated={(iso) => {
+          key={createEmail ?? "blank"}
+          initialEmail={createEmail}
+          onClose={() => {
             setCreating(false);
+            setCreateEmail(undefined);
+          }}
+          onCreated={(iso, email) => {
+            setNotice(email);
+            setCreating(false);
+            setCreateEmail(undefined);
             // Saltamos al dia de la cita recien creada y recargamos.
             const d = new Date(iso);
             setCursor(new Date(d.getFullYear(), d.getMonth(), 1));
@@ -184,7 +225,23 @@ function CitasContent() {
 
       {/* Citas con pago aprobado que faltan agendar. Al confirmar una se
           recarga el calendario para que aparezca de inmediato. */}
-      <PendingScheduling onScheduled={() => setReloadKey((k) => k + 1)} />
+      {/* Paquetes agotados sin renovar: alerta proactiva con acceso directo
+          a agendar la siguiente cita de esa paciente. */}
+      <RenewalsCard
+        reloadKey={reloadKey}
+        onBook={(email) => {
+          setCreateEmail(email);
+          setCreating(true);
+          if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+      />
+
+      <PendingScheduling
+        onScheduled={(email) => {
+          setNotice(email);
+          setReloadKey((k) => k + 1);
+        }}
+      />
 
       <div className="grid lg:grid-cols-[1fr_20rem] gap-5">
         {/* Calendario */}
@@ -322,6 +379,12 @@ function CitasContent() {
                           {formatCents(a.payment.amountCents, a.payment.currency)}
                         </p>
                       )}
+                      {a.status !== "CANCELED" && (
+                        <InvoiceToggle
+                          appointment={a}
+                          onChanged={() => setReloadKey((k) => k + 1)}
+                        />
+                      )}
                       {a.meetingUrl && (
                         <a
                           href={a.meetingUrl}
@@ -451,6 +514,57 @@ function DeclineTime({
           {t.common.cancel}
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Casilla "Factura emitida". Guarda al instante; si falla, vuelve al estado
+ * anterior y muestra el error debajo.
+ */
+function InvoiceToggle({
+  appointment,
+  onChanged,
+}: {
+  appointment: AppointmentItem;
+  onChanged: () => void;
+}) {
+  const t = useAdminT();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggle(next: boolean) {
+    setBusy(true);
+    setError(null);
+    try {
+      await setAppointmentInvoiced(appointment.id, next);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.common.error);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-2">
+      <label
+        className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-medium cursor-pointer select-none ${
+          appointment.invoiced
+            ? "border-brand-300 bg-brand-50 text-brand-800"
+            : "border-cream-200 bg-white text-ink-600"
+        }`}
+      >
+        <input
+          type="checkbox"
+          checked={appointment.invoiced}
+          disabled={busy}
+          onChange={(e) => toggle(e.target.checked)}
+          className="h-3.5 w-3.5 accent-brand-600"
+        />
+        {appointment.invoiced ? t.invoice.label : t.invoice.pending}
+      </label>
+      {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
     </div>
   );
 }

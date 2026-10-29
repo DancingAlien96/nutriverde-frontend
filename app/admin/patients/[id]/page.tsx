@@ -267,6 +267,11 @@ function Content() {
                           package of {a.package.totalSessions}
                         </span>
                       )}
+                      {a.invoiced && (
+                        <span className="ml-2 rounded-full bg-brand-100 text-brand-800 text-[10px] font-medium px-2 py-0.5 align-middle">
+                          invoiced
+                        </span>
+                      )}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {a.scheduledAt

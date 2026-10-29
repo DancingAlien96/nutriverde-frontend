@@ -487,6 +487,7 @@ export interface PatientDetail {
     createdAt: string;
     service: { id: string; name: string; slug: string };
     package: { id: string; totalSessions: number } | null;
+    invoiced?: boolean;
     payment: {
       id: string;
       status: string;
@@ -849,6 +850,21 @@ export interface AppointmentItem {
     usedSessions: number;
     sessionNumber: number | null;
   } | null;
+  /** Control administrativo: si ya se emitió la factura de esta cita. */
+  invoiced: boolean;
+  invoicedAt: string | null;
+}
+
+/** Marca o desmarca "factura emitida" en una cita. */
+export async function setAppointmentInvoiced(
+  appointmentId: string,
+  invoiced: boolean,
+): Promise<{ ok: true; appointment: { id: string; invoiced: boolean; invoicedAt: string | null } }> {
+  const res = await authFetch(`/api/admin/appointments/${appointmentId}/invoice`, {
+    method: "PATCH",
+    body: JSON.stringify({ invoiced }),
+  });
+  return parseJson(res);
 }
 
 export async function listAppointments(range?: {
@@ -968,6 +984,28 @@ export async function updateAdminUser(
   return parseJson(res);
 }
 
+/** Paquete agotado sin renovar: aparece en la tarjeta "Por renovar". */
+export interface RenewalItem {
+  packageId: string;
+  patient: { id: string; fullName: string; email: string; phone: string | null };
+  serviceName: string;
+  totalSessions: number;
+  lastSessionAt: string | null;
+  lastSessionDone: boolean;
+}
+
+export async function listRenewals(): Promise<{ renewals: RenewalItem[] }> {
+  const res = await authFetch("/api/admin/appointments/renewals");
+  return parseJson(res);
+}
+
+/** Resultado del correo a la paciente tras agendar: para mostrarlo en pantalla. */
+export interface EmailOutcome {
+  to: string;
+  sent: boolean;
+  error?: string;
+}
+
 /** Paciente mínima para la cita manual (sin datos clínicos). */
 export interface PatientLookup {
   id: string;
@@ -1006,6 +1044,7 @@ export async function createManualAppointment(input: {
 }): Promise<{
   ok: true;
   appointment: { id: string; status: string; scheduledAt: string };
+  email: EmailOutcome;
   patient: { id: string; fullName: string; email: string };
 }> {
   const res = await authFetch("/api/admin/appointments", {
@@ -1023,7 +1062,11 @@ export async function confirmAppointmentById(
     meetingProvider?: "GOOGLE_MEET" | "ZOOM";
     scheduledAt?: string;
   },
-): Promise<{ ok: true; appointment: { id: string; status: string; scheduledAt: string } }> {
+): Promise<{
+  ok: true;
+  appointment: { id: string; status: string; scheduledAt: string };
+  email: EmailOutcome;
+}> {
   const res = await authFetch(`/api/admin/appointments/${appointmentId}/confirm`, {
     method: "POST",
     body: JSON.stringify(input),

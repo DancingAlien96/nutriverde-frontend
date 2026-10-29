@@ -6,6 +6,7 @@ import {
   getAppointmentAvailability,
   getAppointmentSlots,
   listPendingAppointments,
+  type EmailOutcome,
   type PendingAppointment,
 } from "../../lib/admin";
 import { MonthCalendar } from "../../components/MonthCalendar";
@@ -22,7 +23,11 @@ const BUSINESS_TZ = "America/Guatemala";
  * propuso la paciente), se pega el link de la videollamada y al confirmar
  * la paciente recibe el correo con fecha y enlace.
  */
-export function PendingScheduling({ onScheduled }: { onScheduled: () => void }) {
+export function PendingScheduling({
+  onScheduled,
+}: {
+  onScheduled: (email: EmailOutcome) => void;
+}) {
   const t = useAdminT();
   const [items, setItems] = useState<PendingAppointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,10 +57,10 @@ export function PendingScheduling({ onScheduled }: { onScheduled: () => void }) 
     };
   }, [reloadKey, t.pending.loadError]);
 
-  function handleScheduled() {
+  function handleScheduled(email: EmailOutcome) {
     setOpenId(null);
     setReloadKey((k) => k + 1);
-    onScheduled();
+    onScheduled(email);
   }
 
   if (loading && items.length === 0) {
@@ -138,7 +143,7 @@ function ScheduleForm({
   onDone,
 }: {
   appointment: PendingAppointment;
-  onDone: () => void;
+  onDone: (email: EmailOutcome) => void;
 }) {
   const t = useAdminT();
   const proposed = appointment.scheduledAt;
@@ -195,12 +200,12 @@ function ScheduleForm({
     setSubmitting(true);
     setError(null);
     try {
-      await confirmAppointmentById(appointment.id, {
+      const result = await confirmAppointmentById(appointment.id, {
         meetingUrl: url || undefined,
         // Solo mandamos scheduledAt si se eligio una hora distinta a la propuesta.
         scheduledAt: useProposed ? undefined : effectiveTime,
       });
-      onDone();
+      onDone(result.email);
     } catch (err) {
       setError(err instanceof Error ? err.message : t.common.error);
     } finally {
