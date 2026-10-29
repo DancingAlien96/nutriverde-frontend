@@ -81,6 +81,24 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // PWA: el navegador avisa cuando la app se puede instalar; guardamos el
+  // evento para disparar el dialogo desde el boton "Instalar app".
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    function onPrompt(e: Event) {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    }
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
+  }, []);
+
+  async function handleInstall() {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    setInstallPrompt(null);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -163,6 +181,19 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
+
+      {/* Instalar como app (solo aparece si el navegador lo permite) */}
+      {installPrompt && (
+        <div className="px-3 pb-2">
+          <button
+            type="button"
+            onClick={handleInstall}
+            className="w-full rounded-2xl border border-brand-300 bg-brand-50 px-4 py-2 text-xs font-medium text-brand-800 hover:bg-brand-100"
+          >
+            {t.common.installApp}
+          </button>
+        </div>
+      )}
 
       {/* Decoración */}
       <div className="px-6 pointer-events-none">
@@ -270,4 +301,10 @@ function roleLabel(role: string | undefined, t: AdminDict): string {
     default:
       return role ? role.toLowerCase() : t.roles.default;
   }
+}
+
+/** Evento no estandarizado de Chromium para el prompt de instalacion PWA. */
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
