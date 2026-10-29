@@ -999,6 +999,49 @@ export async function listRenewals(): Promise<{ renewals: RenewalItem[] }> {
   return parseJson(res);
 }
 
+// ============================================================
+// Dashboard (inicio del panel)
+// ============================================================
+
+export interface DashboardData {
+  generatedAt: string;
+  months: string[]; // YYYY-MM, del más antiguo al actual
+  kpis: {
+    incomeThisMonthCents: number;
+    incomeLastMonthCents: number;
+    appointmentsThisMonth: number;
+    patientsTotal: number;
+    newPatientsThisMonth: number;
+    pendingReview: number;
+    activePackages: number;
+    sessionsRemaining: number;
+  };
+  incomeByMonth: Array<{ month: string; gtqCents: number; usdCents: number; count: number }>;
+  appointmentsByMonth: Array<{ month: string; done: number; upcoming: number; canceled: number }>;
+  revenueByService: Array<{ name: string; gtqCents: number; count: number }>;
+  paymentsThisMonth: {
+    approved: number;
+    pending: number;
+    rejected: number;
+    approvedCents: number;
+    pendingCents: number;
+    rejectedCents: number;
+  };
+  upcoming: Array<{
+    id: string;
+    scheduledAt: string;
+    status: string;
+    patient: { fullName: string };
+    service: { name: string };
+  }>;
+  recentPatients: Array<{ id: string; fullName: string; email: string; createdAt: string }>;
+}
+
+export async function getDashboard(months: 6 | 12): Promise<DashboardData> {
+  const res = await authFetch(`/api/admin/dashboard?months=${months}`);
+  return parseJson(res);
+}
+
 /** Resultado del correo a la paciente tras agendar: para mostrarlo en pantalla. */
 export interface EmailOutcome {
   to: string;
