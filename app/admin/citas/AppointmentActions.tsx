@@ -243,16 +243,20 @@ function ReschedulePanel({
           </div>
         )}
       </div>
-      <label className="block">
-        <span className="block text-[11px] text-ink-600 mb-1">{t.actions.meetingLink}</span>
-        <input
-          type="url"
-          value={meetingUrl}
-          onChange={(e) => setMeetingUrl(e.target.value)}
-          placeholder="https://meet.google.com/..."
-          className="w-full rounded-lg border border-cream-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
-        />
-      </label>
+      {appointment.modality === "IN_PERSON" ? (
+        <p className="text-[11px] text-ink-600">{t.modality.inPerson} · {t.modality.inPersonHint}</p>
+      ) : (
+        <label className="block">
+          <span className="block text-[11px] text-ink-600 mb-1">{t.actions.meetingLink}</span>
+          <input
+            type="url"
+            value={meetingUrl}
+            onChange={(e) => setMeetingUrl(e.target.value)}
+            placeholder="https://meet.google.com/..."
+            className="w-full rounded-lg border border-cream-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+          />
+        </label>
+      )}
       {error && <p className="text-[11px] text-red-600">{error}</p>}
       <div className="flex flex-col gap-1">
         <button

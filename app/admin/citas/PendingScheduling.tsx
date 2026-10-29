@@ -7,6 +7,7 @@ import {
   getAppointmentSlots,
   listPendingAppointments,
   type EmailOutcome,
+  type Modality,
   type PendingAppointment,
 } from "../../lib/admin";
 import { MonthCalendar } from "../../components/MonthCalendar";
@@ -155,6 +156,7 @@ function ScheduleForm({
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [pickedSlot, setPickedSlot] = useState<string | null>(null);
   const [meetingUrl, setMeetingUrl] = useState(appointment.meetingUrl ?? "");
+  const [modality, setModality] = useState<Modality>(appointment.modality ?? "VIRTUAL");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -201,7 +203,8 @@ function ScheduleForm({
     setError(null);
     try {
       const result = await confirmAppointmentById(appointment.id, {
-        meetingUrl: url || undefined,
+        modality,
+        meetingUrl: modality === "VIRTUAL" ? url || undefined : undefined,
         // Solo mandamos scheduledAt si se eligio una hora distinta a la propuesta.
         scheduledAt: useProposed ? undefined : effectiveTime,
       });
@@ -296,21 +299,38 @@ function ScheduleForm({
         </div>
       )}
 
-      {/* Paso 2: link */}
+      {/* Paso 2: modalidad + link */}
       <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-brand-700">
         {t.pending.step2}
       </p>
-      <input
-        type="url"
-        value={meetingUrl}
-        onChange={(e) => {
-          setMeetingUrl(e.target.value);
-          setError(null);
-        }}
-        placeholder="https://meet.google.com/..."
-        className="mt-2 w-full rounded-xl border border-cream-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-      />
-      <p className="mt-1 text-[11px] text-ink-500">{t.pending.linkHint}</p>
+      <div className="mt-2">
+        <ModalityToggle
+          value={modality}
+          onChange={setModality}
+          label={t.modality.label}
+          virtualLabel={t.modality.virtual}
+          inPersonLabel={t.modality.inPerson}
+        />
+      </div>
+      {modality === "VIRTUAL" ? (
+        <>
+          <input
+            type="url"
+            value={meetingUrl}
+            onChange={(e) => {
+              setMeetingUrl(e.target.value);
+              setError(null);
+            }}
+            placeholder="https://meet.google.com/..."
+            className="mt-2 w-full rounded-xl border border-cream-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+          />
+          <p className="mt-1 text-[11px] text-ink-500">{t.pending.linkHint}</p>
+        </>
+      ) : (
+        <p className="mt-2 rounded-xl bg-white border border-cream-200 px-3 py-2 text-xs text-ink-600">
+          {t.modality.inPersonHint}
+        </p>
+      )}
 
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
 
@@ -332,6 +352,41 @@ function ScheduleForm({
               }.`
             : t.pending.noTimeSelected}
         </span>
+      </div>
+    </div>
+  );
+}
+
+function ModalityToggle({
+  value,
+  onChange,
+  label,
+  virtualLabel,
+  inPersonLabel,
+}: {
+  value: "VIRTUAL" | "IN_PERSON";
+  onChange: (m: "VIRTUAL" | "IN_PERSON") => void;
+  label: string;
+  virtualLabel: string;
+  inPersonLabel: string;
+}) {
+  const btn = (m: "VIRTUAL" | "IN_PERSON", text: string) => (
+    <button
+      type="button"
+      onClick={() => onChange(m)}
+      className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+        value === m ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-cream-50"
+      }`}
+    >
+      {text}
+    </button>
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <span className="text-xs text-ink-600">{label}</span>
+      <div className="inline-flex rounded-full bg-white border border-cream-200 p-1">
+        {btn("VIRTUAL", virtualLabel)}
+        {btn("IN_PERSON", inPersonLabel)}
       </div>
     </div>
   );

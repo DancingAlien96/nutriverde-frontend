@@ -5,6 +5,7 @@ import {
   createManualAppointment,
   lookupPatientByEmail,
   type EmailOutcome,
+  type Modality,
   type PatientPackage,
 } from "../../lib/admin";
 import {
@@ -72,6 +73,7 @@ export function NewAppointment({
   const [pickedSlot, setPickedSlot] = useState<string | null>(null);
 
   const [meetingUrl, setMeetingUrl] = useState("");
+  const [modality, setModality] = useState<Modality>("VIRTUAL");
   const [notes, setNotes] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
@@ -201,7 +203,8 @@ export function NewAppointment({
         serviceId: service.id,
         packageId: packageId || undefined,
         scheduledAt: pickedSlot,
-        meetingUrl: meetingUrl.trim() || undefined,
+        modality,
+        meetingUrl: modality === "VIRTUAL" ? meetingUrl.trim() || undefined : undefined,
         notes: notes.trim() || undefined,
       });
       onCreated(pickedSlot, result.email);
@@ -366,14 +369,29 @@ export function NewAppointment({
           <p className="text-xs font-semibold uppercase tracking-wider text-ink-500 pt-2">
             {t.newAppt.step4}
           </p>
-          <input
-            type="url"
-            value={meetingUrl}
-            onChange={(e) => setMeetingUrl(e.target.value)}
-            placeholder="https://meet.google.com/..."
-            className={inputCls}
+          <ModalityToggle
+            value={modality}
+            onChange={setModality}
+            label={t.modality.label}
+            virtualLabel={t.modality.virtual}
+            inPersonLabel={t.modality.inPerson}
           />
-          <p className="text-[11px] text-ink-500 -mt-2">{t.newAppt.linkHint}</p>
+          {modality === "VIRTUAL" ? (
+            <>
+              <input
+                type="url"
+                value={meetingUrl}
+                onChange={(e) => setMeetingUrl(e.target.value)}
+                placeholder="https://meet.google.com/..."
+                className={inputCls}
+              />
+              <p className="text-[11px] text-ink-500 -mt-2">{t.newAppt.linkHint}</p>
+            </>
+          ) : (
+            <p className="rounded-xl bg-cream-50 border border-cream-200 px-3 py-2 text-xs text-ink-600">
+              {t.modality.inPersonHint}
+            </p>
+          )}
 
           <Field label={t.newAppt.notes}>
             <textarea
@@ -479,6 +497,41 @@ export function NewAppointment({
 
 const inputCls =
   "w-full rounded-xl border border-cream-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500";
+
+function ModalityToggle({
+  value,
+  onChange,
+  label,
+  virtualLabel,
+  inPersonLabel,
+}: {
+  value: "VIRTUAL" | "IN_PERSON";
+  onChange: (m: "VIRTUAL" | "IN_PERSON") => void;
+  label: string;
+  virtualLabel: string;
+  inPersonLabel: string;
+}) {
+  const btn = (m: "VIRTUAL" | "IN_PERSON", text: string) => (
+    <button
+      type="button"
+      onClick={() => onChange(m)}
+      className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+        value === m ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-cream-50"
+      }`}
+    >
+      {text}
+    </button>
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <span className="text-xs text-ink-600">{label}</span>
+      <div className="inline-flex rounded-full bg-white border border-cream-200 p-1">
+        {btn("VIRTUAL", virtualLabel)}
+        {btn("IN_PERSON", inPersonLabel)}
+      </div>
+    </div>
+  );
+}
 
 function Field({
   label,

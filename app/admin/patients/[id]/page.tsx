@@ -267,9 +267,14 @@ function Content() {
                           package of {a.package.totalSessions}
                         </span>
                       )}
-                      {a.invoiced && (
+                      {a.invoiceStatus === "ISSUED" && (
                         <span className="ml-2 rounded-full bg-brand-100 text-brand-800 text-[10px] font-medium px-2 py-0.5 align-middle">
                           invoiced
+                        </span>
+                      )}
+                      {a.invoiceStatus === "NOT_REQUESTED" && (
+                        <span className="ml-2 rounded-full bg-cream-100 text-ink-600 text-[10px] font-medium px-2 py-0.5 align-middle">
+                          no invoice requested
                         </span>
                       )}
                     </p>

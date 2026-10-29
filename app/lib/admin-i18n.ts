@@ -169,9 +169,18 @@ const EN = {
     noDate: "Last session not scheduled yet",
     book: "Book next appointment",
   },
+  modality: {
+    label: "Appointment type",
+    virtual: "Virtual",
+    inPerson: "In person",
+    inPersonHint: "No video link. The patient's email says we'll contact her the day before with the address and directions.",
+    virtualHint: "The patient's email includes the video call link (or says it will be sent later).",
+  },
   invoice: {
-    label: "Invoice issued",
-    pending: "Invoice pending",
+    title: "Invoice",
+    PENDING: "Invoice pending",
+    ISSUED: "Invoice issued",
+    NOT_REQUESTED: "No invoice requested",
   },
   mail: {
     sentTo: "Confirmation email sent to",
@@ -429,9 +438,18 @@ const ES: AdminDict = {
     noDate: "Última sesión aún sin fecha",
     book: "Agendar siguiente cita",
   },
+  modality: {
+    label: "Tipo de cita",
+    virtual: "Virtual",
+    inPerson: "Presencial",
+    inPersonHint: "Sin enlace. El correo le dice a la paciente que un día antes le avisaremos con la dirección e indicaciones.",
+    virtualHint: "El correo a la paciente incluye el enlace de la videollamada (o avisa que se enviará después).",
+  },
   invoice: {
-    label: "Factura emitida",
-    pending: "Factura pendiente",
+    title: "Factura",
+    PENDING: "Factura pendiente",
+    ISSUED: "Factura emitida",
+    NOT_REQUESTED: "No solicitó factura",
   },
   mail: {
     sentTo: "Correo de confirmación enviado a",

@@ -11,6 +11,8 @@ const TOKEN_KEY = "nutriverde_admin_token";
 export type AdminRole = "NUTRITIONIST" | "STAFF" | "SECRETARY";
 /** Idioma del panel para ese usuario (lo fija la nutricionista). */
 export type AdminLocale = "EN" | "ES";
+/** Modalidad de la cita: virtual (con enlace) o presencial. */
+export type Modality = "VIRTUAL" | "IN_PERSON";
 
 export interface Admin {
   id: string;
@@ -487,7 +489,7 @@ export interface PatientDetail {
     createdAt: string;
     service: { id: string; name: string; slug: string };
     package: { id: string; totalSessions: number } | null;
-    invoiced?: boolean;
+    invoiceStatus?: "PENDING" | "ISSUED" | "NOT_REQUESTED";
     payment: {
       id: string;
       status: string;
@@ -850,19 +852,22 @@ export interface AppointmentItem {
     usedSessions: number;
     sessionNumber: number | null;
   } | null;
-  /** Control administrativo: si ya se emitió la factura de esta cita. */
-  invoiced: boolean;
+  /** Control administrativo de factura: pendiente, emitida o no solicitada. */
+  invoiceStatus: InvoiceStatus;
   invoicedAt: string | null;
+  modality: Modality;
 }
 
-/** Marca o desmarca "factura emitida" en una cita. */
-export async function setAppointmentInvoiced(
+export type InvoiceStatus = "PENDING" | "ISSUED" | "NOT_REQUESTED";
+
+/** Cambia el estado de factura de una cita. */
+export async function setAppointmentInvoice(
   appointmentId: string,
-  invoiced: boolean,
-): Promise<{ ok: true; appointment: { id: string; invoiced: boolean; invoicedAt: string | null } }> {
+  status: InvoiceStatus,
+): Promise<{ ok: true; appointment: { id: string; invoiceStatus: InvoiceStatus; invoicedAt: string | null } }> {
   const res = await authFetch(`/api/admin/appointments/${appointmentId}/invoice`, {
     method: "PATCH",
-    body: JSON.stringify({ invoiced }),
+    body: JSON.stringify({ status }),
   });
   return parseJson(res);
 }
@@ -893,6 +898,7 @@ export interface PendingAppointment {
   scheduleToken: string | null;
   meetingUrl: string | null;
   meetingProvider: "GOOGLE_MEET" | "ZOOM" | null;
+  modality: Modality;
   updatedAt: string;
   package: { id: string; totalSessions: number } | null;
   patient: {
@@ -1083,6 +1089,7 @@ export async function createManualAppointment(input: {
   /** Opcional: la cita puede crearse sin enlace y enviarlo después. */
   meetingUrl?: string;
   meetingProvider?: "GOOGLE_MEET" | "ZOOM";
+  modality?: Modality;
   notes?: string;
 }): Promise<{
   ok: true;
@@ -1103,6 +1110,7 @@ export async function confirmAppointmentById(
   input: {
     meetingUrl?: string;
     meetingProvider?: "GOOGLE_MEET" | "ZOOM";
+    modality?: Modality;
     scheduledAt?: string;
   },
 ): Promise<{
@@ -1165,7 +1173,12 @@ export async function cancelAppointment(
  */
 export async function rescheduleAppointment(
   appointmentId: string,
-  input: { scheduledAt: string; meetingUrl?: string; meetingProvider?: "GOOGLE_MEET" | "ZOOM" },
+  input: {
+    scheduledAt: string;
+    meetingUrl?: string;
+    meetingProvider?: "GOOGLE_MEET" | "ZOOM";
+    modality?: Modality;
+  },
 ): Promise<{ ok: true; appointment: { id: string; status: string; scheduledAt: string } }> {
   const res = await authFetch(`/api/admin/appointments/${appointmentId}/reschedule`, {
     method: "POST",

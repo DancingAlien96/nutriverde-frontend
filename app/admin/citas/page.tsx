@@ -5,8 +5,9 @@ import { AdminShell } from "../AdminShell";
 import {
   listAppointments,
   declineAppointmentTime,
-  setAppointmentInvoiced,
+  setAppointmentInvoice,
   formatCents,
+  type InvoiceStatus,
   type AppointmentItem,
   type AppointmentStatus,
   type EmailOutcome,
@@ -358,7 +359,18 @@ function CitasContent() {
                       <p className="mt-2 text-sm font-medium text-ink-900">
                         {a.patient.fullName}
                       </p>
-                      <p className="text-xs text-ink-500">{a.service.name}</p>
+                      <p className="text-xs text-ink-500">
+                        {a.service.name}
+                        <span
+                          className={`ml-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium align-middle ${
+                            a.modality === "IN_PERSON"
+                              ? "bg-cream-100 text-ink-700"
+                              : "bg-brand-50 text-brand-700"
+                          }`}
+                        >
+                          {a.modality === "IN_PERSON" ? t.modality.inPerson : t.modality.virtual}
+                        </span>
+                      </p>
                       {a.package && a.package.sessionNumber && (
                         <p
                           className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
@@ -533,11 +545,11 @@ function InvoiceToggle({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function toggle(next: boolean) {
+  async function change(next: InvoiceStatus) {
     setBusy(true);
     setError(null);
     try {
-      await setAppointmentInvoiced(appointment.id, next);
+      await setAppointmentInvoice(appointment.id, next);
       onChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : t.common.error);
@@ -546,23 +558,30 @@ function InvoiceToggle({
     }
   }
 
+  const status = appointment.invoiceStatus ?? "PENDING";
+  const tone =
+    status === "ISSUED"
+      ? "border-brand-300 bg-brand-50 text-brand-800"
+      : status === "NOT_REQUESTED"
+        ? "border-cream-200 bg-cream-50 text-ink-600"
+        : "border-amber-200 bg-amber-50 text-amber-800";
+
   return (
     <div className="mt-2">
-      <label
-        className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-medium cursor-pointer select-none ${
-          appointment.invoiced
-            ? "border-brand-300 bg-brand-50 text-brand-800"
-            : "border-cream-200 bg-white text-ink-600"
-        }`}
-      >
-        <input
-          type="checkbox"
-          checked={appointment.invoiced}
+      <label className="inline-flex items-center gap-2 text-[11px] text-ink-500">
+        <span>{t.invoice.title}</span>
+        <select
+          value={status}
           disabled={busy}
-          onChange={(e) => toggle(e.target.checked)}
-          className="h-3.5 w-3.5 accent-brand-600"
-        />
-        {appointment.invoiced ? t.invoice.label : t.invoice.pending}
+          onChange={(e) => change(e.target.value as InvoiceStatus)}
+          className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${tone} disabled:opacity-60`}
+        >
+          {(["PENDING", "ISSUED", "NOT_REQUESTED"] as InvoiceStatus[]).map((v) => (
+            <option key={v} value={v}>
+              {t.invoice[v]}
+            </option>
+          ))}
+        </select>
       </label>
       {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
     </div>
