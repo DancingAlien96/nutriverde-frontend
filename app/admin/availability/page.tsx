@@ -85,7 +85,9 @@ function Content() {
       <section className="rounded-2xl bg-white border border-gray-200 p-4 sm:p-6 mb-6">
         <h2 className="font-semibold text-gray-900">Weekly schedule</h2>
         <p className="text-xs text-gray-500 mt-1">
-          You can add several ranges per day (for example 8-12 and 14-17).
+          You can add several ranges per day (for example 8-12 and 14-17). The
+          &quot;To&quot; time is the last appointment start: 7:30 – 14:00 offers a
+          last appointment at 14:00, whatever the service duration.
         </p>
 
         <div className="mt-6 space-y-3">
@@ -367,7 +369,7 @@ function DayRow({
             />
           </label>
           <label className="text-xs">
-            To
+            To (last start)
             <input
               type="time"
               value={end}
@@ -465,7 +467,7 @@ function SlotRow({
           />
         </label>
         <label className="text-xs">
-          To
+          To (last start)
           <input
             type="time"
             value={end}
