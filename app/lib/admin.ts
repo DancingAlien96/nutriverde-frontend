@@ -713,6 +713,8 @@ export interface ServiceAdmin {
   durationMin: number;
   /** Consultas incluidas (1 = cita suelta, 4/6 = programa). */
   sessions: number;
+  /** Interno: no sale en la web; solo se asigna desde el panel (empresas). */
+  internal: boolean;
   billingType: "ONE_TIME" | "MONTHLY";
   active: boolean;
   sortOrder: number;
@@ -742,6 +744,7 @@ export async function createAdminService(input: {
   priceUsdCents?: number | null;
   durationMin: number;
   sessions?: number;
+  internal?: boolean;
   billingType: "ONE_TIME" | "MONTHLY";
   currency?: string;
   active?: boolean;
@@ -1053,6 +1056,23 @@ export interface EmailOutcome {
   to: string;
   sent: boolean;
   error?: string;
+}
+
+/** Servicio asignable desde la agenda (incluye los internos de empresa). */
+export interface SchedulableService {
+  id: string;
+  slug: string;
+  name: string;
+  durationMin: number;
+  sessions: number;
+  priceCents: number;
+  currency: string;
+  internal: boolean;
+}
+
+export async function listSchedulableServices(): Promise<{ services: SchedulableService[] }> {
+  const res = await authFetch("/api/admin/appointments/services");
+  return parseJson(res);
 }
 
 /** Paciente mínima para la cita manual (sin datos clínicos). */

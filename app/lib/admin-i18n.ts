@@ -132,6 +132,9 @@ const EN = {
     forPatient: "for the patient",
     pickAll: "Pick a service, a day and a time.",
     min: "min",
+    internalTag: "internal",
+    internalGroup: "Internal (companies)",
+    publicGroup: "Public services",
   },
   actions: {
     reschedule: "Reschedule",
@@ -401,6 +404,9 @@ const ES: AdminDict = {
     forPatient: "para la paciente",
     pickAll: "Elige servicio, día y hora.",
     min: "min",
+    internalTag: "interno",
+    internalGroup: "Internos (empresas)",
+    publicGroup: "Servicios públicos",
   },
   actions: {
     reschedule: "Reprogramar",

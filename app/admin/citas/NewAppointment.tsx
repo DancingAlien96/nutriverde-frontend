@@ -3,17 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   createManualAppointment,
+  listSchedulableServices,
   lookupPatientByEmail,
   type EmailOutcome,
   type Modality,
   type PatientPackage,
+  type SchedulableService,
 } from "../../lib/admin";
-import {
-  fetchServiceAvailability,
-  fetchServiceSlots,
-  fetchServices,
-  type ApiService,
-} from "../../lib/api";
+import { fetchServiceAvailability, fetchServiceSlots } from "../../lib/api";
 import { MonthCalendar } from "../../components/MonthCalendar";
 import { CloseIcon } from "../icons";
 import { useAdminT } from "../../lib/admin-i18n";
@@ -54,7 +51,7 @@ export function NewAppointment({
 }) {
   const t = useAdminT();
   const dl = t.dateLocale;
-  const [services, setServices] = useState<ApiService[]>([]);
+  const [services, setServices] = useState<SchedulableService[]>([]);
   const [serviceSlug, setServiceSlug] = useState<string>("");
 
   const [email, setEmail] = useState(initialEmail ?? "");
@@ -127,7 +124,7 @@ export function NewAppointment({
     return lookup(email, services);
   }
 
-  async function lookup(raw: string, svcList: ApiService[]) {
+  async function lookup(raw: string, svcList: SchedulableService[]) {
     const e = raw.trim().toLowerCase();
     if (!e || !e.includes("@")) return;
     setLookingUp(true);
@@ -166,8 +163,10 @@ export function NewAppointment({
   // formulario desde "Por renovar".
   useEffect(() => {
     let cancelled = false;
-    fetchServices()
-      .then((list) => {
+    // Lista del panel (no la pública): incluye los servicios internos de
+    // empresa, que no aparecen en la web.
+    listSchedulableServices()
+      .then(({ services: list }) => {
         if (cancelled) return;
         setServices(list);
         if (list.length > 0) setServiceSlug(list[0].slug);
@@ -351,11 +350,27 @@ export function NewAppointment({
             disabled={!!packageId}
             className={`${inputCls} ${packageId ? "bg-cream-50 text-ink-600" : ""}`}
           >
-            {services.map((s) => (
-              <option key={s.id} value={s.slug}>
-                {s.name} · {s.durationMin > 0 ? s.durationMin : 60} {t.newAppt.min}
-              </option>
-            ))}
+            <optgroup label={t.newAppt.publicGroup}>
+              {services
+                .filter((s) => !s.internal)
+                .map((s) => (
+                  <option key={s.id} value={s.slug}>
+                    {s.name} · {s.durationMin > 0 ? s.durationMin : 60} {t.newAppt.min}
+                  </option>
+                ))}
+            </optgroup>
+            {services.some((s) => s.internal) && (
+              <optgroup label={t.newAppt.internalGroup}>
+                {services
+                  .filter((s) => s.internal)
+                  .map((s) => (
+                    <option key={s.id} value={s.slug}>
+                      {s.name} · {s.durationMin > 0 ? s.durationMin : 60} {t.newAppt.min}
+                      {s.sessions > 1 ? ` · ${s.sessions} ${t.packages.sessionsWord}` : ""} ({t.newAppt.internalTag})
+                    </option>
+                  ))}
+              </optgroup>
+            )}
           </select>
 
           {!packageId && (service?.sessions ?? 1) > 1 && (

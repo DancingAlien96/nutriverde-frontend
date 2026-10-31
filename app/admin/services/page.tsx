@@ -124,6 +124,7 @@ function NewServiceForm({
   const [priceUsd, setPriceUsd] = useState("");
   const [duration, setDuration] = useState("60");
   const [sessions, setSessions] = useState("1");
+  const [internal, setInternal] = useState(false);
   const [billingType, setBillingType] = useState<"ONE_TIME" | "MONTHLY">(
     "ONE_TIME",
   );
@@ -158,6 +159,7 @@ function NewServiceForm({
         priceUsdCents: usd ? Math.round(Number(usd) * 100) : null,
         durationMin,
         sessions: sessionsNum,
+        internal,
         billingType,
       });
       if (imageFile) await uploadServiceImage(service.id, imageFile);
@@ -257,6 +259,18 @@ function NewServiceForm({
           </span>
         </label>
 
+        <label className="flex items-end gap-2 cursor-pointer text-sm">
+          <input
+            type="checkbox"
+            checked={internal}
+            onChange={(e) => setInternal(e.target.checked)}
+            className="h-4 w-4 mb-2 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+          />
+          <span className="mb-1.5">
+            Internal (companies): hidden from the website, only bookable from the panel
+          </span>
+        </label>
+
         <label className="text-xs">
           Type
           <select
@@ -342,6 +356,7 @@ function ServiceCard({
   );
   const [duration, setDuration] = useState(service.durationMin.toString());
   const [sessions, setSessions] = useState((service.sessions ?? 1).toString());
+  const [internal, setInternal] = useState(service.internal ?? false);
   const [billingType, setBillingType] = useState<"ONE_TIME" | "MONTHLY">(
     service.billingType,
   );
@@ -379,6 +394,7 @@ function ServiceCard({
     );
     setDuration(service.durationMin.toString());
     setSessions((service.sessions ?? 1).toString());
+    setInternal(service.internal ?? false);
     setBillingType(service.billingType);
     setActive(service.active);
     setSortOrder(service.sortOrder.toString());
@@ -413,6 +429,7 @@ function ServiceCard({
         priceUsdCents: usd ? Math.round(Number(usd) * 100) : null,
         durationMin,
         sessions: sessionsNum,
+        internal,
         billingType,
         active,
         sortOrder: Number(sortOrder) || 0,
@@ -449,6 +466,11 @@ function ServiceCard({
               {!service.active && (
                 <span className="text-[10px] uppercase tracking-wider text-ink-500 bg-cream-100 px-2 py-0.5 rounded-full">
                   Inactive
+                </span>
+              )}
+              {service.internal && (
+                <span className="text-[10px] uppercase tracking-wider text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                  Internal
                 </span>
               )}
             </div>
@@ -627,7 +649,17 @@ function ServiceCard({
             onChange={(e) => setActive(e.target.checked)}
             className="h-4 w-4 mb-2 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
           />
-          <span className="mb-1.5">Active (visible to the public)</span>
+          <span className="mb-1.5">Active</span>
+        </label>
+
+        <label className="flex items-end gap-2 cursor-pointer text-sm">
+          <input
+            type="checkbox"
+            checked={internal}
+            onChange={(e) => setInternal(e.target.checked)}
+            className="h-4 w-4 mb-2 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+          />
+          <span className="mb-1.5">Internal (companies): hidden from the website</span>
         </label>
       </div>
 
