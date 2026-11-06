@@ -30,7 +30,18 @@ function PaquetesContent() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
+  // Desglose de sesiones visible por defecto en todos los paquetes; aquí se
+  // guardan los que el usuario contrajo.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const isOpen = (id: string) => !collapsed.has(id);
+  function toggle(id: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +117,17 @@ function PaquetesContent() {
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          onClick={() =>
+            setCollapsed((prev) =>
+              prev.size === 0 ? new Set(visible.map((p) => p.id)) : new Set(),
+            )
+          }
+          className="rounded-full border border-cream-200 bg-white px-3.5 py-1.5 text-xs font-medium text-ink-600 hover:bg-cream-50"
+        >
+          {collapsed.size === 0 ? tp.collapseAll : tp.expandAll}
+        </button>
         <input
           type="search"
           value={query}
@@ -127,7 +149,7 @@ function PaquetesContent() {
             <li key={p.id} className="rounded-2xl bg-white border border-cream-200">
               <button
                 type="button"
-                onClick={() => setOpenId(openId === p.id ? null : p.id)}
+                onClick={() => toggle(p.id)}
                 className="w-full text-left px-4 sm:px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-5"
               >
                 <div className="min-w-0 lg:w-64">
@@ -196,11 +218,11 @@ function PaquetesContent() {
                   {tp.states[p.state]}
                 </span>
                 <ChevronRightIcon
-                  className={`hidden lg:block h-4 w-4 text-ink-400 shrink-0 transition-transform ${openId === p.id ? "rotate-90" : ""}`}
+                  className={`hidden lg:block h-4 w-4 text-ink-400 shrink-0 transition-transform ${isOpen(p.id) ? "rotate-90" : ""}`}
                 />
               </button>
 
-              {openId === p.id && (
+              {isOpen(p.id) && (
                 <div className="border-t border-cream-100 px-4 sm:px-5 py-4">
                   <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1">
                     {Array.from({ length: p.totalSessions }, (_, i) => i + 1).map((n) => {

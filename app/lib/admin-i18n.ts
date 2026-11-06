@@ -264,6 +264,8 @@ const EN = {
     canceledNote: "Canceled appointments (not counted):",
     viewPatient: "View patient record",
     goCalendar: "Go to calendar",
+    expandAll: "Show all sessions",
+    collapseAll: "Hide sessions",
   },
   users: {
     title: "Users",
@@ -562,6 +564,8 @@ const ES: AdminDict = {
     canceledNote: "Citas canceladas (no cuentan):",
     viewPatient: "Ver expediente",
     goCalendar: "Ir al calendario",
+    expandAll: "Mostrar todas las sesiones",
+    collapseAll: "Ocultar sesiones",
   },
   users: {
     title: "Usuarios",
