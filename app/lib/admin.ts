@@ -1075,6 +1075,65 @@ export async function listSchedulableServices(): Promise<{ services: Schedulable
   return parseJson(res);
 }
 
+/** Disponibilidad por servicio en modo panel (incluye hoy, horas futuras). */
+export async function getServiceAvailabilityAdmin(
+  serviceId: string,
+  month: string,
+): Promise<MonthAvailability> {
+  const res = await authFetch(`/api/admin/appointments/services/${serviceId}/availability?month=${month}`);
+  return parseJson(res);
+}
+
+export async function getServiceSlotsAdmin(
+  serviceId: string,
+  date: string,
+): Promise<{ date: string; durationMin: number; slots: string[] }> {
+  const res = await authFetch(`/api/admin/appointments/services/${serviceId}/slots?date=${date}`);
+  return parseJson(res);
+}
+
+// ============================================================
+// Paquetes (vista global, solo nutricionista/staff)
+// ============================================================
+
+export interface PackageSession {
+  id: string;
+  sessionNumber: number | null;
+  scheduledAt: string | null;
+  status: string;
+  modality: Modality;
+}
+
+export interface PackageOverview {
+  id: string;
+  createdAt: string;
+  notes: string | null;
+  patient: { id: string; fullName: string; email: string; phone: string | null };
+  service: { id: string; name: string; internal: boolean };
+  payment: { id: string; status: string; amountCents: number; currency: string } | null;
+  totalSessions: number;
+  usedSessions: number;
+  remaining: number;
+  doneSessions: number;
+  scheduledPending: number;
+  nextSessionAt: string | null;
+  lastSessionAt: string | null;
+  state: "active" | "exhausted" | "completed";
+  sessions: PackageSession[];
+}
+
+export interface PackagesSummary {
+  active: number;
+  exhausted: number;
+  completed: number;
+  sessionsRemaining: number;
+}
+
+export async function listPackages(): Promise<{ packages: PackageOverview[]; summary: PackagesSummary }> {
+  const res = await authFetch("/api/admin/packages");
+  return parseJson(res);
+}
+
 /** Paciente mínima para la cita manual (sin datos clínicos). */
 export interface PatientLookup {
   id: string;

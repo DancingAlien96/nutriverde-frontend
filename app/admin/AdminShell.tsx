@@ -14,6 +14,7 @@ import {
   CardIcon,
   PlateIcon,
   GearIcon,
+  BoxIcon,
   LogoutIcon,
   MenuIcon,
   CloseIcon,
@@ -34,6 +35,7 @@ const NAV: NavItem[] = [
   { href: "/admin/patients", label: "patients", icon: UsersIcon },
   { href: "/admin/pagos", label: "payments", icon: CardIcon },
   { href: "/admin/services", label: "services", icon: PlateIcon },
+  { href: "/admin/paquetes", label: "packages", icon: BoxIcon },
   // Solo nutricionista: ver navFor/canVisit.
   { href: "/admin/users", label: "users", icon: GearIcon },
 ];

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   createManualAppointment,
+  getServiceAvailabilityAdmin,
+  getServiceSlotsAdmin,
   listSchedulableServices,
   lookupPatientByEmail,
   type EmailOutcome,
@@ -10,7 +12,6 @@ import {
   type PatientPackage,
   type SchedulableService,
 } from "../../lib/admin";
-import { fetchServiceAvailability, fetchServiceSlots } from "../../lib/api";
 import { MonthCalendar } from "../../components/MonthCalendar";
 import { CloseIcon } from "../icons";
 import { useAdminT } from "../../lib/admin-i18n";
@@ -79,12 +80,15 @@ export function NewAppointment({
 
   const service = services.find((s) => s.slug === serviceSlug) ?? null;
 
+  // Disponibilidad en modo panel: permite hoy mismo (solo horas futuras),
+  // sin el margen minimo que aplica a la paciente que se agenda sola.
+  const serviceId = service?.id ?? "";
   const fetchAvailability = useCallback(
     (month: string) =>
-      serviceSlug
-        ? fetchServiceAvailability(serviceSlug, month)
+      serviceId
+        ? getServiceAvailabilityAdmin(serviceId, month)
         : Promise.reject(new Error("no service")),
-    [serviceSlug],
+    [serviceId],
   );
 
   // Al cambiar de servicio cambia la duracion, asi que los slots ya no valen.
@@ -103,9 +107,9 @@ export function NewAppointment({
   }
 
   useEffect(() => {
-    if (!serviceSlug || !selectedDate) return;
+    if (!serviceId || !selectedDate) return;
     let cancelled = false;
-    fetchServiceSlots(serviceSlug, selectedDate)
+    getServiceSlotsAdmin(serviceId, selectedDate)
       .then((d) => {
         if (!cancelled) setSlots(d.slots);
       })
@@ -118,7 +122,7 @@ export function NewAppointment({
     return () => {
       cancelled = true;
     };
-  }, [serviceSlug, selectedDate]);
+  }, [serviceId, selectedDate]);
 
   function handleEmailBlur() {
     return lookup(email, services);
