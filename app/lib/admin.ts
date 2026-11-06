@@ -489,6 +489,7 @@ export interface PatientDetail {
     createdAt: string;
     service: { id: string; name: string; slug: string };
     package: { id: string; totalSessions: number } | null;
+    modality?: Modality;
     invoiceStatus?: "PENDING" | "ISSUED" | "NOT_REQUESTED";
     payment: {
       id: string;

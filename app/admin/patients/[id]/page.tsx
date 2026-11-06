@@ -206,42 +206,86 @@ function Content() {
         onChanged={reload}
       />
 
-      {/* Session packages */}
+      {/* Session packages: cada paquete con el desglose numerado de sus sesiones */}
       {(patient.packages ?? []).length > 0 && (
         <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
           <h2 className="font-semibold text-gray-900 mb-4">Session packages</h2>
-          <ul className="space-y-2">
-            {patient.packages.map((p) => (
-              <li
-                key={p.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">{p.serviceName}</p>
-                  <p className="text-xs text-gray-500">
-                    Purchased {formatDate(p.createdAt)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-2 w-32 rounded-full bg-gray-200 overflow-hidden">
-                    <div
-                      className={`h-full ${p.remaining === 0 ? "bg-amber-500" : "bg-brand-500"}`}
-                      style={{
-                        width: `${Math.min(100, (p.usedSessions / p.totalSessions) * 100)}%`,
-                      }}
-                    />
+          <ul className="space-y-4">
+            {patient.packages.map((p) => {
+              // Citas de este paquete que cuentan (no canceladas), en orden
+              // cronologico; la posicion es el numero de sesion.
+              const sessions = patient.appointments
+                .filter((a) => a.package?.id === p.id && a.status !== "CANCELED")
+                .sort((a, b) => {
+                  const ta = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
+                  const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
+                  return ta - tb || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                });
+              const canceled = patient.appointments.filter(
+                (a) => a.package?.id === p.id && a.status === "CANCELED",
+              ).length;
+              return (
+                <li key={p.id} className="rounded-xl border border-gray-100 bg-gray-50/50">
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                    <div>
+                      <p className="font-medium text-gray-900">{p.serviceName}</p>
+                      <p className="text-xs text-gray-500">Purchased {formatDate(p.createdAt)}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-2 w-32 rounded-full bg-gray-200 overflow-hidden">
+                        <div
+                          className={`h-full ${p.remaining === 0 ? "bg-amber-500" : "bg-brand-500"}`}
+                          style={{ width: `${Math.min(100, (p.usedSessions / p.totalSessions) * 100)}%` }}
+                        />
+                      </div>
+                      <span className={`text-xs font-medium ${p.remaining === 0 ? "text-amber-700" : "text-gray-700"}`}>
+                        {p.usedSessions}/{p.totalSessions} used ·{" "}
+                        {p.remaining === 0 ? "complete, renew" : `${p.remaining} left`}
+                      </span>
+                    </div>
                   </div>
-                  <span
-                    className={`text-xs font-medium ${
-                      p.remaining === 0 ? "text-amber-700" : "text-gray-700"
-                    }`}
-                  >
-                    {p.usedSessions}/{p.totalSessions} used ·{" "}
-                    {p.remaining === 0 ? "complete, renew" : `${p.remaining} left`}
-                  </span>
-                </div>
-              </li>
-            ))}
+                  <div className="border-t border-gray-100 px-4 py-3 grid sm:grid-cols-2 gap-x-6 gap-y-1">
+                    {Array.from({ length: p.totalSessions }, (_, i) => i + 1).map((n) => {
+                      const a = sessions[n - 1];
+                      const past = isPastIso(a?.scheduledAt ?? null);
+                      return (
+                        <div key={n} className="flex items-center gap-3 py-1.5 text-sm border-b border-gray-100 last:border-0">
+                          <span className="h-6 w-6 shrink-0 rounded-full bg-white border border-gray-200 text-gray-600 text-[11px] font-semibold flex items-center justify-center">
+                            {n}
+                          </span>
+                          {a ? (
+                            <>
+                              <span className="text-gray-800 tabular-nums">
+                                {a.scheduledAt ? formatDate(a.scheduledAt) : "No date yet"}
+                              </span>
+                              <span className="text-[11px] text-gray-500">
+                                {a.modality === "IN_PERSON" ? "In person" : "Virtual"}
+                              </span>
+                              <span
+                                className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                  a.status === "COMPLETED" || past
+                                    ? "bg-brand-100 text-brand-800"
+                                    : "bg-sky-100 text-sky-800"
+                                }`}
+                              >
+                                {a.status === "COMPLETED" || past ? "Done" : appointmentStatusLabel(a.status)}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-gray-400 italic">Not booked yet</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {canceled > 0 && (
+                    <p className="px-4 pb-3 text-[11px] text-gray-500">
+                      Canceled appointments (not counted): {canceled}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
@@ -518,6 +562,11 @@ function paymentStatusLabel(status: string): string {
     default:
       return status;
   }
+}
+
+/** Fuera del componente: la regla de pureza de hooks no permite Date.now() en render. */
+function isPastIso(iso: string | null): boolean {
+  return !!iso && new Date(iso).getTime() < Date.now();
 }
 
 function formatDate(iso: string): string {
