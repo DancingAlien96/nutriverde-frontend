@@ -40,12 +40,16 @@ function Content() {
   const [error, setError] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   // La secretaria ve datos basicos, citas y paquetes; no lo clinico ni pagos.
-  const [secretary, setSecretary] = useState(false);
+  // Cerrado por defecto: hasta confirmar el rol (o si falla) se trata como
+  // restringido. El servidor ya recorta la respuesta para la secretaria;
+  // esto solo evita mostrar secciones vacias o botones que darian 403.
+  const [role, setRole] = useState<"full" | "restricted" | null>(null);
   useEffect(() => {
     adminMe()
-      .then((me) => setSecretary(isSecretary(me.admin.role)))
-      .catch(() => setSecretary(false));
+      .then((me) => setRole(isSecretary(me.admin.role) ? "restricted" : "full"))
+      .catch(() => setRole("restricted"));
   }, []);
+  const secretary = role !== "full";
 
   async function handleDownloadPdf() {
     if (!patient) return;
