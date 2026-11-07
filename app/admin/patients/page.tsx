@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell } from "../AdminShell";
 import {
-  DOCUMENT_TYPE_LABEL,
   adminMe,
   deletePatient,
   listPatients,
@@ -21,10 +20,6 @@ export default function PatientsPage() {
 
 type SortKey =
   | "fullName"
-  | "documentId"
-  | "phone"
-  | "age"
-  | "heightCm"
   | "appointments"
   | "sessionsRemaining"
   | "lastAppointmentAt"
@@ -35,15 +30,11 @@ const PAGE_SIZE = 25;
 
 const COLUMNS: { key: SortKey; label: string; align?: "right" | "center"; hide?: string }[] = [
   { key: "fullName", label: "Name" },
-  { key: "documentId", label: "ID" },
-  { key: "phone", label: "Phone", hide: "hidden md:table-cell" },
-  { key: "age", label: "Age", align: "center" },
-  { key: "heightCm", label: "Height", align: "right", hide: "hidden lg:table-cell" },
   { key: "appointments", label: "Appts", align: "center" },
-  { key: "sessionsRemaining", label: "Package", hide: "hidden md:table-cell" },
-  { key: "lastAppointmentAt", label: "Last appt.", hide: "hidden lg:table-cell" },
-  { key: "lastMeasurementAt", label: "Last measurement", hide: "hidden 2xl:table-cell" },
-  { key: "createdAt", label: "Registered", hide: "hidden 2xl:table-cell" },
+  { key: "sessionsRemaining", label: "Package" },
+  { key: "lastAppointmentAt", label: "Last appointment", hide: "hidden md:table-cell" },
+  { key: "lastMeasurementAt", label: "Last measurement", hide: "hidden lg:table-cell" },
+  { key: "createdAt", label: "Registered", hide: "hidden xl:table-cell" },
 ];
 
 /**
@@ -96,14 +87,10 @@ function Content() {
     const dir = sortDir === "asc" ? 1 : -1;
     const val = (p: PatientListItem): string | number | null => {
       switch (sortKey) {
-        case "age":
-          return ageFrom(p.birthDate);
         case "appointments":
           return p._count.appointments;
         case "sessionsRemaining":
           return p.packages.length ? p.sessionsRemaining : null;
-        case "documentId":
-          return p.documentId;
         default:
           return p[sortKey] as string | number | null;
       }
@@ -127,7 +114,7 @@ function Content() {
     if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else {
       setSortKey(key);
-      setSortDir(key === "fullName" || key === "documentId" || key === "phone" ? "asc" : "desc");
+      setSortDir(key === "fullName" ? "asc" : "desc");
     }
     setPage(1);
   }
@@ -139,7 +126,7 @@ function Content() {
           <h1 className="font-serif-display text-2xl sm:text-3xl text-gray-900">Patients</h1>
           <p className="text-sm text-gray-600 mt-1">
             {patients.length} {patients.length === 1 ? "patient" : "patients"}. Click a column to sort;
-            use the eye to open the record.
+            use the eye to open the record. Search also works by ID or phone.
           </p>
         </div>
         <div className="sm:max-w-xs sm:w-72">
@@ -200,7 +187,6 @@ function Content() {
               </thead>
               <tbody className="tabular-nums">
                 {rows.map((p) => {
-                  const age = ageFrom(p.birthDate);
                   return (
                     <tr
                       key={p.id}
@@ -211,34 +197,15 @@ function Content() {
                         <div className="font-medium text-gray-900 whitespace-nowrap">{p.fullName}</div>
                         <div className="text-[11px] text-gray-500 truncate max-w-[180px]">{p.email}</div>
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-700 whitespace-nowrap">
-                        {p.documentId ? (
-                          <>
-                            <span className="text-[10px] uppercase tracking-wider text-gray-500 mr-1">
-                              {DOCUMENT_TYPE_LABEL[p.documentType]}
-                            </span>
-                            <span className="font-mono">{p.documentId}</span>
-                          </>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-700 whitespace-nowrap hidden md:table-cell">
-                        {p.phone ?? "—"}
-                      </td>
-                      <td className="px-3 py-2.5 text-center text-gray-700">{age ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-right text-gray-700 whitespace-nowrap hidden lg:table-cell">
-                        {p.heightCm ? `${p.heightCm} cm` : "—"}
-                      </td>
                       <td className="px-3 py-2.5 text-center text-gray-700">{p._count.appointments}</td>
-                      <td className="px-3 py-2.5 text-xs whitespace-nowrap hidden md:table-cell">
+                      <td className="px-3 py-2.5 text-xs whitespace-nowrap">
                         {p.packages.length === 0 ? (
                           <span className="text-gray-400">—</span>
                         ) : (
                           <div className="space-y-0.5">
                             {p.packages.slice(0, 2).map((k) => (
                               <div key={k.id} className="flex items-center gap-1.5">
-                                <span className="text-gray-500 truncate max-w-[120px]">{k.serviceName}</span>
+                                <span className="text-gray-500 truncate max-w-[200px]">{k.serviceName}</span>
                                 <span className="font-medium text-gray-800 tabular-nums">
                                   {k.usedSessions}/{k.totalSessions}
                                 </span>
@@ -257,16 +224,16 @@ function Content() {
                           </div>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap hidden lg:table-cell">
+                      <td className="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap hidden md:table-cell">
                         {p.lastAppointmentAt ? formatDate(p.lastAppointmentAt) : "—"}
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap hidden 2xl:table-cell">
+                      <td className="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap hidden lg:table-cell">
                         {p.lastMeasurementAt ? formatDate(p.lastMeasurementAt) : "—"}
                         {p.lastWeightKg != null && (
                           <span className="ml-1 text-gray-400">· {p.lastWeightKg} kg</span>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap hidden 2xl:table-cell">
+                      <td className="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap hidden xl:table-cell">
                         {formatDate(p.createdAt)}
                       </td>
                       <td className="px-3 py-2.5 sticky right-0 bg-white group-hover:bg-cream-50">
@@ -447,17 +414,6 @@ function TrashIcon() {
       <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v7M14 10v7" />
     </svg>
   );
-}
-
-function ageFrom(birthDate: string | null): number | null {
-  if (!birthDate) return null;
-  const b = new Date(birthDate);
-  if (Number.isNaN(b.getTime())) return null;
-  const now = new Date();
-  let age = now.getFullYear() - b.getFullYear();
-  const m = now.getMonth() - b.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age -= 1;
-  return age >= 0 && age < 130 ? age : null;
 }
 
 function formatDate(iso: string): string {
