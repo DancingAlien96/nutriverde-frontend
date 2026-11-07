@@ -1115,47 +1115,6 @@ export async function getServiceSlotsAdmin(
   return parseJson(res);
 }
 
-// ============================================================
-// Paquetes (vista global, solo nutricionista/staff)
-// ============================================================
-
-export interface PackageSession {
-  id: string;
-  sessionNumber: number | null;
-  scheduledAt: string | null;
-  status: string;
-  modality: Modality;
-}
-
-export interface PackageOverview {
-  id: string;
-  createdAt: string;
-  notes: string | null;
-  patient: { id: string; fullName: string; email: string; phone: string | null };
-  service: { id: string; name: string; internal: boolean };
-  payment: { id: string; status: string; amountCents: number; currency: string } | null;
-  totalSessions: number;
-  usedSessions: number;
-  remaining: number;
-  doneSessions: number;
-  scheduledPending: number;
-  nextSessionAt: string | null;
-  lastSessionAt: string | null;
-  state: "active" | "exhausted" | "completed";
-  sessions: PackageSession[];
-}
-
-export interface PackagesSummary {
-  active: number;
-  exhausted: number;
-  completed: number;
-  sessionsRemaining: number;
-}
-
-export async function listPackages(): Promise<{ packages: PackageOverview[]; summary: PackagesSummary }> {
-  const res = await authFetch("/api/admin/packages");
-  return parseJson(res);
-}
 
 /** Paciente mínima para la cita manual (sin datos clínicos). */
 export interface PatientLookup {

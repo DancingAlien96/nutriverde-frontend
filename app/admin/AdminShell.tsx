@@ -14,7 +14,6 @@ import {
   CardIcon,
   PlateIcon,
   GearIcon,
-  BoxIcon,
   LogoutIcon,
   MenuIcon,
   CloseIcon,
@@ -35,7 +34,6 @@ const NAV: NavItem[] = [
   { href: "/admin/patients", label: "patients", icon: UsersIcon },
   { href: "/admin/pagos", label: "payments", icon: CardIcon },
   { href: "/admin/services", label: "services", icon: PlateIcon },
-  { href: "/admin/paquetes", label: "packages", icon: BoxIcon },
   // Solo nutricionista: ver navFor/canVisit.
   { href: "/admin/users", label: "users", icon: GearIcon },
 ];
@@ -46,7 +44,8 @@ const NUTRITIONIST_ONLY = ["/admin/users"];
 // de vuelta a /admin/citas (el backend también la rechaza con 403, esto es
 // solo para que nunca vea una pantalla rota).
 const SECRETARY_HOME = "/admin/citas";
-const SECRETARY_ALLOWED = ["/admin/citas"];
+// Citas, disponibilidad y pacientes (sin expediente clínico ni pagos).
+const SECRETARY_ALLOWED = ["/admin/citas", "/admin/availability", "/admin/patients"];
 
 function navFor(admin: Admin | null): NavItem[] {
   if (isSecretary(admin?.role)) {

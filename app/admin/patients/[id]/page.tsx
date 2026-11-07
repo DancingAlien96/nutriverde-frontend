@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AdminShell } from "../../AdminShell";
+import { adminMe, isSecretary } from "../../../lib/admin";
 import {
   DOCUMENT_TYPE_LABEL,
   downloadExpedientePdf,
@@ -38,6 +39,13 @@ function Content() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  // La secretaria ve datos basicos, citas y paquetes; no lo clinico ni pagos.
+  const [secretary, setSecretary] = useState(false);
+  useEffect(() => {
+    adminMe()
+      .then((me) => setSecretary(isSecretary(me.admin.role)))
+      .catch(() => setSecretary(false));
+  }, []);
 
   async function handleDownloadPdf() {
     if (!patient) return;
@@ -110,6 +118,7 @@ function Content() {
           <span className="hidden sm:inline">Back to list</span>
           <span className="sm:hidden">Back</span>
         </Link>
+        {!secretary && (
         <button
           type="button"
           onClick={handleDownloadPdf}
@@ -121,6 +130,7 @@ function Content() {
           </svg>
           {downloadingPdf ? "Generating…" : "Download PDF"}
         </button>
+        )}
       </div>
 
       {/* Header */}
@@ -172,6 +182,9 @@ function Content() {
         </div>
       </section>
 
+      {/* Lo clinico solo para nutricionista/staff */}
+      {!secretary && (
+        <>
       {/* Static clinical data */}
       <StaticHealthSection patient={patient} onSaved={reload} />
 
@@ -205,6 +218,8 @@ function Content() {
         mealPlans={patient.mealPlans}
         onChanged={reload}
       />
+        </>
+      )}
 
       {/* Session packages: cada paquete con el desglose numerado de sus sesiones */}
       {(patient.packages ?? []).length > 0 && (
@@ -377,7 +392,7 @@ function Content() {
       </section>
 
       {/* Intake forms */}
-      {patient.intakeForms.length > 0 && (
+      {!secretary && patient.intakeForms.length > 0 && (
         <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
           <h2 className="font-semibold text-gray-900 mb-4">
             Submitted forms
@@ -409,7 +424,7 @@ function Content() {
       )}
 
       {/* Payments */}
-      {patient.payments.length > 0 && (
+      {!secretary && patient.payments.length > 0 && (
         <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
           <h2 className="font-semibold text-gray-900 mb-4">Payment history</h2>
           <ul className="space-y-2">
