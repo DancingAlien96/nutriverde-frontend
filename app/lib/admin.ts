@@ -363,13 +363,25 @@ export interface PatientListItem {
   documentId: string | null;
   documentType: DocumentType;
   phone: string | null;
+  birthDate: string | null;
+  heightCm: number | null;
+  timezone: string;
   createdAt: string;
   updatedAt: string;
+  lastAppointmentAt: string | null;
+  lastMeasurementAt: string | null;
+  lastWeightKg: number | null;
   _count: {
     appointments: number;
     payments: number;
     nutritionPlans: number;
   };
+}
+
+/** Borra a la paciente con todo su historial. Solo nutricionista. */
+export async function deletePatient(id: string): Promise<{ ok: true }> {
+  const res = await authFetch(`/api/admin/patients/${id}`, { method: "DELETE" });
+  return parseJson(res);
 }
 
 export interface PatientDiagnosis {
