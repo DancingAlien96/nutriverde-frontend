@@ -169,14 +169,16 @@ function Content() {
                 value={stats.completedAppointments.toString()}
                 label="Completed"
               />
-              <Stat
-                value={
-                  stats.totalPaidCents > 0
-                    ? formatCents(stats.totalPaidCents, "GTQ")
-                    : "Q0"
-                }
-                label="Paid"
-              />
+              {!secretary && (
+                <Stat
+                  value={
+                    stats.totalPaidCents > 0
+                      ? formatCents(stats.totalPaidCents, "GTQ")
+                      : "Q0"
+                  }
+                  label="Paid"
+                />
+              )}
             </div>
           )}
         </div>
