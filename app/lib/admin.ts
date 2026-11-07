@@ -371,6 +371,16 @@ export interface PatientListItem {
   lastAppointmentAt: string | null;
   lastMeasurementAt: string | null;
   lastWeightKg: number | null;
+  /** Paquetes de la paciente con sesiones usadas y restantes. */
+  packages: Array<{
+    id: string;
+    serviceName: string;
+    totalSessions: number;
+    usedSessions: number;
+    remaining: number;
+  }>;
+  /** Suma de sesiones restantes en todos sus paquetes. */
+  sessionsRemaining: number;
   _count: {
     appointments: number;
     payments: number;

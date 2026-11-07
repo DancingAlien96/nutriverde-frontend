@@ -26,6 +26,7 @@ type SortKey =
   | "age"
   | "heightCm"
   | "appointments"
+  | "sessionsRemaining"
   | "lastAppointmentAt"
   | "lastMeasurementAt"
   | "createdAt";
@@ -39,9 +40,10 @@ const COLUMNS: { key: SortKey; label: string; align?: "right" | "center"; hide?:
   { key: "age", label: "Age", align: "center" },
   { key: "heightCm", label: "Height", align: "right", hide: "hidden lg:table-cell" },
   { key: "appointments", label: "Appts", align: "center" },
-  { key: "lastAppointmentAt", label: "Last appointment", hide: "hidden lg:table-cell" },
+  { key: "sessionsRemaining", label: "Package", hide: "hidden md:table-cell" },
+  { key: "lastAppointmentAt", label: "Last appt.", hide: "hidden lg:table-cell" },
   { key: "lastMeasurementAt", label: "Last measurement", hide: "hidden 2xl:table-cell" },
-  { key: "createdAt", label: "Registered", hide: "hidden xl:table-cell" },
+  { key: "createdAt", label: "Registered", hide: "hidden 2xl:table-cell" },
 ];
 
 /**
@@ -98,6 +100,8 @@ function Content() {
           return ageFrom(p.birthDate);
         case "appointments":
           return p._count.appointments;
+        case "sessionsRemaining":
+          return p.packages.length ? p.sessionsRemaining : null;
         case "documentId":
           return p.documentId;
         default:
@@ -227,6 +231,32 @@ function Content() {
                         {p.heightCm ? `${p.heightCm} cm` : "—"}
                       </td>
                       <td className="px-3 py-2.5 text-center text-gray-700">{p._count.appointments}</td>
+                      <td className="px-3 py-2.5 text-xs whitespace-nowrap hidden md:table-cell">
+                        {p.packages.length === 0 ? (
+                          <span className="text-gray-400">—</span>
+                        ) : (
+                          <div className="space-y-0.5">
+                            {p.packages.slice(0, 2).map((k) => (
+                              <div key={k.id} className="flex items-center gap-1.5">
+                                <span className="text-gray-500 truncate max-w-[120px]">{k.serviceName}</span>
+                                <span className="font-medium text-gray-800 tabular-nums">
+                                  {k.usedSessions}/{k.totalSessions}
+                                </span>
+                                <span
+                                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                                    k.remaining === 0 ? "bg-amber-100 text-amber-800" : "bg-brand-100 text-brand-800"
+                                  }`}
+                                >
+                                  {k.remaining === 0 ? "none left" : `${k.remaining} left`}
+                                </span>
+                              </div>
+                            ))}
+                            {p.packages.length > 2 && (
+                              <div className="text-[10px] text-gray-400">+{p.packages.length - 2} more</div>
+                            )}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap hidden lg:table-cell">
                         {p.lastAppointmentAt ? formatDate(p.lastAppointmentAt) : "—"}
                       </td>
@@ -236,7 +266,7 @@ function Content() {
                           <span className="ml-1 text-gray-400">· {p.lastWeightKg} kg</span>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap hidden xl:table-cell">
+                      <td className="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap hidden 2xl:table-cell">
                         {formatDate(p.createdAt)}
                       </td>
                       <td className="px-3 py-2.5 sticky right-0 bg-white group-hover:bg-cream-50">
