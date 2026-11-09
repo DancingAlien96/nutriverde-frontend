@@ -6,6 +6,7 @@ import { AdminShell } from "../AdminShell";
 import {
   adminMe,
   deletePatient,
+  formatMoney,
   listPatients,
   type PatientListItem,
 } from "../../lib/admin";
@@ -23,7 +24,6 @@ type SortKey =
   | "appointments"
   | "sessionsRemaining"
   | "lastAppointmentAt"
-  | "lastMeasurementAt"
   | "createdAt";
 
 const PAGE_SIZE = 25;
@@ -33,8 +33,7 @@ const COLUMNS: { key: SortKey; label: string; align?: "right" | "center"; hide?:
   { key: "appointments", label: "Appts", align: "center" },
   { key: "sessionsRemaining", label: "Package" },
   { key: "lastAppointmentAt", label: "Last appointment", hide: "hidden md:table-cell" },
-  { key: "lastMeasurementAt", label: "Last measurement", hide: "hidden lg:table-cell" },
-  { key: "createdAt", label: "Registered", hide: "hidden xl:table-cell" },
+  { key: "createdAt", label: "Registered", hide: "hidden lg:table-cell" },
 ];
 
 /**
@@ -56,7 +55,7 @@ function Content() {
 
   useEffect(() => {
     adminMe()
-      .then((me) => setCanDelete(me.admin.role === "NUTRITIONIST"))
+      .then((me) => setCanDelete(me.admin.role === "NUTRITIONIST" || me.admin.role === "SECRETARY"))
       .catch(() => setCanDelete(false));
   }, []);
 
@@ -194,7 +193,14 @@ function Content() {
                       onClick={() => router.push(`/admin/patients/${p.id}`)}
                     >
                       <td className="px-3 py-2.5">
-                        <div className="font-medium text-gray-900 whitespace-nowrap">{p.fullName}</div>
+                        <div className="font-medium text-gray-900 whitespace-nowrap">
+                          {p.fullName}
+                          {p.balanceCents > 0 && (
+                            <span className="ml-2 rounded-full bg-amber-100 text-amber-800 text-[10px] font-medium px-1.5 py-0.5 align-middle">
+                              owes {formatMoney(p.balanceCents, "GTQ")}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] text-gray-500 truncate max-w-[180px]">{p.email}</div>
                       </td>
                       <td className="px-3 py-2.5 text-center text-gray-700">{p._count.appointments}</td>
@@ -228,12 +234,6 @@ function Content() {
                         {p.lastAppointmentAt ? formatDate(p.lastAppointmentAt) : "—"}
                       </td>
                       <td className="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap hidden lg:table-cell">
-                        {p.lastMeasurementAt ? formatDate(p.lastMeasurementAt) : "—"}
-                        {p.lastWeightKg != null && (
-                          <span className="ml-1 text-gray-400">· {p.lastWeightKg} kg</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap hidden xl:table-cell">
                         {formatDate(p.createdAt)}
                       </td>
                       <td className="px-3 py-2.5 sticky right-0 bg-white group-hover:bg-cream-50">

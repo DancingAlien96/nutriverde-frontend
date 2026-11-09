@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   createManualAppointment,
+  formatMoney,
   getServiceAvailabilityAdmin,
   getServiceSlotsAdmin,
   listSchedulableServices,
@@ -15,6 +16,12 @@ import {
 import { MonthCalendar } from "../../components/MonthCalendar";
 import { CloseIcon } from "../icons";
 import { useAdminT } from "../../lib/admin-i18n";
+import {
+  ChargeFields,
+  EMPTY_CHARGE_FIELDS,
+  resolveChargeFields,
+  type ChargeFieldsValue,
+} from "../ChargePanel";
 
 const BUSINESS_TZ = "America/Guatemala";
 
@@ -37,8 +44,8 @@ const TIMEZONES = [
 
 /**
  * Cita desde cero: paciente (nueva o existente por correo), servicio, dia y
- * hora libres, link de videollamada. Al crear, la cita ya queda confirmada y
- * la paciente recibe el correo. No pasa por pago.
+ * hora libres, link de videollamada, precio y forma de pago. Al crear, la
+ * cita ya queda confirmada y la paciente recibe el correo.
  */
 export function NewAppointment({
   onClose,
@@ -73,6 +80,9 @@ export function NewAppointment({
   const [meetingUrl, setMeetingUrl] = useState("");
   const [modality, setModality] = useState<Modality>("VIRTUAL");
   const [notes, setNotes] = useState("");
+  // Precio acordado y forma de pago. El precio arranca en el de lista del
+  // servicio (priceText null) y se puede cambiar para esta paciente.
+  const [chargeFields, setChargeFields] = useState<ChargeFieldsValue>(EMPTY_CHARGE_FIELDS);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +104,8 @@ export function NewAppointment({
   // Al cambiar de servicio cambia la duracion, asi que los slots ya no valen.
   function handleServiceChange(slug: string) {
     setServiceSlug(slug);
+    // Otro servicio, otro precio de lista: se descarta el precio escrito.
+    setChargeFields((f) => ({ ...f, priceText: null }));
     setSelectedDate(null);
     setSlots(null);
     setPickedSlot(null);
@@ -186,11 +198,17 @@ export function NewAppointment({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t.newAppt.servicesError, initialEmail]);
 
+  // El cobro solo se pide si la cita no descuenta de un paquete que ya existe.
+  const charging = !!service && !packageId;
+  const resolvedCharge = service ? resolveChargeFields(chargeFields, service.priceCents) : null;
+  const selectedPackage = packages.find((p) => p.id === packageId) ?? null;
+
   const canSubmit =
     !!service &&
     email.trim().length > 3 &&
     fullName.trim().length >= 2 &&
     !!pickedSlot &&
+    (!charging || !resolvedCharge?.error) &&
     !submitting;
 
   async function submit() {
@@ -209,6 +227,16 @@ export function NewAppointment({
         modality,
         meetingUrl: modality === "VIRTUAL" ? meetingUrl.trim() || undefined : undefined,
         notes: notes.trim() || undefined,
+        ...(charging && resolvedCharge && resolvedCharge.priceCents !== null
+          ? {
+              priceCents: resolvedCharge.priceCents,
+              payment: {
+                plan: chargeFields.plan,
+                paidCents: resolvedCharge.paidCents ?? 0,
+                method: chargeFields.method,
+              },
+            }
+          : {}),
       });
       onCreated(pickedSlot, result.email);
     } catch (err) {
@@ -359,7 +387,8 @@ export function NewAppointment({
                 .filter((s) => !s.internal)
                 .map((s) => (
                   <option key={s.id} value={s.slug}>
-                    {s.name} · {s.durationMin > 0 ? s.durationMin : 60} {t.newAppt.min}
+                    {s.name} · {s.durationMin > 0 ? s.durationMin : 60} {t.newAppt.min} ·{" "}
+                    {formatMoney(s.priceCents, s.currency)}
                   </option>
                 ))}
             </optgroup>
@@ -370,7 +399,8 @@ export function NewAppointment({
                   .map((s) => (
                     <option key={s.id} value={s.slug}>
                       {s.name} · {s.durationMin > 0 ? s.durationMin : 60} {t.newAppt.min}
-                      {s.sessions > 1 ? ` · ${s.sessions} ${t.packages.sessionsWord}` : ""} ({t.newAppt.internalTag})
+                      {s.sessions > 1 ? ` · ${s.sessions} ${t.packages.sessionsWord}` : ""} ·{" "}
+                      {formatMoney(s.priceCents, s.currency)} ({t.newAppt.internalTag})
                     </option>
                   ))}
               </optgroup>
@@ -383,6 +413,38 @@ export function NewAppointment({
               {service?.name} · {service?.sessions} {t.packages.sessionsWord}. {t.packages.firstSession}{" "}
               {service?.sessions}.
             </div>
+          )}
+
+          {service && (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink-500 pt-2">
+                {t.charge.formTitle}
+              </p>
+              {packageId ? (
+                <p className="rounded-xl bg-cream-50 border border-cream-200 px-3 py-2 text-xs text-ink-600">
+                  {t.charge.fromPackage}
+                  {selectedPackage?.charge && selectedPackage.charge.balanceCents > 0 && (
+                    <span className="block mt-1 font-medium text-amber-800">
+                      {t.charge.packageBalance}{" "}
+                      {formatMoney(
+                        selectedPackage.charge.balanceCents,
+                        selectedPackage.charge.currency,
+                      )}
+                      .
+                    </span>
+                  )}
+                </p>
+              ) : (
+                <div className="rounded-2xl border border-cream-200 p-3">
+                  <ChargeFields
+                    value={chargeFields}
+                    onChange={setChargeFields}
+                    listPriceCents={service.priceCents}
+                    currency={service.currency}
+                  />
+                </div>
+              )}
+            </>
           )}
 
           <p className="text-xs font-semibold uppercase tracking-wider text-ink-500 pt-2">
@@ -508,6 +570,17 @@ export function NewAppointment({
                   : ""
               }`
             : t.newAppt.pickAll}
+          {charging && service && resolvedCharge && !resolvedCharge.error && resolvedCharge.priceCents !== null && (
+            <span className="block text-ink-700">
+              {formatMoney(resolvedCharge.priceCents, service.currency)} ·{" "}
+              {chargeFields.plan === "FULL"
+                ? t.charge.paidFull
+                : `${t.charge.paidToday} ${formatMoney(resolvedCharge.paidCents ?? 0, service.currency)} · ${t.charge.balance} ${formatMoney(
+                    resolvedCharge.priceCents - (resolvedCharge.paidCents ?? 0),
+                    service.currency,
+                  )}`}
+            </span>
+          )}
         </span>
       </div>
     </div>

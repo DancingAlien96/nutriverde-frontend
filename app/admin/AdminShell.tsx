@@ -18,6 +18,8 @@ import {
   MenuIcon,
   CloseIcon,
   LeafBranch,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "./icons";
 
 type NavItem = {
@@ -69,6 +71,19 @@ function canVisit(admin: Admin, pathname: string | null): boolean {
   return true;
 }
 
+// El menú lateral de escritorio se puede contraer a solo iconos. Se recuerda
+// en el navegador porque cada página monta su propio AdminShell.
+const COLLAPSE_KEY = "nutriverde_admin_sidebar_collapsed";
+
+function readCollapsed(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(COLLAPSE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 function isActive(pathname: string | null, item: NavItem): boolean {
   if (!pathname) return false;
   return item.exact ? pathname === item.href : pathname.startsWith(item.href);
@@ -82,6 +97,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+
+  function toggleCollapsed() {
+    const next = !collapsed;
+    setCollapsed(next);
+    try {
+      window.localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+    } catch {
+      // Sin almacenamiento (modo privado): el cambio vale solo en esta página.
+    }
+  }
   // PWA: el navegador avisa cuando la app se puede instalar; guardamos el
   // evento para disparar el dialogo desde el boton "Instalar app".
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -149,20 +175,50 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const sidebar = (
+  // `mini`: solo iconos (escritorio contraído). `withToggle`: muestra el botón
+  // de contraer/desplegar; el cajón del móvil no lo lleva.
+  const renderSidebar = (mini: boolean, withToggle: boolean) => (
     <div className="flex h-full flex-col">
-      {/* Logo */}
-      <Link href={homeFor(admin)} className="block px-6 pt-7 pb-6 leading-none">
-        <span className="block font-serif-display text-2xl tracking-[0.06em] text-ink-900">
-          PLENHA
-        </span>
-        <span className="block text-[10px] tracking-widest-2 uppercase text-brand-600 mt-1">
-          Nutrition
-        </span>
-      </Link>
+      {/* Logo + botón de contraer */}
+      <div
+        className={`flex pt-7 pb-6 ${
+          mini ? "flex-col items-center gap-3 px-2" : "items-start justify-between px-6"
+        }`}
+      >
+        <Link href={homeFor(admin)} className="block leading-none" aria-label="Plenha Nutrition">
+          {mini ? (
+            <span className="block font-serif-display text-2xl text-ink-900">P</span>
+          ) : (
+            <>
+              <span className="block font-serif-display text-2xl tracking-[0.06em] text-ink-900">
+                PLENHA
+              </span>
+              <span className="block text-[10px] tracking-widest-2 uppercase text-brand-600 mt-1">
+                Nutrition
+              </span>
+            </>
+          )}
+        </Link>
+        {withToggle && (
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            aria-expanded={!mini}
+            aria-label={mini ? t.common.expandMenu : t.common.collapseMenu}
+            title={mini ? t.common.expandMenu : t.common.collapseMenu}
+            className="h-8 w-8 shrink-0 rounded-full border border-cream-200 bg-white text-ink-500 hover:text-ink-900 hover:bg-cream-100 flex items-center justify-center transition-colors"
+          >
+            {mini ? (
+              <ChevronRightIcon className="h-4 w-4" />
+            ) : (
+              <ChevronLeftIcon className="h-4 w-4" />
+            )}
+          </button>
+        )}
+      </div>
 
       {/* Navegación */}
-      <nav className="flex-1 px-3 space-y-1">
+      <nav className={`flex-1 space-y-1 ${mini ? "px-2" : "px-3"}`}>
         {navFor(admin).map((item) => {
           const active = isActive(pathname, item);
           const Icon = item.icon;
@@ -170,21 +226,26 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-medium transition-colors ${
+              title={mini ? t.nav[item.label] : undefined}
+              aria-label={mini ? t.nav[item.label] : undefined}
+              aria-current={active ? "page" : undefined}
+              className={`flex items-center rounded-2xl py-2.5 text-sm font-medium transition-colors ${
+                mini ? "justify-center px-0" : "gap-3 px-4"
+              } ${
                 active
                   ? "bg-brand-300 text-brand-900 shadow-sm"
                   : "text-ink-600 hover:bg-cream-200/70 hover:text-ink-900"
               }`}
             >
               <Icon className="h-5 w-5 shrink-0" />
-              {t.nav[item.label]}
+              {!mini && t.nav[item.label]}
             </Link>
           );
         })}
       </nav>
 
       {/* Instalar como app (solo aparece si el navegador lo permite) */}
-      {installPrompt && (
+      {installPrompt && !mini && (
         <div className="px-3 pb-2">
           <button
             type="button"
@@ -197,40 +258,66 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Decoración */}
-      <div className="px-6 pointer-events-none">
-        <LeafBranch className="h-24 w-auto text-brand-300/60" />
-      </div>
+      {!mini && (
+        <div className="px-6 pointer-events-none">
+          <LeafBranch className="h-24 w-auto text-brand-300/60" />
+        </div>
+      )}
 
       {/* Perfil */}
-      <div className="m-3 rounded-2xl bg-cream-100 border border-cream-200 p-3 flex items-center gap-3">
-        <span className="h-10 w-10 shrink-0 rounded-full bg-brand-400 text-white flex items-center justify-center text-sm font-semibold">
-          {initials(admin?.fullName)}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-ink-900 truncate">
-            {admin?.fullName ?? "Admin"}
-          </p>
-          <p className="text-xs text-ink-500 truncate capitalize">
-            {roleLabel(admin?.role, t)}
-          </p>
+      {mini ? (
+        <div className="mb-3 flex flex-col items-center gap-2">
+          <span
+            title={`${admin?.fullName ?? "Admin"} · ${roleLabel(admin?.role, t)}`}
+            className="h-10 w-10 shrink-0 rounded-full bg-brand-400 text-white flex items-center justify-center text-sm font-semibold"
+          >
+            {initials(admin?.fullName)}
+          </span>
+          <button
+            type="button"
+            onClick={handleLogout}
+            aria-label={t.common.signOut}
+            title={t.common.signOut}
+            className="h-8 w-8 shrink-0 rounded-full text-ink-500 hover:text-ink-900 hover:bg-cream-200 flex items-center justify-center transition-colors"
+          >
+            <LogoutIcon className="h-4 w-4" />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleLogout}
-          aria-label={t.common.signOut}
-          className="h-8 w-8 shrink-0 rounded-full text-ink-500 hover:text-ink-900 hover:bg-cream-200 flex items-center justify-center transition-colors"
-        >
-          <LogoutIcon className="h-4 w-4" />
-        </button>
-      </div>
+      ) : (
+        <div className="m-3 rounded-2xl bg-cream-100 border border-cream-200 p-3 flex items-center gap-3">
+          <span className="h-10 w-10 shrink-0 rounded-full bg-brand-400 text-white flex items-center justify-center text-sm font-semibold">
+            {initials(admin?.fullName)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-ink-900 truncate">
+              {admin?.fullName ?? "Admin"}
+            </p>
+            <p className="text-xs text-ink-500 truncate capitalize">
+              {roleLabel(admin?.role, t)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            aria-label={t.common.signOut}
+            className="h-8 w-8 shrink-0 rounded-full text-ink-500 hover:text-ink-900 hover:bg-cream-200 flex items-center justify-center transition-colors"
+          >
+            <LogoutIcon className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 
   return (
     <div className="min-h-screen bg-cream-50">
       {/* Sidebar fijo (desktop) */}
-      <aside className="hidden lg:block fixed inset-y-0 left-0 w-60 bg-cream-50 border-r border-cream-200">
-        {sidebar}
+      <aside
+        className={`hidden lg:block fixed inset-y-0 left-0 bg-cream-50 border-r border-cream-200 transition-[width] duration-200 ${
+          collapsed ? "w-[4.5rem]" : "w-60"
+        }`}
+      >
+        {renderSidebar(collapsed, true)}
       </aside>
 
       {/* Barra superior móvil */}
@@ -266,13 +353,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             >
               <CloseIcon className="h-5 w-5" />
             </button>
-            {sidebar}
+            {renderSidebar(false, false)}
           </div>
         </div>
       )}
 
       {/* Contenido */}
-      <main className="lg:pl-60">
+      <main
+        className={`transition-[padding] duration-200 ${
+          collapsed ? "lg:pl-[4.5rem]" : "lg:pl-60"
+        }`}
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-6 lg:py-9">
           {children}
         </div>

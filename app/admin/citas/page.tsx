@@ -4,19 +4,33 @@ import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "../AdminShell";
 import {
   listAppointments,
+  listOutstandingCharges,
+  listPendingAppointments,
+  listRenewals,
   declineAppointmentTime,
   setAppointmentInvoice,
   formatCents,
+  formatMoney,
   type InvoiceStatus,
   type AppointmentItem,
   type AppointmentStatus,
   type EmailOutcome,
 } from "../../lib/admin";
-import { ChevronLeftIcon, ChevronRightIcon, ClockIcon } from "../icons";
+import {
+  BellIcon,
+  CalendarIcon,
+  CardIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ClockIcon,
+} from "../icons";
 import { PendingScheduling } from "./PendingScheduling";
 import { NewAppointment } from "./NewAppointment";
 import { AppointmentActions } from "./AppointmentActions";
 import { RenewalsCard } from "./RenewalsCard";
+import { OutstandingCard } from "./OutstandingCard";
+import { ChargePanel } from "../ChargePanel";
+import { useFullAccess } from "../useFullAccess";
 import { useAdminT } from "../../lib/admin-i18n";
 
 export default function CitasPage() {
@@ -38,8 +52,38 @@ const STATUS: Record<AppointmentStatus, { chip: string; dot: string }> = {
   AWAITING_PAYMENT: { chip: "bg-cream-100 text-ink-500", dot: "#cbb58f" },
 };
 
+// La agenda se divide en cuatro tarjetas; debajo solo se ve la sección de
+// la tarjeta elegida, para no mostrar todo de golpe.
+type Tab = "calendar" | "pending" | "charges" | "renewals";
+
+// ?tab=... en la URL abre la agenda en esa sección (enlaces del inicio).
+const TAB_PARAM: Record<string, Tab> = {
+  calendario: "calendar",
+  agendar: "pending",
+  cobrar: "charges",
+  renovar: "renewals",
+};
+
+function initialTab(): Tab {
+  if (typeof window === "undefined") return "calendar";
+  const v = new URLSearchParams(window.location.search).get("tab");
+  return (v && TAB_PARAM[v]) || "calendar";
+}
+
+interface Summary {
+  pending: number;
+  renewals: number;
+  outstandingCount: number;
+  outstandingCents: number;
+}
+
 function CitasContent() {
   const t = useAdminT();
+  const [tab, setTab] = useState<Tab>(initialTab);
+  // Números de las tarjetas (se recalculan con cada cambio en la agenda).
+  const [summary, setSummary] = useState<Summary | null>(null);
+  // Nutricionista/staff: puede corregir precios y borrar abonos.
+  const canManage = useFullAccess();
   // Primer día del mes enfocado.
   const [cursor, setCursor] = useState(() => {
     const n = new Date();
@@ -93,6 +137,39 @@ function CitasContent() {
     };
   }, [gridStart, reloadKey, t.citas.loadError]);
 
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      listPendingAppointments().then((d) => d.appointments.length).catch(() => 0),
+      listRenewals().then((d) => d.renewals.length).catch(() => 0),
+      listOutstandingCharges()
+        .then((d) => ({ count: d.charges.length, cents: d.totalCents }))
+        .catch(() => ({ count: 0, cents: 0 })),
+    ]).then(([pending, renewals, out]) => {
+      if (cancelled) return;
+      setSummary({
+        pending,
+        renewals,
+        outstandingCount: out.count,
+        outstandingCents: out.cents,
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
+
+  // Citas del mes enfocado que cuentan (sin canceladas), para la tarjeta.
+  const monthCount = useMemo(
+    () =>
+      appts.filter((a) => {
+        if (a.status === "CANCELED") return false;
+        const d = new Date(a.scheduledAt);
+        return d.getFullYear() === cursor.getFullYear() && d.getMonth() === cursor.getMonth();
+      }).length,
+    [appts, cursor],
+  );
+
   // Agrupa por día local (YYYY-MM-DD).
   const byDay = useMemo(() => {
     const map = new Map<string, AppointmentItem[]>();
@@ -125,14 +202,14 @@ function CitasContent() {
           <h1 className="font-serif-display text-2xl sm:text-3xl text-ink-900">{t.citas.title}</h1>
           <p className="text-sm text-ink-500 mt-1">{t.citas.subtitle}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => {
               setCreateEmail(undefined);
               setCreating((v) => !v);
             }}
-            className={`rounded-full px-4 h-9 text-sm font-medium transition-colors ${
+            className={`rounded-full px-4 h-9 text-sm font-medium whitespace-nowrap transition-colors ${
               creating
                 ? "border border-cream-200 bg-white text-ink-700 hover:bg-cream-50"
                 : "bg-brand-600 text-white hover:bg-brand-700"
@@ -140,6 +217,8 @@ function CitasContent() {
           >
             {creating ? t.common.cancel : t.citas.newAppointment}
           </button>
+          {tab === "calendar" && (
+            <>
           <button
             type="button"
             onClick={goToday}
@@ -171,6 +250,8 @@ function CitasContent() {
               <ChevronRightIcon className="h-5 w-5" />
             </button>
           </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -216,6 +297,7 @@ function CitasContent() {
             setCreating(false);
             setCreateEmail(undefined);
             // Saltamos al dia de la cita recien creada y recargamos.
+            setTab("calendar");
             const d = new Date(iso);
             setCursor(new Date(d.getFullYear(), d.getMonth(), 1));
             setSelected(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -224,26 +306,88 @@ function CitasContent() {
         />
       )}
 
+      {/* Tarjetas de sección: un vistazo a cada frente y se abre solo uno. */}
+      <div className="mb-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <SectionCard
+          active={tab === "calendar"}
+          onClick={() => setTab("calendar")}
+          icon={CalendarIcon}
+          title={t.citas.tabs.calendar}
+          value={loading && appts.length === 0 ? "—" : String(monthCount)}
+          hint={`${monthCount === 1 ? t.citas.tabs.calendarOne : t.citas.tabs.calendarMany} ${cursor.toLocaleDateString(
+            t.dateLocale,
+            { month: "long" },
+          )}`}
+        />
+        <SectionCard
+          active={tab === "pending"}
+          onClick={() => setTab("pending")}
+          icon={ClockIcon}
+          title={t.pending.title}
+          value={summary ? String(summary.pending) : "—"}
+          hint={summary && summary.pending === 0 ? t.citas.tabs.pendingNone : t.citas.tabs.pendingHint}
+          attention={!!summary && summary.pending > 0}
+        />
+        <SectionCard
+          active={tab === "charges"}
+          onClick={() => setTab("charges")}
+          icon={CardIcon}
+          title={t.charge.outstandingTitle}
+          value={summary ? formatMoney(summary.outstandingCents, "GTQ") : "—"}
+          hint={
+            summary && summary.outstandingCount === 0
+              ? t.citas.tabs.chargesNone
+              : `${summary?.outstandingCount ?? ""} ${t.citas.tabs.chargesHint}`
+          }
+          attention={!!summary && summary.outstandingCount > 0}
+        />
+        <SectionCard
+          active={tab === "renewals"}
+          onClick={() => setTab("renewals")}
+          icon={BellIcon}
+          title={t.renewals.title}
+          value={summary ? String(summary.renewals) : "—"}
+          hint={summary && summary.renewals === 0 ? t.citas.tabs.renewalsNone : t.citas.tabs.renewalsHint}
+          attention={!!summary && summary.renewals > 0}
+        />
+      </div>
+
       {/* Citas con pago aprobado que faltan agendar. Al confirmar una se
-          recarga el calendario para que aparezca de inmediato. */}
-      {/* Paquetes agotados sin renovar: alerta proactiva con acceso directo
-          a agendar la siguiente cita de esa paciente. */}
-      <RenewalsCard
-        reloadKey={reloadKey}
-        onBook={(email) => {
-          setCreateEmail(email);
-          setCreating(true);
-          if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-        }}
-      />
+          recargan las tarjetas y el calendario. */}
+      {tab === "pending" && (
+        <PendingScheduling
+          onScheduled={(email) => {
+            setNotice(email);
+            setReloadKey((k) => k + 1);
+          }}
+        />
+      )}
 
-      <PendingScheduling
-        onScheduled={(email) => {
-          setNotice(email);
-          setReloadKey((k) => k + 1);
-        }}
-      />
+      {/* Saldos pendientes de citas y paquetes agendados desde el panel. */}
+      {tab === "charges" && (
+        <OutstandingCard
+          reloadKey={reloadKey}
+          canManage={canManage}
+          onChanged={() => setReloadKey((k) => k + 1)}
+          showEmpty
+        />
+      )}
 
+      {/* Paquetes agotados sin renovar, con acceso directo a agendar la
+          siguiente cita de esa paciente. */}
+      {tab === "renewals" && (
+        <RenewalsCard
+          reloadKey={reloadKey}
+          showEmpty
+          onBook={(email) => {
+            setCreateEmail(email);
+            setCreating(true);
+            if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
+      )}
+
+      {tab === "calendar" && (
       <div className="grid lg:grid-cols-[1fr_20rem] gap-5">
         {/* Calendario */}
         <div className="rounded-3xl bg-white border border-cream-200 p-3 sm:p-4">
@@ -391,6 +535,17 @@ function CitasContent() {
                           {formatCents(a.payment.amountCents, a.payment.currency)}
                         </p>
                       )}
+                      {(a.charge || (a.chargeable && a.status !== "CANCELED")) && (
+                        <ChargePanel
+                          key={a.charge?.id ?? "no-charge"}
+                          charge={a.charge}
+                          target={a.package ? { packageId: a.package.id } : { appointmentId: a.id }}
+                          listPriceCents={a.service.priceCents}
+                          currency={a.service.currency}
+                          canManage={canManage}
+                          onChanged={() => setReloadKey((k) => k + 1)}
+                        />
+                      )}
                       {a.status !== "CANCELED" && (
                         <InvoiceToggle
                           appointment={a}
@@ -444,7 +599,65 @@ function CitasContent() {
           </div>
         </div>
       </div>
+      )}
     </>
+  );
+}
+
+/** Tarjeta de sección de la agenda: título, número grande y una pista. */
+function SectionCard({
+  active,
+  onClick,
+  icon: Icon,
+  title,
+  value,
+  hint,
+  attention = false,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: (p: { className?: string }) => React.ReactNode;
+  title: string;
+  value: string;
+  hint: string;
+  /** Hay algo pendiente en esta sección: se marca en ámbar. */
+  attention?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`text-left rounded-3xl border p-4 transition-colors ${
+        active
+          ? "border-brand-500 bg-brand-50 shadow-sm"
+          : "border-cream-200 bg-white hover:border-brand-300"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center ${
+            active ? "bg-brand-600 text-white" : "bg-cream-100 text-ink-600"
+          }`}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+        <span className="min-w-0 text-[11px] uppercase tracking-wider font-semibold text-ink-500">
+          {title}
+        </span>
+        {attention && (
+          <span className="ml-auto h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" aria-hidden />
+        )}
+      </div>
+      <p
+        className={`mt-3 text-2xl font-semibold tabular-nums ${
+          attention ? "text-amber-800" : "text-ink-900"
+        }`}
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 text-xs text-ink-500">{hint}</p>
+    </button>
   );
 }
 

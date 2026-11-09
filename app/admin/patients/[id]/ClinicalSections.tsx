@@ -19,6 +19,7 @@ import {
   type PatientTraining,
   type PatientUpdatePatch,
 } from "../../../lib/admin";
+import { CollapsibleSection } from "../../CollapsibleSection";
 
 // ============================================================
 // Static clinical data
@@ -295,7 +296,7 @@ export function DiagnosesSection({
   }
 
   return (
-    <Card title="Diagnosis and goals">
+    <Card title="Diagnosis and goals" summary={countLabel(diagnoses.length, "entry", "entries")}>
       {diagnoses.length === 0 && !adding && (
         <p className="text-sm text-gray-500">No entries.</p>
       )}
@@ -491,7 +492,7 @@ export function TrainingsSection({
   }
 
   return (
-    <Card title="Training">
+    <Card title="Training" summary={countLabel(trainings.length, "entry", "entries")}>
       {trainings.length === 0 && !adding && (
         <p className="text-sm text-gray-500">No entries.</p>
       )}
@@ -771,10 +772,11 @@ export function MeasurementsSection({
 
   return (
     <Card
-      title={
+      title="Measurements"
+      summary={
         sorted.length === 0
-          ? "Measurements"
-          : `Measurements · ${sorted.length}${rangeLabel ? ` · ${rangeLabel}` : ""}`
+          ? "None yet"
+          : `${sorted.length}${rangeLabel ? ` · ${rangeLabel}` : ""}`
       }
     >
       {sorted.length === 0 && !adding && (
@@ -1146,7 +1148,7 @@ export function MealPlansSection({
   }
 
   return (
-    <Card title="Meal plan">
+    <Card title="Meal plan" summary={countLabel(mealPlans.length, "plan", "plans")}>
       {mealPlans.length === 0 && !adding && (
         <p className="text-sm text-gray-500">No plans recorded.</p>
       )}
@@ -1325,19 +1327,27 @@ const inputClass =
 const primaryBtn =
   "rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 px-4 py-2 text-sm font-medium text-white";
 
+/** Tarjeta de sección del expediente: se despliega hacia abajo. */
 function Card({
   title,
+  summary,
   children,
 }: {
   title: string;
+  /** Resumen corto junto al título (cuántos registros hay). */
+  summary?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
-      <h2 className="font-semibold text-gray-900 mb-4">{title}</h2>
+    <CollapsibleSection title={title} summary={summary}>
       {children}
-    </section>
+    </CollapsibleSection>
   );
+}
+
+function countLabel(n: number, one: string, many: string): string {
+  if (n === 0) return "None yet";
+  return `${n} ${n === 1 ? one : many}`;
 }
 
 function Field({

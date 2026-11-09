@@ -13,7 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { AdminShell } from "./AdminShell";
-import { adminMe, formatCents, getDashboard, type DashboardData } from "../lib/admin";
+import { adminMe, formatCents, formatMoney, getDashboard, type DashboardData } from "../lib/admin";
 import { useAdminT, type AdminDict } from "../lib/admin-i18n";
 import { CalendarIcon, CardIcon, ChevronRightIcon, ClockIcon, UsersIcon } from "./icons";
 import { Reminders } from "./Reminders";
@@ -231,6 +231,14 @@ function KpiRow({ data, t }: { data: DashboardData; t: AdminDict }) {
             className="mt-3 inline-flex self-start items-center gap-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs px-2.5 py-1"
           >
             <span aria-hidden>●</span> {k.pendingReview} {t.dashboard.pendingReview}
+          </Link>
+        )}
+        {k.outstandingCents > 0 && (
+          <Link
+            href="/admin/citas?tab=cobrar"
+            className="mt-2 inline-flex self-start items-center gap-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs px-2.5 py-1"
+          >
+            <span aria-hidden>●</span> {formatMoney(k.outstandingCents, "GTQ")} {t.dashboard.toCollect}
           </Link>
         )}
       </div>

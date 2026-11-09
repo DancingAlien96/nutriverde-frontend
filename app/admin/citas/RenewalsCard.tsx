@@ -12,9 +12,12 @@ import { useAdminT } from "../../lib/admin-i18n";
 export function RenewalsCard({
   reloadKey,
   onBook,
+  showEmpty = false,
 }: {
   reloadKey: number;
   onBook: (email: string) => void;
+  /** Si no hay nadie por renovar, mostrar el aviso en vez de no pintar nada. */
+  showEmpty?: boolean;
 }) {
   const t = useAdminT();
   const [items, setItems] = useState<RenewalItem[]>([]);
@@ -37,9 +40,18 @@ export function RenewalsCard({
     };
   }, [reloadKey]);
 
-  // Sin pendientes no ocupamos espacio: la tarjeta solo aparece cuando hay
-  // alguien por renovar.
-  if (!loaded || items.length === 0) return null;
+  if (!loaded) return null;
+  if (items.length === 0) {
+    if (!showEmpty) return null;
+    return (
+      <div className="mb-5 rounded-3xl bg-white border border-cream-200 p-5">
+        <h2 className="text-xs uppercase tracking-wider font-semibold text-ink-500">
+          {t.renewals.title}
+        </h2>
+        <p className="text-sm text-ink-400 py-6 text-center">{t.renewals.empty}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mb-5 rounded-3xl bg-amber-50 border border-amber-200 p-5">

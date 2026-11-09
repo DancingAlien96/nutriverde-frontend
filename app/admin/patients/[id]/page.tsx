@@ -21,6 +21,15 @@ import {
   TrainingsSection,
 } from "./ClinicalSections";
 import { ProgressCharts } from "./ProgressCharts";
+import { ChargePanel, ChargeStatusChip } from "../../ChargePanel";
+import { Collapse } from "../../Collapse";
+import {
+  CollapsibleSection,
+  SectionsProvider,
+  SectionsToolbar,
+} from "../../CollapsibleSection";
+import { ChevronDownIcon } from "../../icons";
+import { formatMoney } from "../../../lib/admin";
 
 export default function PatientExpedientePage() {
   return (
@@ -39,10 +48,10 @@ function Content() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
-  // La secretaria ve datos basicos, citas y paquetes; no lo clinico ni pagos.
-  // Cerrado por defecto: hasta confirmar el rol (o si falla) se trata como
-  // restringido. El servidor ya recorta la respuesta para la secretaria;
-  // esto solo evita mostrar secciones vacias o botones que darian 403.
+  // La secretaria ve y usa el expediente completo. Lo unico que no tiene
+  // es la seccion Payments (detalle del comprobante) ni corregir precios o
+  // borrar abonos. Cerrado por defecto: hasta confirmar el rol (o si falla)
+  // se trata como restringido para no ofrecer acciones que darian 403.
   const [role, setRole] = useState<"full" | "restricted" | null>(null);
   useEffect(() => {
     adminMe()
@@ -109,8 +118,10 @@ function Content() {
     );
   if (!patient) return null;
 
+  const sessionsLeft = (patient.packages ?? []).reduce((sum, k) => sum + k.remaining, 0);
+
   return (
-    <>
+    <SectionsProvider storageKey="nutriverde_admin_record_sections">
       <div className="mb-6 flex items-center justify-between gap-3">
         <Link
           href="/admin/patients"
@@ -122,7 +133,6 @@ function Content() {
           <span className="hidden sm:inline">Back to list</span>
           <span className="sm:hidden">Back</span>
         </Link>
-        {!secretary && (
         <button
           type="button"
           onClick={handleDownloadPdf}
@@ -134,7 +144,6 @@ function Content() {
           </svg>
           {downloadingPdf ? "Generating…" : "Download PDF"}
         </button>
-        )}
       </div>
 
       {/* Header */}
@@ -173,24 +182,27 @@ function Content() {
                 value={stats.completedAppointments.toString()}
                 label="Completed"
               />
-              {!secretary && (
-                <Stat
-                  value={
-                    stats.totalPaidCents > 0
-                      ? formatCents(stats.totalPaidCents, "GTQ")
-                      : "Q0"
-                  }
-                  label="Paid"
-                />
-              )}
+              <Stat
+                value={
+                  stats.totalPaidCents > 0
+                    ? formatCents(stats.totalPaidCents, "GTQ")
+                    : "Q0"
+                }
+                label={
+                  (stats.balanceCents ?? 0) > 0
+                    ? `Paid · owes ${formatMoney(stats.balanceCents ?? 0, "GTQ")}`
+                    : "Paid"
+                }
+              />
             </div>
           )}
         </div>
       </section>
 
-      {/* Lo clinico solo para nutricionista/staff */}
-      {!secretary && (
-        <>
+      {/* Cada tarjeta es una seccion que se despliega hacia abajo. */}
+      <SectionsToolbar expandLabel="Expand all" collapseLabel="Collapse all" />
+
+      {/* Datos clinicos: cualquier rol del panel */}
       {/* Static clinical data */}
       <StaticHealthSection patient={patient} onSaved={reload} />
 
@@ -224,96 +236,36 @@ function Content() {
         mealPlans={patient.mealPlans}
         onChanged={reload}
       />
-        </>
-      )}
 
       {/* Session packages: cada paquete con el desglose numerado de sus sesiones */}
       {(patient.packages ?? []).length > 0 && (
-        <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
-          <h2 className="font-semibold text-gray-900 mb-4">Session packages</h2>
+        <CollapsibleSection
+          title="Session packages"
+          summary={`${patient.packages.length} ${patient.packages.length === 1 ? "package" : "packages"} · ${sessionsLeft} ${
+            sessionsLeft === 1 ? "session" : "sessions"
+          } left`}
+        >
           <ul className="space-y-4">
-            {patient.packages.map((p) => {
-              // Citas de este paquete que cuentan (no canceladas), en orden
-              // cronologico; la posicion es el numero de sesion.
-              const sessions = patient.appointments
-                .filter((a) => a.package?.id === p.id && a.status !== "CANCELED")
-                .sort((a, b) => {
-                  const ta = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
-                  const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
-                  return ta - tb || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-                });
-              const canceled = patient.appointments.filter(
-                (a) => a.package?.id === p.id && a.status === "CANCELED",
-              ).length;
-              return (
-                <li key={p.id} className="rounded-xl border border-gray-100 bg-gray-50/50">
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-                    <div>
-                      <p className="font-medium text-gray-900">{p.serviceName}</p>
-                      <p className="text-xs text-gray-500">Purchased {formatDate(p.createdAt)}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-2 w-32 rounded-full bg-gray-200 overflow-hidden">
-                        <div
-                          className={`h-full ${p.remaining === 0 ? "bg-amber-500" : "bg-brand-500"}`}
-                          style={{ width: `${Math.min(100, (p.usedSessions / p.totalSessions) * 100)}%` }}
-                        />
-                      </div>
-                      <span className={`text-xs font-medium ${p.remaining === 0 ? "text-amber-700" : "text-gray-700"}`}>
-                        {p.usedSessions}/{p.totalSessions} used ·{" "}
-                        {p.remaining === 0 ? "complete, renew" : `${p.remaining} left`}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="border-t border-gray-100 px-4 py-3 grid sm:grid-cols-2 gap-x-6 gap-y-1">
-                    {Array.from({ length: p.totalSessions }, (_, i) => i + 1).map((n) => {
-                      const a = sessions[n - 1];
-                      const past = isPastIso(a?.scheduledAt ?? null);
-                      return (
-                        <div key={n} className="flex items-center gap-3 py-1.5 text-sm border-b border-gray-100 last:border-0">
-                          <span className="h-6 w-6 shrink-0 rounded-full bg-white border border-gray-200 text-gray-600 text-[11px] font-semibold flex items-center justify-center">
-                            {n}
-                          </span>
-                          {a ? (
-                            <>
-                              <span className="text-gray-800 tabular-nums">
-                                {a.scheduledAt ? formatDate(a.scheduledAt) : "No date yet"}
-                              </span>
-                              <span className="text-[11px] text-gray-500">
-                                {a.modality === "IN_PERSON" ? "In person" : "Virtual"}
-                              </span>
-                              <span
-                                className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                                  a.status === "COMPLETED" || past
-                                    ? "bg-brand-100 text-brand-800"
-                                    : "bg-sky-100 text-sky-800"
-                                }`}
-                              >
-                                {a.status === "COMPLETED" || past ? "Done" : appointmentStatusLabel(a.status)}
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-gray-400 italic">Not booked yet</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {canceled > 0 && (
-                    <p className="px-4 pb-3 text-[11px] text-gray-500">
-                      Canceled appointments (not counted): {canceled}
-                    </p>
-                  )}
-                </li>
-              );
-            })}
+            {patient.packages.map((p, i) => (
+              <PackageCard
+                key={p.id}
+                pkg={p}
+                appointments={patient.appointments}
+                canManage={!secretary}
+                onChanged={reload}
+                // El paquete más reciente arranca abierto; los demás, cerrados.
+                defaultOpen={i === 0}
+              />
+            ))}
           </ul>
-        </section>
+        </CollapsibleSection>
       )}
 
       {/* Appointments */}
-      <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
-        <h2 className="font-semibold text-gray-900 mb-4">Appointments and consultations</h2>
+      <CollapsibleSection
+        title="Appointments and consultations"
+        summary={patient.appointments.length === 0 ? "None yet" : String(patient.appointments.length)}
+      >
         {patient.appointments.length === 0 ? (
           <p className="text-sm text-gray-500">No appointments recorded.</p>
         ) : (
@@ -358,7 +310,7 @@ function Content() {
                   <p className="mt-2 text-xs text-gray-600">
                     Payment: {paymentStatusLabel(a.payment.status)} ·{" "}
                     {formatCents(a.payment.amountCents, a.payment.currency)}
-                    {a.payment.id && (
+                    {a.payment.id && !secretary && (
                       <>
                         {" · "}
                         <Link
@@ -370,6 +322,18 @@ function Content() {
                       </>
                     )}
                   </p>
+                )}
+
+                {(a.charge || (a.chargeable && a.status !== "CANCELED")) && (
+                  <ChargePanel
+                    key={a.charge?.id ?? "no-charge"}
+                    charge={a.charge ?? null}
+                    target={{ appointmentId: a.id }}
+                    listPriceCents={a.service.priceCents}
+                    currency={a.service.currency}
+                    canManage={!secretary}
+                    onChanged={reload}
+                  />
                 )}
 
                 {a.meetingUrl && (
@@ -395,14 +359,11 @@ function Content() {
             ))}
           </ul>
         )}
-      </section>
+      </CollapsibleSection>
 
       {/* Intake forms */}
-      {!secretary && patient.intakeForms.length > 0 && (
-        <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
-          <h2 className="font-semibold text-gray-900 mb-4">
-            Submitted forms
-          </h2>
+      {patient.intakeForms.length > 0 && (
+        <CollapsibleSection title="Submitted forms" summary={String(patient.intakeForms.length)}>
           <ul className="space-y-4">
             {patient.intakeForms.map((f) => (
               <li
@@ -426,13 +387,12 @@ function Content() {
               </li>
             ))}
           </ul>
-        </section>
+        </CollapsibleSection>
       )}
 
       {/* Payments */}
-      {!secretary && patient.payments.length > 0 && (
-        <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
-          <h2 className="font-semibold text-gray-900 mb-4">Payment history</h2>
+      {patient.payments.length > 0 && (
+        <CollapsibleSection title="Payment history" summary={String(patient.payments.length)}>
           <ul className="space-y-2">
             {patient.payments.map((p) => (
               <li
@@ -450,22 +410,23 @@ function Content() {
                   <span className="font-medium text-gray-900">
                     {formatCents(p.amountCents, p.currency)}
                   </span>
-                  <Link
-                    href={`/admin/payments/${p.id}`}
-                    className="text-xs text-brand-700 hover:underline"
-                  >
-                    View →
-                  </Link>
+                  {!secretary && (
+                    <Link
+                      href={`/admin/payments/${p.id}`}
+                      className="text-xs text-brand-700 hover:underline"
+                    >
+                      View →
+                    </Link>
+                  )}
                 </div>
               </li>
             ))}
           </ul>
-        </section>
+        </CollapsibleSection>
       )}
 
       {patient.nutritionPlans.length > 0 && (
-        <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6">
-          <h2 className="font-semibold text-gray-900 mb-4">Nutrition plans</h2>
+        <CollapsibleSection title="Nutrition plans" summary={String(patient.nutritionPlans.length)}>
           <ul className="space-y-2 text-sm">
             {patient.nutritionPlans.map((np) => (
               <li
@@ -483,9 +444,145 @@ function Content() {
               </li>
             ))}
           </ul>
-        </section>
+        </CollapsibleSection>
       )}
-    </>
+    </SectionsProvider>
+  );
+}
+
+/**
+ * Paquete de sesiones como tarjeta desplegable: el encabezado resume uso y
+ * cobro; al abrirlo baja el desglose numerado de sesiones y el cobro.
+ */
+function PackageCard({
+  pkg: p,
+  appointments,
+  canManage,
+  onChanged,
+  defaultOpen,
+}: {
+  pkg: PatientDetail["packages"][number];
+  appointments: PatientDetail["appointments"];
+  canManage: boolean;
+  onChanged: () => void;
+  defaultOpen: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  // Citas de este paquete que cuentan (no canceladas), en orden
+  // cronologico; la posicion es el numero de sesion.
+  const sessions = appointments
+    .filter((a) => a.package?.id === p.id && a.status !== "CANCELED")
+    .sort((a, b) => {
+      const ta = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
+      const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
+      return ta - tb || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+  const canceled = appointments.filter(
+    (a) => a.package?.id === p.id && a.status === "CANCELED",
+  ).length;
+  const panelId = `package-${p.id}`;
+
+  return (
+    <li className="rounded-xl border border-gray-100 bg-gray-50/50">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="w-full text-left flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 rounded-xl hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+      >
+        <span className="min-w-0">
+          <span className="block font-medium text-gray-900">{p.serviceName}</span>
+          <span className="block text-xs text-gray-500">Purchased {formatDate(p.createdAt)}</span>
+        </span>
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {/* Resumen del cobro, visible aunque la tarjeta esté cerrada. */}
+          {p.charge && (
+            <span className="inline-flex items-center gap-1.5">
+              <ChargeStatusChip charge={p.charge} />
+              {p.charge.balanceCents > 0 && (
+                <span className="text-xs font-semibold text-amber-800 tabular-nums">
+                  {formatMoney(p.charge.balanceCents, p.charge.currency)}
+                </span>
+              )}
+            </span>
+          )}
+          <span className="h-2 w-24 sm:w-32 rounded-full bg-gray-200 overflow-hidden">
+            <span
+              className={`block h-full ${p.remaining === 0 ? "bg-amber-500" : "bg-brand-500"}`}
+              style={{ width: `${Math.min(100, (p.usedSessions / p.totalSessions) * 100)}%` }}
+            />
+          </span>
+          <span className={`text-xs font-medium ${p.remaining === 0 ? "text-amber-700" : "text-gray-700"}`}>
+            {p.usedSessions}/{p.totalSessions} used ·{" "}
+            {p.remaining === 0 ? "complete, renew" : `${p.remaining} left`}
+          </span>
+          <ChevronDownIcon
+            className={`h-4 w-4 shrink-0 text-gray-500 transition-transform duration-300 motion-reduce:transition-none ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        </span>
+      </button>
+
+      <Collapse open={open}>
+        <div id={panelId}>
+          <div className="border-t border-gray-100 px-4 py-3 grid sm:grid-cols-2 gap-x-6 gap-y-1">
+            {Array.from({ length: p.totalSessions }, (_, i) => i + 1).map((n) => {
+              const a = sessions[n - 1];
+              const past = isPastIso(a?.scheduledAt ?? null);
+              return (
+                <div key={n} className="flex items-center gap-3 py-1.5 text-sm border-b border-gray-100 last:border-0">
+                  <span className="h-6 w-6 shrink-0 rounded-full bg-white border border-gray-200 text-gray-600 text-[11px] font-semibold flex items-center justify-center">
+                    {n}
+                  </span>
+                  {a ? (
+                    <>
+                      <span className="text-gray-800 tabular-nums">
+                        {a.scheduledAt ? formatDate(a.scheduledAt) : "No date yet"}
+                      </span>
+                      <span className="text-[11px] text-gray-500">
+                        {a.modality === "IN_PERSON" ? "In person" : "Virtual"}
+                      </span>
+                      <span
+                        className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          a.status === "COMPLETED" || past
+                            ? "bg-brand-100 text-brand-800"
+                            : "bg-sky-100 text-sky-800"
+                        }`}
+                      >
+                        {a.status === "COMPLETED" || past ? "Done" : appointmentStatusLabel(a.status)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-gray-400 italic">Not booked yet</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {canceled > 0 && (
+            <p className="px-4 pb-3 text-[11px] text-gray-500">
+              Canceled appointments (not counted): {canceled}
+            </p>
+          )}
+          {(p.charge || p.chargeable) && (
+            <div className="px-4 pb-3">
+              <ChargePanel
+                key={p.charge?.id ?? "no-charge"}
+                charge={p.charge ?? null}
+                target={{ packageId: p.id }}
+                listPriceCents={p.listPriceCents}
+                currency={p.currency}
+                canManage={canManage}
+                onChanged={onChanged}
+              />
+            </div>
+          )}
+        </div>
+      </Collapse>
+    </li>
   );
 }
 

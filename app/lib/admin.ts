@@ -381,6 +381,8 @@ export interface PatientListItem {
   }>;
   /** Suma de sesiones restantes en todos sus paquetes. */
   sessionsRemaining: number;
+  /** Saldo pendiente (GTQ) de sus cobros del panel. */
+  balanceCents: number;
   _count: {
     appointments: number;
     payments: number;
@@ -458,6 +460,13 @@ export interface PatientPackage {
   remaining: number;
   createdAt: string;
   notes: string | null;
+  /** Precio de lista del servicio del paquete. */
+  listPriceCents?: number;
+  currency?: string;
+  /** Cobro del panel (precio acordado + abonos); null si no se registró. */
+  charge?: ChargeSummary | null;
+  /** Admite cobro del panel: no se pagó con comprobante desde la web. */
+  chargeable?: boolean;
 }
 
 export interface PatientDetail {
@@ -509,10 +518,13 @@ export interface PatientDetail {
     meetingUrl: string | null;
     meetingProvider: "GOOGLE_MEET" | "ZOOM" | null;
     createdAt: string;
-    service: { id: string; name: string; slug: string };
+    service: { id: string; name: string; slug: string; priceCents?: number; currency?: string };
     package: { id: string; totalSessions: number } | null;
     modality?: Modality;
     invoiceStatus?: "PENDING" | "ISSUED" | "NOT_REQUESTED";
+    /** Cobro del panel de la cita suelta (las de paquete, en el paquete). */
+    charge?: ChargeSummary | null;
+    chargeable?: boolean;
     payment: {
       id: string;
       status: string;
@@ -555,6 +567,8 @@ export interface PatientStats {
   completedAppointments: number;
   scheduledAppointments: number;
   totalPaidCents: number;
+  /** Saldo pendiente (GTQ) de los cobros del panel. */
+  balanceCents?: number;
 }
 
 export async function listPatients(
@@ -864,13 +878,17 @@ export interface AppointmentItem {
   meetingProvider: "GOOGLE_MEET" | "ZOOM" | null;
   notes: string | null;
   patient: { id: string; fullName: string; email: string; phone: string | null };
-  service: { id: string; name: string };
+  service: { id: string; name: string; priceCents: number; currency: string };
   payment: {
     id: string;
     status: string;
     amountCents: number;
     currency: string;
   } | null;
+  /** Cobro del panel: el de la cita suelta o el de su paquete. */
+  charge: ChargeSummary | null;
+  /** Admite cobro del panel (no se pagó con comprobante desde la web). */
+  chargeable: boolean;
   /** Paquete del que descuenta (null = cita suelta). */
   package: {
     id: string;
@@ -1047,6 +1065,9 @@ export interface DashboardData {
     pendingReview: number;
     activePackages: number;
     sessionsRemaining: number;
+    /** Saldo por cobrar (GTQ) de los cobros del panel y cuántos cobros son. */
+    outstandingCents: number;
+    outstandingCount: number;
   };
   incomeByMonth: Array<{ month: string; gtqCents: number; usdCents: number; count: number }>;
   appointmentsByMonth: Array<{ month: string; done: number; upcoming: number; canceled: number }>;
@@ -1152,11 +1173,16 @@ export async function createManualAppointment(input: {
   meetingProvider?: "GOOGLE_MEET" | "ZOOM";
   modality?: Modality;
   notes?: string;
+  /** Precio acordado en centavos; sin él, el de lista del servicio. */
+  priceCents?: number;
+  /** Pago completo o por plazos (con lo que abona hoy). */
+  payment?: { plan: ChargePlan; paidCents?: number; method?: ChargeMethod };
 }): Promise<{
   ok: true;
   appointment: { id: string; status: string; scheduledAt: string };
   email: EmailOutcome;
   patient: { id: string; fullName: string; email: string };
+  charge: ChargeSummary | null;
 }> {
   const res = await authFetch("/api/admin/appointments", {
     method: "POST",
@@ -1321,4 +1347,131 @@ export function formatCents(cents: number, currency: string): string {
   const amount = cents / 100;
   if (currency === "GTQ") return `Q${amount.toFixed(0)}`;
   return `${currency} ${amount.toFixed(2)}`;
+}
+
+// ============================================================
+// Cobros del panel: precio acordado de una cita o paquete + abonos
+// ============================================================
+
+export type ChargePlan = "FULL" | "INSTALLMENTS";
+export type ChargeMethod = "CASH" | "TRANSFER" | "CARD" | "OTHER";
+export type ChargeStatus = "PAID" | "PARTIAL" | "PENDING";
+
+export interface ChargePaymentItem {
+  id: string;
+  amountCents: number;
+  method: ChargeMethod;
+  paidAt: string;
+  note: string | null;
+  recordedByEmail: string | null;
+}
+
+export interface ChargeSummary {
+  id: string;
+  /** PACKAGE: cobra todo el paquete. APPOINTMENT: cobra una cita suelta. */
+  scope: "PACKAGE" | "APPOINTMENT";
+  packageId: string | null;
+  appointmentId: string | null;
+  priceCents: number;
+  listPriceCents: number;
+  currency: string;
+  plan: ChargePlan;
+  paidCents: number;
+  balanceCents: number;
+  status: ChargeStatus;
+  notes: string | null;
+  createdAt: string;
+  payments: ChargePaymentItem[];
+}
+
+export interface OutstandingCharge extends ChargeSummary {
+  patient: { id: string; fullName: string; email: string; phone: string | null };
+  serviceName: string;
+  totalSessions: number | null;
+  appointmentAt: string | null;
+}
+
+/** Monto con separador de miles; decimales solo si los hay (Q1,400 / Q350.50). */
+export function formatMoney(cents: number, currency: string): string {
+  const amount = cents / 100;
+  const text = amount.toLocaleString("en-US", {
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+  if (currency === "GTQ") return `Q${text}`;
+  if (currency === "USD") return `US$${text}`;
+  return `${currency} ${text}`;
+}
+
+/** Texto escrito por la persona ("1,400", "Q350.50") a centavos; null si no es un monto. */
+export function parseMoney(text: string): number | null {
+  const clean = text.replace(/[Qq$\s,]/g, "");
+  if (!/^\d+(\.\d{1,2})?$/.test(clean)) return null;
+  return Math.round(parseFloat(clean) * 100);
+}
+
+/** Centavos al texto de un campo de monto ("1400" / "350.50"). */
+export function centsToInput(cents: number): string {
+  const amount = cents / 100;
+  return Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
+}
+
+/** Cobros con saldo pendiente (lista "Por cobrar" de la agenda). */
+export async function listOutstandingCharges(): Promise<{
+  charges: OutstandingCharge[];
+  totalCents: number;
+}> {
+  const res = await authFetch("/api/admin/charges/outstanding");
+  return parseJson(res);
+}
+
+/** Registra el cobro de una cita o paquete que aún no lo tiene. */
+export async function createCharge(input: {
+  appointmentId?: string;
+  packageId?: string;
+  priceCents?: number;
+  plan?: ChargePlan;
+  paidCents?: number;
+  method?: ChargeMethod;
+}): Promise<{ ok: true; charge: ChargeSummary }> {
+  const res = await authFetch("/api/admin/charges", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
+/** Corrige precio acordado o forma de pago. Solo nutricionista/staff. */
+export async function updateCharge(
+  chargeId: string,
+  patch: { priceCents?: number; plan?: ChargePlan },
+): Promise<{ ok: true; charge: ChargeSummary }> {
+  const res = await authFetch(`/api/admin/charges/${chargeId}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+  return parseJson(res);
+}
+
+/** Registra un abono contra un cobro. */
+export async function addChargePayment(
+  chargeId: string,
+  input: { amountCents: number; method: ChargeMethod; paidAt?: string; note?: string },
+): Promise<{ ok: true; charge: ChargeSummary }> {
+  const res = await authFetch(`/api/admin/charges/${chargeId}/payments`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
+/** Borra un abono registrado por error. Solo nutricionista/staff. */
+export async function deleteChargePayment(
+  chargeId: string,
+  paymentId: string,
+): Promise<{ ok: true; charge: ChargeSummary }> {
+  const res = await authFetch(`/api/admin/charges/${chargeId}/payments/${paymentId}`, {
+    method: "DELETE",
+  });
+  return parseJson(res);
 }

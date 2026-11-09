@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CollapsibleSection } from "../../CollapsibleSection";
 import {
   CartesianGrid,
   Legend,
@@ -79,19 +80,17 @@ export function ProgressCharts({
 
   if (data.length < 2) {
     return (
-      <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
-        <h2 className="font-semibold text-gray-900 mb-2">Progress</h2>
+      <CollapsibleSection title="Progress" summary="Needs 2 measurements">
         <p className="text-sm text-gray-500">
           You need at least 2 recorded measurements to view progress charts.
         </p>
-      </section>
+      </CollapsibleSection>
     );
   }
 
   return (
-    <section className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <h2 className="font-semibold text-gray-900">Progress</h2>
+    <CollapsibleSection title="Progress" summary={`${data.length} measurements`}>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4">
         <div className="flex sm:inline-flex rounded-full bg-cream-100 p-1 text-xs font-medium overflow-x-auto -mx-1 sm:mx-0">
           {(
             [
@@ -165,6 +164,6 @@ export function ProgressCharts({
           </ResponsiveContainer>
         </div>
       )}
-    </section>
+    </CollapsibleSection>
   );
 }
