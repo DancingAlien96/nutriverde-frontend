@@ -17,9 +17,9 @@ import {
   type BlockConflict,
   type CreateBlockResult,
 } from "../../lib/admin";
+import { useAdminT } from "../../lib/admin-i18n";
 
-const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-// Mostrar de Lunes a Domingo
+// Mostrar de Lunes a Domingo (0 = domingo, como `dayOfWeek` en la API).
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
 export default function AvailabilityPage() {
@@ -31,6 +31,8 @@ export default function AvailabilityPage() {
 }
 
 function Content() {
+  const t = useAdminT();
+  const tp = t.availabilityPage;
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
   const [settings, setSettings] = useState<SchedulingSettings | null>(null);
@@ -45,25 +47,23 @@ function Content() {
       setBlocks(data.blocks);
       setSettings(data.settings);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      setError(err instanceof Error ? err.message : t.common.error);
     }
   }
 
   useEffect(() => {
     setLoading(true);
     reload().finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (loading) return <div className="text-sm text-gray-500">Loading…</div>;
+  if (loading) return <div className="text-sm text-gray-500">{t.common.loading}</div>;
 
   return (
     <>
       <div className="mb-6">
-        <h1 className="font-serif-display text-2xl sm:text-3xl text-gray-900">Availability</h1>
-        <p className="text-sm text-gray-600 mt-1">
-          Define your weekly schedule and block specific dates (vacations,
-          holidays). Patients will only see times within these ranges.
-        </p>
+        <h1 className="font-serif-display text-2xl sm:text-3xl text-gray-900">{tp.title}</h1>
+        <p className="text-sm text-gray-600 mt-1">{tp.subtitle}</p>
       </div>
 
       {error && (
@@ -83,12 +83,8 @@ function Content() {
       )}
 
       <section className="rounded-2xl bg-white border border-gray-200 p-4 sm:p-6 mb-6">
-        <h2 className="font-semibold text-gray-900">Weekly schedule</h2>
-        <p className="text-xs text-gray-500 mt-1">
-          You can add several ranges per day (for example 8-12 and 14-17). The
-          &quot;To&quot; time is the last appointment start: 7:30 – 14:00 offers a
-          last appointment at 14:00, whatever the service duration.
-        </p>
+        <h2 className="font-semibold text-gray-900">{tp.weekly.title}</h2>
+        <p className="text-xs text-gray-500 mt-1">{tp.weekly.subtitle}</p>
 
         <div className="mt-6 space-y-3">
           {DAY_ORDER.map((dow) => (
@@ -118,11 +114,8 @@ function Content() {
       </section>
 
       <section className="rounded-2xl bg-white border border-gray-200 p-4 sm:p-6">
-        <h2 className="font-semibold text-gray-900">One-off blocks</h2>
-        <p className="text-xs text-gray-500 mt-1">
-          Vacations, holidays, days with no availability. They apply on top of
-          the weekly schedule.
-        </p>
+        <h2 className="font-semibold text-gray-900">{tp.blocks.title}</h2>
+        <p className="text-xs text-gray-500 mt-1">{tp.blocks.subtitle}</p>
 
         <BlockForm
           onCreate={async (input) => {
@@ -133,7 +126,7 @@ function Content() {
         />
 
         {blocks.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-500">No active blocks.</p>
+          <p className="mt-4 text-sm text-gray-500">{tp.blocks.empty}</p>
         ) : (
           <ul className="mt-4 space-y-2">
             {blocks.map((b) => (
@@ -143,7 +136,7 @@ function Content() {
               >
                 <div className="text-sm">
                   <p className="font-medium text-gray-900">
-                    {fmtBlockRange(b.startsAt, b.endsAt)}
+                    {fmtBlockRange(b.startsAt, b.endsAt, t.dateLocale)}
                   </p>
                   {b.reason && (
                     <p className="text-xs text-gray-600 mt-0.5">{b.reason}</p>
@@ -152,17 +145,17 @@ function Content() {
                 <button
                   type="button"
                   onClick={async () => {
-                    if (!confirm("Delete this block?")) return;
+                    if (!confirm(tp.blocks.confirmDelete)) return;
                     try {
                       await deleteBlock(b.id);
                       await reload();
                     } catch (err) {
-                      setError(err instanceof Error ? err.message : "Error");
+                      setError(err instanceof Error ? err.message : t.common.error);
                     }
                   }}
                   className="text-xs text-red-700 hover:text-red-800 font-medium"
                 >
-                  Delete
+                  {tp.blocks.delete}
                 </button>
               </li>
             ))}
@@ -180,6 +173,8 @@ function SettingsSection({
   settings: SchedulingSettings;
   onSave: (patch: Partial<SchedulingSettings>) => Promise<void>;
 }) {
+  const t = useAdminT();
+  const ts = t.availabilityPage.settings;
   const [allowSameDay, setAllowSameDay] = useState(settings.allowSameDayBooking);
   const [minLead, setMinLead] = useState(settings.minLeadMinutes.toString());
   const [saving, setSaving] = useState(false);
@@ -195,7 +190,7 @@ function SettingsSection({
     setSavedFlag(false);
     const minutes = Number(minLead);
     if (Number.isNaN(minutes) || minutes < 0) {
-      setError("Invalid lead time.");
+      setError(ts.invalidLead);
       return;
     }
     setSaving(true);
@@ -207,7 +202,7 @@ function SettingsSection({
       setSavedFlag(true);
       setTimeout(() => setSavedFlag(false), 1800);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSaving(false);
     }
@@ -215,10 +210,8 @@ function SettingsSection({
 
   return (
     <section className="rounded-2xl bg-white border border-gray-200 p-4 sm:p-6 mb-6">
-      <h2 className="font-semibold text-gray-900">Settings</h2>
-      <p className="text-xs text-gray-500 mt-1">
-        Rules applied to the calendar the patient sees.
-      </p>
+      <h2 className="font-semibold text-gray-900">{ts.title}</h2>
+      <p className="text-xs text-gray-500 mt-1">{ts.subtitle}</p>
 
       <div className="mt-4 space-y-4">
         <label className="flex items-start gap-3 cursor-pointer">
@@ -230,18 +223,17 @@ function SettingsSection({
           />
           <span>
             <span className="block text-sm font-medium text-gray-900">
-              Allow same-day bookings
+              {ts.allowSameDay}
             </span>
             <span className="block text-xs text-gray-500 mt-0.5">
-              If you turn this off, today appears as &quot;full&quot; regardless
-              of free times.
+              {ts.allowSameDayHint}
             </span>
           </span>
         </label>
 
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-1">
-            Minimum lead time
+            {ts.minLead}
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -253,12 +245,9 @@ function SettingsSection({
               disabled={!allowSameDay}
               className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-50 disabled:text-gray-400"
             />
-            <span className="text-sm text-gray-600">minutes</span>
+            <span className="text-sm text-gray-600">{ts.minutes}</span>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
-            The patient can't book slots that start before this margin from now.
-            For example, 60 = at least 1 hour ahead.
-          </p>
+          <p className="text-xs text-gray-500 mt-1">{ts.minLeadHint}</p>
         </div>
       </div>
 
@@ -272,7 +261,7 @@ function SettingsSection({
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            Saved
+            {ts.saved}
           </span>
         )}
         <button
@@ -281,7 +270,7 @@ function SettingsSection({
           disabled={saving || !dirty}
           className="rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-40 px-5 py-2 text-sm font-medium text-white"
         >
-          {saving ? "Saving…" : "Save changes"}
+          {saving ? ts.saving : ts.save}
         </button>
       </div>
     </section>
@@ -303,6 +292,8 @@ function DayRow({
   onEdit: (id: string, startMinute: number, endMinute: number) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
+  const t = useAdminT();
+  const tw = t.availabilityPage.weekly;
   const [adding, setAdding] = useState(false);
   const [start, setStart] = useState("08:00");
   const [end, setEnd] = useState("17:00");
@@ -318,7 +309,7 @@ function DayRow({
       setStart("08:00");
       setEnd("17:00");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSubmitting(false);
     }
@@ -327,20 +318,20 @@ function DayRow({
   return (
     <div className="rounded-xl border border-gray-100 p-4">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-semibold text-gray-900">{DAY_NAMES[dayOfWeek]}</p>
+        <p className="text-sm font-semibold text-gray-900">{t.availabilityPage.days[dayOfWeek]}</p>
         {!adding && (
           <button
             type="button"
             onClick={() => setAdding(true)}
             className="text-xs text-brand-700 hover:text-brand-800 font-medium"
           >
-            + Add range
+            {tw.addRange}
           </button>
         )}
       </div>
 
       {slots.length === 0 && !adding && (
-        <p className="text-xs text-gray-500">No ranges. No appointments this day.</p>
+        <p className="text-xs text-gray-500">{tw.noRanges}</p>
       )}
 
       {slots.length > 0 && (
@@ -360,7 +351,7 @@ function DayRow({
       {adding && (
         <div className="mt-3 flex flex-wrap items-end gap-2">
           <label className="text-xs">
-            From
+            {tw.from}
             <input
               type="time"
               value={start}
@@ -369,7 +360,7 @@ function DayRow({
             />
           </label>
           <label className="text-xs">
-            To (last start)
+            {tw.to}
             <input
               type="time"
               value={end}
@@ -383,7 +374,7 @@ function DayRow({
             disabled={submitting}
             className="rounded-full bg-gray-900 hover:bg-gray-800 disabled:opacity-60 px-4 py-1.5 text-xs font-medium text-white"
           >
-            {submitting ? "Adding…" : "Add"}
+            {submitting ? tw.adding : tw.add}
           </button>
           <button
             type="button"
@@ -393,7 +384,7 @@ function DayRow({
             }}
             className="text-xs text-gray-600 hover:text-gray-900"
           >
-            Cancel
+            {t.common.cancel}
           </button>
           {error && (
             <p className="w-full text-xs text-red-700">{error}</p>
@@ -419,6 +410,8 @@ function SlotRow({
   onEdit: (id: string, startMinute: number, endMinute: number) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
+  const t = useAdminT();
+  const tw = t.availabilityPage.weekly;
   const [editing, setEditing] = useState(false);
   const [start, setStart] = useState(fmtMin(s.startMinute));
   const [end, setEnd] = useState(fmtMin(s.endMinute));
@@ -436,7 +429,7 @@ function SlotRow({
     const sm = toMin(start);
     const em = toMin(end);
     if (!(sm < em)) {
-      setError("The start time must be before the end time.");
+      setError(tw.startBeforeEnd);
       return;
     }
     setSaving(true);
@@ -445,7 +438,7 @@ function SlotRow({
       await onEdit(s.id, sm, em);
       setEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSaving(false);
     }
@@ -458,7 +451,7 @@ function SlotRow({
           className={`inline-block w-2 h-2 rounded-full mb-2.5 ${s.active ? "bg-brand-500" : "bg-gray-300"}`}
         />
         <label className="text-xs">
-          From
+          {tw.from}
           <input
             type="time"
             value={start}
@@ -467,7 +460,7 @@ function SlotRow({
           />
         </label>
         <label className="text-xs">
-          To (last start)
+          {tw.to}
           <input
             type="time"
             value={end}
@@ -481,7 +474,7 @@ function SlotRow({
           disabled={saving}
           className="rounded-full bg-gray-900 hover:bg-gray-800 disabled:opacity-60 px-4 py-1.5 text-xs font-medium text-white"
         >
-          {saving ? "Saving…" : "Save"}
+          {saving ? tw.saving : tw.save}
         </button>
         <button
           type="button"
@@ -491,7 +484,7 @@ function SlotRow({
           }}
           className="text-xs text-gray-600 hover:text-gray-900"
         >
-          Cancel
+          {t.common.cancel}
         </button>
         {error && <p className="w-full text-xs text-red-700">{error}</p>}
       </li>
@@ -511,21 +504,21 @@ function SlotRow({
         onClick={openEdit}
         className="ml-auto text-xs text-brand-700 hover:text-brand-800 font-medium"
       >
-        Edit
+        {tw.edit}
       </button>
       <button
         type="button"
         onClick={() => onToggle(s.id, !s.active)}
         className="text-xs text-gray-600 hover:text-gray-900"
       >
-        {s.active ? "Pause" : "Activate"}
+        {s.active ? tw.pause : tw.activate}
       </button>
       <button
         type="button"
         onClick={() => onDelete(s.id)}
         className="text-xs text-red-700 hover:text-red-800"
       >
-        Delete
+        {tw.delete}
       </button>
     </li>
   );
@@ -541,6 +534,8 @@ function BlockForm({
     acknowledgeConflicts?: boolean;
   }) => Promise<CreateBlockResult>;
 }) {
+  const t = useAdminT();
+  const tb = t.availabilityPage.blocks;
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [reason, setReason] = useState("");
@@ -560,7 +555,7 @@ function BlockForm({
   async function handle(acknowledgeConflicts = false) {
     setError(null);
     if (!start || !end) {
-      setError("Enter start and end date and time.");
+      setError(tb.missingDates);
       return;
     }
     setSubmitting(true);
@@ -581,7 +576,7 @@ function BlockForm({
         setConflicts(result.conflicts);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSubmitting(false);
     }
@@ -590,7 +585,7 @@ function BlockForm({
   return (
     <div className="mt-4 grid sm:grid-cols-2 gap-3 items-end">
       <label className="text-xs">
-        From (Guatemala time)
+        {tb.from}
         <input
           type="datetime-local"
           value={start}
@@ -599,7 +594,7 @@ function BlockForm({
         />
       </label>
       <label className="text-xs">
-        To (Guatemala time)
+        {tb.to}
         <input
           type="datetime-local"
           value={end}
@@ -608,12 +603,12 @@ function BlockForm({
         />
       </label>
       <label className="text-xs sm:col-span-2">
-        Reason (optional)
+        {tb.reason}
         <input
           type="text"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="e.g. Vacation, travel, training…"
+          placeholder={tb.reasonPh}
           className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
         />
       </label>
@@ -624,7 +619,7 @@ function BlockForm({
           disabled={submitting}
           className="rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 px-5 py-2 text-sm font-medium text-white"
         >
-          {submitting ? "Adding…" : "Add block"}
+          {submitting ? tb.adding : tb.add}
         </button>
         {error && <p className="text-xs text-red-700">{error}</p>}
       </div>
@@ -633,13 +628,13 @@ function BlockForm({
         <div className="sm:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <p className="text-sm font-semibold text-amber-900">
             {conflicts.length === 1
-              ? "1 appointment falls"
-              : `${conflicts.length} appointments fall`}{" "}
-            inside that range
+              ? tb.conflictOne
+              : tb.conflictMany.replace("{n}", String(conflicts.length))}
           </p>
           <p className="mt-1 text-xs text-amber-800">
-            Blocking prevents <em>new</em> bookings but does not cancel these.
-            Reschedule them first, or block anyway and handle them yourself.
+            {tb.conflictHint1}
+            <em>{tb.conflictHintEm}</em>
+            {tb.conflictHint2}
           </p>
 
           <ul className="mt-3 space-y-2">
@@ -663,14 +658,14 @@ function BlockForm({
               disabled={submitting}
               className="rounded-full bg-amber-600 hover:bg-amber-700 disabled:opacity-60 px-4 py-1.5 text-xs font-medium text-white"
             >
-              {submitting ? "Adding…" : "Block anyway"}
+              {submitting ? tb.adding : tb.blockAnyway}
             </button>
             <button
               type="button"
               onClick={() => setConflicts(null)}
               className="text-xs text-ink-500 hover:text-ink-700"
             >
-              Cancel
+              {t.common.cancel}
             </button>
           </div>
         </div>
@@ -687,10 +682,12 @@ function ConflictRow({
   conflict: BlockConflict;
   onResolved: () => void;
 }) {
+  const t = useAdminT();
+  const tb = t.availabilityPage.blocks;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const when = new Date(conflict.scheduledAt).toLocaleString("en-US", {
+  const when = new Date(conflict.scheduledAt).toLocaleString(t.dateLocale, {
     timeZone: "America/Guatemala",
     weekday: "short",
     day: "numeric",
@@ -706,7 +703,7 @@ function ConflictRow({
       await declineAppointmentTime(conflict.id);
       onResolved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      setError(err instanceof Error ? err.message : t.common.error);
       setBusy(false);
     }
   }
@@ -718,7 +715,7 @@ function ConflictRow({
           {when} · {conflict.patient.fullName}
         </p>
         <p className="text-[11px] text-gray-500 truncate">
-          {conflict.service.name} · {conflict.durationMin} min
+          {conflict.service.name} · {conflict.durationMin} {tb.min}
         </p>
         {error && <p className="text-[11px] text-red-600">{error}</p>}
       </div>
@@ -728,7 +725,7 @@ function ConflictRow({
         disabled={busy}
         className="shrink-0 rounded-full border border-amber-300 px-3 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
       >
-        {busy ? "Notifying…" : "Notify & reschedule"}
+        {busy ? tb.notifying : tb.notify}
       </button>
     </li>
   );
@@ -743,7 +740,7 @@ function fmtMin(min: number): string {
   return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 }
 
-function fmtBlockRange(startIso: string, endIso: string): string {
+function fmtBlockRange(startIso: string, endIso: string, locale: string): string {
   const s = new Date(startIso);
   const e = new Date(endIso);
   const opts: Intl.DateTimeFormatOptions = {
@@ -755,7 +752,7 @@ function fmtBlockRange(startIso: string, endIso: string): string {
     minute: "2-digit",
     hour12: false,
   };
-  return `${s.toLocaleString("en-US", opts)} → ${e.toLocaleString("en-US", opts)} (GT)`;
+  return `${s.toLocaleString(locale, opts)} → ${e.toLocaleString(locale, opts)} (GT)`;
 }
 
 /** Recibe "YYYY-MM-DDTHH:MM" como hora GT (UTC-6) y devuelve ISO UTC. */

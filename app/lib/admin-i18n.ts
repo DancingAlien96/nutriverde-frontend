@@ -2,13 +2,17 @@
 
 import { useLocale } from "./i18n";
 import type { Locale } from "./dictionary";
+import { patientsDict } from "./admin-dict/patients";
+import { recordDict } from "./admin-dict/record";
+import { clinicalDict } from "./admin-dict/clinical";
+import { availabilityDict } from "./admin-dict/availability";
 
 /**
  * Textos del panel admin en los dos idiomas. El idioma lo fija la
  * nutricionista por usuario (campo `locale` de AdminUser) y AdminShell lo
  * aplica al iniciar sesión. Por ahora cubre las pantallas que usa la
- * secretaria (login, agenda) y la sección de usuarios; el resto del panel
- * sigue en inglés.
+ * secretaria (login, agenda, pacientes, expediente, disponibilidad) y la
+ * sección de usuarios. Las secciones grandes viven en ./admin-dict/.
  */
 const EN = {
   dateLocale: "en-US",
@@ -349,6 +353,10 @@ const EN = {
     },
     locales: { EN: "English", ES: "Español" },
   },
+  patientsList: patientsDict.en,
+  record: recordDict.en,
+  clinical: clinicalDict.en,
+  availabilityPage: availabilityDict.en,
 };
 
 export type AdminDict = typeof EN;
@@ -692,6 +700,10 @@ const ES: AdminDict = {
     },
     locales: { EN: "English", ES: "Español" },
   },
+  patientsList: patientsDict.es,
+  record: recordDict.es,
+  clinical: clinicalDict.es,
+  availabilityPage: availabilityDict.es,
 };
 
 export const ADMIN_DICT: Record<Locale, AdminDict> = { en: EN, es: ES };

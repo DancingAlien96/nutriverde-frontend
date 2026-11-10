@@ -13,40 +13,49 @@ import {
   YAxis,
 } from "recharts";
 import type { AnthropometricMeasurement } from "../../../lib/admin";
+import { useAdminT, type AdminDict } from "../../../lib/admin-i18n";
+
+/** Indicadores graficables; la etiqueta de cada serie sale del diccionario. */
+type SeriesKey = keyof AdminDict["clinical"]["progress"]["series"] &
+  keyof AnthropometricMeasurement;
 
 type Series = {
-  key: keyof AnthropometricMeasurement;
-  label: string;
+  key: SeriesKey;
   color: string;
 };
 
 const COMPOSITION_SERIES: Series[] = [
-  { key: "weightKg", label: "Weight (kg)", color: "#95593a" },
-  { key: "leanMassKg", label: "Lean mass (kg)", color: "#7a8c5a" },
+  { key: "weightKg", color: "#95593a" },
+  { key: "leanMassKg", color: "#7a8c5a" },
 ];
 
 const BODY_FAT_SERIES: Series[] = [
-  { key: "fatPercent", label: "Body fat %", color: "#95593a" },
-  { key: "waterPercent", label: "Water %", color: "#4f8c8e" },
-  { key: "caliperFatPercent", label: "Caliper body fat %", color: "#c68c56" },
+  { key: "fatPercent", color: "#95593a" },
+  { key: "waterPercent", color: "#4f8c8e" },
+  { key: "caliperFatPercent", color: "#c68c56" },
 ];
 
 const CIRCUMFERENCE_SERIES: Series[] = [
-  { key: "waistCm", label: "Waist", color: "#95593a" },
-  { key: "abdomenCm", label: "Abdomen", color: "#c68c56" },
-  { key: "hipCm", label: "Hip", color: "#7a8c5a" },
-  { key: "chestCm", label: "Chest", color: "#4f8c8e" },
-  { key: "armCm", label: "Arm", color: "#d7a878" },
-  { key: "thighCm", label: "Thigh", color: "#74442e" },
+  { key: "waistCm", color: "#95593a" },
+  { key: "abdomenCm", color: "#c68c56" },
+  { key: "hipCm", color: "#7a8c5a" },
+  { key: "chestCm", color: "#4f8c8e" },
+  { key: "armCm", color: "#d7a878" },
+  { key: "thighCm", color: "#74442e" },
 ];
 
 type TabKey = "weight" | "fat" | "circ";
+
+const TABS: TabKey[] = ["weight", "fat", "circ"];
 
 export function ProgressCharts({
   measurements,
 }: {
   measurements: AnthropometricMeasurement[];
 }) {
+  const t = useAdminT();
+  const p = t.clinical.progress;
+  const dateLocale = t.dateLocale;
   const [tab, setTab] = useState<TabKey>("weight");
 
   // Recharts needs the series sorted ascending by date
@@ -59,12 +68,12 @@ export function ProgressCharts({
       .map((m, i) => ({
         ...m,
         label: m.visitNumber ? `#${m.visitNumber}` : `V${i + 1}`,
-        date: new Date(m.measuredAt).toLocaleDateString("en-US", {
+        date: new Date(m.measuredAt).toLocaleDateString(dateLocale, {
           day: "2-digit",
           month: "short",
         }),
       }));
-  }, [measurements]);
+  }, [measurements, dateLocale]);
 
   const activeSeries =
     tab === "weight"
@@ -80,45 +89,38 @@ export function ProgressCharts({
 
   if (data.length < 2) {
     return (
-      <CollapsibleSection title="Progress" summary="Needs 2 measurements">
-        <p className="text-sm text-gray-500">
-          You need at least 2 recorded measurements to view progress charts.
-        </p>
+      <CollapsibleSection title={p.title} summary={p.needsTwo}>
+        <p className="text-sm text-gray-500">{p.needsTwoHint}</p>
       </CollapsibleSection>
     );
   }
 
   return (
-    <CollapsibleSection title="Progress" summary={`${data.length} measurements`}>
+    <CollapsibleSection
+      title={p.title}
+      summary={p.measurementsCount.replace("{n}", String(data.length))}
+    >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 mb-4">
         <div className="flex sm:inline-flex rounded-full bg-cream-100 p-1 text-xs font-medium overflow-x-auto -mx-1 sm:mx-0">
-          {(
-            [
-              { key: "weight", label: "Weight & lean mass" },
-              { key: "fat", label: "Body fat & water %" },
-              { key: "circ", label: "Circumferences" },
-            ] as { key: TabKey; label: string }[]
-          ).map((t) => (
+          {TABS.map((key) => (
             <button
-              key={t.key}
+              key={key}
               type="button"
-              onClick={() => setTab(t.key)}
+              onClick={() => setTab(key)}
               className={`px-3 py-1.5 rounded-full transition-colors whitespace-nowrap shrink-0 ${
-                tab === t.key
+                tab === key
                   ? "bg-ink-900 text-white"
                   : "text-ink-700 hover:text-ink-900"
               }`}
             >
-              {t.label}
+              {p.tabs[key]}
             </button>
           ))}
         </div>
       </div>
 
       {seriesWithData.length === 0 ? (
-        <p className="text-sm text-gray-500">
-          No data available for this indicator in the recorded measurements.
-        </p>
+        <p className="text-sm text-gray-500">{p.noData}</p>
       ) : (
         <div className="h-72 sm:h-80">
           <ResponsiveContainer width="100%" height="100%">
@@ -149,10 +151,10 @@ export function ProgressCharts({
               />
               {seriesWithData.map((s) => (
                 <Line
-                  key={s.key as string}
+                  key={s.key}
                   type="monotone"
-                  dataKey={s.key as string}
-                  name={s.label}
+                  dataKey={s.key}
+                  name={p.series[s.key]}
                   stroke={s.color}
                   strokeWidth={2}
                   dot={{ r: 3, fill: s.color }}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell } from "../AdminShell";
+import { useAdminT } from "../../lib/admin-i18n";
 import {
   adminMe,
   deletePatient,
@@ -28,12 +29,13 @@ type SortKey =
 
 const PAGE_SIZE = 25;
 
-const COLUMNS: { key: SortKey; label: string; align?: "right" | "center"; hide?: string }[] = [
-  { key: "fullName", label: "Name" },
-  { key: "appointments", label: "Appts", align: "center" },
-  { key: "sessionsRemaining", label: "Package" },
-  { key: "lastAppointmentAt", label: "Last appointment", hide: "hidden md:table-cell" },
-  { key: "createdAt", label: "Registered", hide: "hidden lg:table-cell" },
+// Las etiquetas salen del diccionario (t.patientsList.columns[key]) dentro del componente.
+const COLUMNS: { key: SortKey; align?: "right" | "center"; hide?: string }[] = [
+  { key: "fullName" },
+  { key: "appointments", align: "center" },
+  { key: "sessionsRemaining" },
+  { key: "lastAppointmentAt", hide: "hidden md:table-cell" },
+  { key: "createdAt", hide: "hidden lg:table-cell" },
 ];
 
 /**
@@ -41,6 +43,8 @@ const COLUMNS: { key: SortKey; label: string; align?: "right" | "center"; hide?:
  * expediente por el icono de ojo y eliminación solo para la nutricionista.
  */
 function Content() {
+  const t = useAdminT();
+  const tp = t.patientsList;
   const router = useRouter();
   const [patients, setPatients] = useState<PatientListItem[]>([]);
   const [query, setQuery] = useState("");
@@ -70,7 +74,7 @@ function Content() {
           }
         })
         .catch((err) => {
-          if (!cancelled) setError(err instanceof Error ? err.message : "Error");
+          if (!cancelled) setError(err instanceof Error ? err.message : t.common.error);
         })
         .finally(() => {
           if (!cancelled) setLoading(false);
@@ -80,7 +84,7 @@ function Content() {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [query, reloadKey]);
+  }, [query, reloadKey, t.common.error]);
 
   const sorted = useMemo(() => {
     const dir = sortDir === "asc" ? 1 : -1;
@@ -122,10 +126,9 @@ function Content() {
     <>
       <div className="mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="font-serif-display text-2xl sm:text-3xl text-gray-900">Patients</h1>
+          <h1 className="font-serif-display text-2xl sm:text-3xl text-gray-900">{tp.title}</h1>
           <p className="text-sm text-gray-600 mt-1">
-            {patients.length} {patients.length === 1 ? "patient" : "patients"}. Click a column to sort;
-            use the eye to open the record. Search also works by ID or phone.
+            {patients.length} {patients.length === 1 ? tp.countOne : tp.countMany}. {tp.subtitle}
           </p>
         </div>
         <div className="sm:max-w-xs sm:w-72">
@@ -136,7 +139,7 @@ function Content() {
               setQuery(e.target.value);
               setPage(1);
             }}
-            placeholder="Search name, email, ID or phone…"
+            placeholder={tp.searchPh}
             className="w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
@@ -149,10 +152,10 @@ function Content() {
       )}
 
       {loading ? (
-        <div className="text-sm text-gray-500">Loading…</div>
+        <div className="text-sm text-gray-500">{t.common.loading}</div>
       ) : patients.length === 0 ? (
         <div className="rounded-2xl bg-white border border-gray-200 p-10 text-center text-sm text-gray-500">
-          {query ? "No matching patients." : "No patients yet."}
+          {query ? tp.emptySearch : tp.empty}
         </div>
       ) : (
         <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
@@ -174,14 +177,14 @@ function Content() {
                           sortKey === c.key ? "text-gray-900" : ""
                         }`}
                       >
-                        {c.label}
+                        {tp.columns[c.key]}
                         <span className="text-[9px] leading-none text-gray-400">
                           {sortKey === c.key ? (sortDir === "asc" ? "▲" : "▼") : "⇅"}
                         </span>
                       </button>
                     </th>
                   ))}
-                  <th className="px-3 py-2.5 text-right font-medium sticky right-0 bg-gray-50">Actions</th>
+                  <th className="px-3 py-2.5 text-right font-medium sticky right-0 bg-gray-50">{tp.actions}</th>
                 </tr>
               </thead>
               <tbody className="tabular-nums">
@@ -197,7 +200,7 @@ function Content() {
                           {p.fullName}
                           {p.balanceCents > 0 && (
                             <span className="ml-2 rounded-full bg-amber-100 text-amber-800 text-[10px] font-medium px-1.5 py-0.5 align-middle">
-                              owes {formatMoney(p.balanceCents, "GTQ")}
+                              {tp.owes} {formatMoney(p.balanceCents, "GTQ")}
                             </span>
                           )}
                         </div>
@@ -220,29 +223,35 @@ function Content() {
                                     k.remaining === 0 ? "bg-amber-100 text-amber-800" : "bg-brand-100 text-brand-800"
                                   }`}
                                 >
-                                  {k.remaining === 0 ? "none left" : `${k.remaining} left`}
+                                  {k.remaining === 0
+                                    ? tp.noneLeft
+                                    : k.remaining === 1
+                                      ? tp.leftOne
+                                      : `${k.remaining} ${tp.leftMany}`}
                                 </span>
                               </div>
                             ))}
                             {p.packages.length > 2 && (
-                              <div className="text-[10px] text-gray-400">+{p.packages.length - 2} more</div>
+                              <div className="text-[10px] text-gray-400">
+                                +{p.packages.length - 2} {tp.more}
+                              </div>
                             )}
                           </div>
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap hidden md:table-cell">
-                        {p.lastAppointmentAt ? formatDate(p.lastAppointmentAt) : "—"}
+                        {p.lastAppointmentAt ? formatDate(p.lastAppointmentAt, t.dateLocale) : "—"}
                       </td>
                       <td className="px-3 py-2.5 text-xs text-gray-600 whitespace-nowrap hidden lg:table-cell">
-                        {formatDate(p.createdAt)}
+                        {formatDate(p.createdAt, t.dateLocale)}
                       </td>
                       <td className="px-3 py-2.5 sticky right-0 bg-white group-hover:bg-cream-50">
                         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
                             onClick={() => router.push(`/admin/patients/${p.id}`)}
-                            title="View record"
-                            aria-label={`View ${p.fullName}`}
+                            title={tp.viewRecord}
+                            aria-label={`${tp.view} ${p.fullName}`}
                             className="h-8 w-8 rounded-full text-brand-700 hover:bg-brand-50 flex items-center justify-center"
                           >
                             <EyeIcon />
@@ -251,8 +260,8 @@ function Content() {
                             <button
                               type="button"
                               onClick={() => setToDelete(p)}
-                              title="Delete patient"
-                              aria-label={`Delete ${p.fullName}`}
+                              title={tp.deletePatient}
+                              aria-label={`${tp.delete} ${p.fullName}`}
                               className="h-8 w-8 rounded-full text-red-600 hover:bg-red-50 flex items-center justify-center"
                             >
                               <TrashIcon />
@@ -270,7 +279,8 @@ function Content() {
           {/* Paginación */}
           <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-3 py-2.5 text-xs text-gray-600">
             <span>
-              {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, sorted.length)} of {sorted.length}
+              {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, sorted.length)} {tp.pageOf}{" "}
+              {sorted.length}
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -337,10 +347,14 @@ function DeleteDialog({
   onCancel: () => void;
   onDeleted: () => void;
 }) {
+  const t = useAdminT();
+  const d = t.patientsList.dialog;
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const match = typed.trim().toLowerCase() === patient.fullName.trim().toLowerCase();
+  const appts = patient._count.appointments;
+  const payments = patient._count.payments;
 
   async function confirm() {
     setBusy(true);
@@ -349,7 +363,7 @@ function DeleteDialog({
       await deletePatient(patient.id);
       onDeleted();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      setError(err instanceof Error ? err.message : t.common.error);
       setBusy(false);
     }
   }
@@ -357,15 +371,14 @@ function DeleteDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/40 px-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-gray-900">Delete patient</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{d.title}</h2>
         <p className="mt-2 text-sm text-gray-600">
-          This permanently removes <strong>{patient.fullName}</strong> together with their{" "}
-          {patient._count.appointments} appointment{patient._count.appointments === 1 ? "" : "s"},{" "}
-          {patient._count.payments} payment{patient._count.payments === 1 ? "" : "s"}, packages, measurements and
-          plans. It cannot be undone.
+          {d.intro} <strong>{patient.fullName}</strong> {d.with} {appts}{" "}
+          {appts === 1 ? d.apptOne : d.apptMany}, {payments} {payments === 1 ? d.paymentOne : d.paymentMany},{" "}
+          {d.tail}
         </p>
         <label className="mt-4 block text-xs text-gray-600">
-          Type the patient&apos;s full name to confirm
+          {d.confirmLabel}
           <input
             type="text"
             value={typed}
@@ -383,7 +396,7 @@ function DeleteDialog({
             disabled={busy}
             className="rounded-full px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
           >
-            Cancel
+            {t.common.cancel}
           </button>
           <button
             type="button"
@@ -391,7 +404,7 @@ function DeleteDialog({
             disabled={!match || busy}
             className="rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-40 px-4 py-2 text-sm font-medium text-white"
           >
-            {busy ? "Deleting…" : "Delete permanently"}
+            {busy ? d.deleting : d.confirm}
           </button>
         </div>
       </div>
@@ -416,6 +429,6 @@ function TrashIcon() {
   );
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "2-digit" });
+function formatDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, { year: "numeric", month: "short", day: "2-digit" });
 }

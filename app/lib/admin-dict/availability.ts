@@ -1,0 +1,131 @@
+// Textos de la sección en los dos idiomas. `es` debe tener la misma forma que `en`.
+const en = {
+  title: "Availability",
+  subtitle:
+    "Define your weekly schedule and block specific dates (vacations, holidays). Patients will only see times within these ranges.",
+  // Índice 0 = domingo, como `Date.getDay()` y `dayOfWeek` en la API.
+  days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+  settings: {
+    title: "Settings",
+    subtitle: "Rules applied to the calendar the patient sees.",
+    allowSameDay: "Allow same-day bookings",
+    allowSameDayHint: "If you turn this off, today appears as \"full\" regardless of free times.",
+    minLead: "Minimum lead time",
+    minutes: "minutes",
+    minLeadHint:
+      "The patient can't book slots that start before this margin from now. For example, 60 = at least 1 hour ahead.",
+    invalidLead: "Invalid lead time.",
+    saved: "Saved",
+    save: "Save changes",
+    saving: "Saving…",
+  },
+  weekly: {
+    title: "Weekly schedule",
+    subtitle:
+      "You can add several ranges per day (for example 8-12 and 14-17). The \"To\" time is the last appointment start: 7:30 – 14:00 offers a last appointment at 14:00, whatever the service duration.",
+    addRange: "+ Add range",
+    noRanges: "No ranges. No appointments this day.",
+    from: "From",
+    to: "To (last start)",
+    add: "Add",
+    adding: "Adding…",
+    edit: "Edit",
+    save: "Save",
+    saving: "Saving…",
+    pause: "Pause",
+    activate: "Activate",
+    delete: "Delete",
+    startBeforeEnd: "The start time must be before the end time.",
+  },
+  blocks: {
+    title: "One-off blocks",
+    subtitle:
+      "Vacations, holidays, days with no availability. They apply on top of the weekly schedule.",
+    empty: "No active blocks.",
+    delete: "Delete",
+    confirmDelete: "Delete this block?",
+    from: "From (Guatemala time)",
+    to: "To (Guatemala time)",
+    reason: "Reason (optional)",
+    reasonPh: "e.g. Vacation, travel, training…",
+    add: "Add block",
+    adding: "Adding…",
+    missingDates: "Enter start and end date and time.",
+    conflictOne: "1 appointment falls inside that range",
+    conflictMany: "{n} appointments fall inside that range",
+    conflictHint1: "Blocking prevents ",
+    conflictHintEm: "new",
+    conflictHint2:
+      " bookings but does not cancel these. Reschedule them first, or block anyway and handle them yourself.",
+    blockAnyway: "Block anyway",
+    notify: "Notify & reschedule",
+    notifying: "Notifying…",
+    min: "min",
+  },
+};
+
+const es: typeof en = {
+  title: "Disponibilidad",
+  subtitle:
+    "Define tu horario semanal y bloquea fechas puntuales (vacaciones, feriados). Las pacientes solo verán horas dentro de estos rangos.",
+  days: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+  settings: {
+    title: "Ajustes",
+    subtitle: "Reglas que se aplican al calendario que ve la paciente.",
+    allowSameDay: "Permitir citas el mismo día",
+    allowSameDayHint: "Si lo apagas, hoy aparece como \"lleno\" aunque haya horas libres.",
+    minLead: "Margen mínimo",
+    minutes: "minutos",
+    minLeadHint:
+      "La paciente no puede reservar horas que empiecen antes de este margen desde ahora. Por ejemplo, 60 = al menos 1 hora de anticipación.",
+    invalidLead: "Margen inválido.",
+    saved: "Guardado",
+    save: "Guardar cambios",
+    saving: "Guardando…",
+  },
+  weekly: {
+    title: "Horario semanal",
+    subtitle:
+      "Puedes agregar varios rangos por día (por ejemplo 8-12 y 14-17). La hora \"Hasta\" es la última hora de inicio de cita: 7:30 – 14:00 ofrece la última cita a las 14:00, sin importar la duración del servicio.",
+    addRange: "+ Agregar rango",
+    noRanges: "Sin rangos. No hay citas este día.",
+    from: "Desde",
+    to: "Hasta (última hora de inicio)",
+    add: "Agregar",
+    adding: "Agregando…",
+    edit: "Editar",
+    save: "Guardar",
+    saving: "Guardando…",
+    pause: "Pausar",
+    activate: "Activar",
+    delete: "Eliminar",
+    startBeforeEnd: "La hora de inicio debe ser antes que la de fin.",
+  },
+  blocks: {
+    title: "Bloqueos",
+    subtitle:
+      "Vacaciones, feriados, días sin disponibilidad. Se aplican encima del horario semanal.",
+    empty: "No hay bloqueos activos.",
+    delete: "Eliminar",
+    confirmDelete: "¿Eliminar este bloqueo?",
+    from: "Inicia (hora de Guatemala)",
+    to: "Termina (hora de Guatemala)",
+    reason: "Motivo (opcional)",
+    reasonPh: "p. ej. Vacaciones, viaje, capacitación…",
+    add: "Agregar bloqueo",
+    adding: "Agregando…",
+    missingDates: "Escribe fecha y hora de inicio y de fin.",
+    conflictOne: "1 cita cae dentro de ese rango",
+    conflictMany: "{n} citas caen dentro de ese rango",
+    conflictHint1: "El bloqueo evita citas ",
+    conflictHintEm: "nuevas",
+    conflictHint2:
+      ", pero no cancela estas. Reprográmalas primero, o bloquea de todos modos y resuélvelas tú.",
+    blockAnyway: "Bloquear de todos modos",
+    notify: "Avisar y reprogramar",
+    notifying: "Avisando…",
+    min: "min",
+  },
+};
+
+export const availabilityDict = { en, es };
