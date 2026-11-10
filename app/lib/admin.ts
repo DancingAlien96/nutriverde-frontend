@@ -1254,6 +1254,14 @@ export async function cancelAppointment(
   return parseJson(res);
 }
 
+/** Borra una cita cancelada del expediente (solo CANCELED; 409 si tiene abonos). */
+export async function deleteAppointment(appointmentId: string): Promise<{ ok: true }> {
+  const res = await authFetch(`/api/admin/appointments/${appointmentId}`, {
+    method: "DELETE",
+  });
+  return parseJson(res);
+}
+
 /**
  * Mueve una cita a otra fecha (o reactiva una cancelada) y avisa a la
  * paciente. Si no se manda meetingUrl se conserva el que tenía.
