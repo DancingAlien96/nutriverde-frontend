@@ -99,6 +99,21 @@ export async function disablePush(): Promise<PushState> {
   return "off";
 }
 
+/**
+ * Baja local sin tocar el servidor: para cuando la sesion ya no es valida
+ * (token vencido). La copia del servidor se borra sola al primer envio
+ * fallido (410) o cuando otra cuenta activa en este dispositivo.
+ */
+export async function forgetPushLocally(): Promise<void> {
+  try {
+    const reg = await registration();
+    const sub = reg ? await reg.pushManager.getSubscription() : null;
+    if (sub) await sub.unsubscribe();
+  } catch {
+    // Sin soporte o sin suscripcion: nada que hacer.
+  }
+}
+
 function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
   const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");

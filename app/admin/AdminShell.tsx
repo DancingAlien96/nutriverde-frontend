@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { adminMe, clearToken, getToken, isSecretary, sendPushTest, type Admin } from "../lib/admin";
-import { disablePush, enablePush, getPushState, type PushState } from "./push";
+import { disablePush, enablePush, forgetPushLocally, getPushState, type PushState } from "./push";
 import { useLocale } from "../lib/i18n";
 import { toSiteLocale, useAdminT, type AdminDict } from "../lib/admin-i18n";
 import {
@@ -201,6 +201,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {
         if (!cancelled) {
+          // Sesion invalida: este dispositivo no debe seguir recibiendo
+          // avisos de la cuenta anterior.
+          void forgetPushLocally();
           clearToken();
           router.replace("/admin/login");
         }
@@ -215,7 +218,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     setDrawerOpen(false);
   }, [pathname]);
 
-  function handleLogout() {
+  async function handleLogout() {
+    // Primero la baja de las notificaciones (mientras el token aun sirve
+    // para avisarle al servidor), con tope para no trabar el cierre.
+    await Promise.race([
+      disablePush().catch(() => undefined),
+      new Promise((resolve) => setTimeout(resolve, 3000)),
+    ]);
     clearToken();
     router.replace("/admin/login");
   }
