@@ -9,6 +9,7 @@ import {
   type EmailOutcome,
   type Modality,
   type PendingAppointment,
+  type PendingPackage,
 } from "../../lib/admin";
 import { MonthCalendar } from "../../components/MonthCalendar";
 import { ClockIcon } from "../icons";
@@ -17,20 +18,24 @@ import { useAdminT } from "../../lib/admin-i18n";
 const BUSINESS_TZ = "America/Guatemala";
 
 /**
- * Bandeja de citas por agendar: pago aprobado pero sin horario confirmado.
- *
- * Es la unica herramienta de la secretaria (y tambien la usa la
- * nutricionista). Para cada cita se elige dia + hora (o se acepta la que
- * propuso la paciente), se pega el link de la videollamada y al confirmar
- * la paciente recibe el correo con fecha y enlace.
+ * Bandeja por agendar. Arriba, citas con pago aprobado pero sin horario
+ * confirmado: para cada una se elige dia + hora (o se acepta la que propuso
+ * la paciente), se pega el link de la videollamada y al confirmar la
+ * paciente recibe el correo. Abajo, paquetes con sesiones restantes cuya
+ * siguiente cita nadie ha agendado: el boton abre "Nueva cita" con la
+ * paciente ya puesta (la cita descuenta del paquete).
  */
 export function PendingScheduling({
   onScheduled,
+  onBook,
 }: {
   onScheduled: (email: EmailOutcome) => void;
+  /** Agendar la siguiente sesión de un paquete (abre Nueva cita con el correo). */
+  onBook: (email: string) => void;
 }) {
   const t = useAdminT();
   const [items, setItems] = useState<PendingAppointment[]>([]);
+  const [packages, setPackages] = useState<PendingPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -41,9 +46,10 @@ export function PendingScheduling({
   useEffect(() => {
     let cancelled = false;
     listPendingAppointments()
-      .then(({ appointments }) => {
+      .then(({ appointments, packages: pkgs }) => {
         if (!cancelled) {
           setItems(appointments);
+          setPackages(pkgs ?? []);
           setError(null);
         }
       })
@@ -64,7 +70,7 @@ export function PendingScheduling({
     onScheduled(email);
   }
 
-  if (loading && items.length === 0) {
+  if (loading && items.length === 0 && packages.length === 0) {
     return (
       <div className="mb-5 rounded-3xl bg-white border border-cream-200 p-5">
         <p className="text-xs text-ink-400">{t.pending.loading}</p>
@@ -82,7 +88,7 @@ export function PendingScheduling({
           <p className="text-sm text-ink-500 mt-1">{t.pending.subtitle}</p>
         </div>
         <span className="shrink-0 rounded-full bg-amber-100 text-amber-800 text-xs font-medium px-3 py-1">
-          {items.length} {t.pending.count}
+          {items.length + packages.length} {t.pending.count}
         </span>
       </div>
 
@@ -92,9 +98,11 @@ export function PendingScheduling({
         </div>
       )}
 
-      {items.length === 0 ? (
+      {items.length === 0 && packages.length === 0 && (
         <p className="text-sm text-ink-400 py-6 text-center">{t.pending.empty}</p>
-      ) : (
+      )}
+
+      {items.length > 0 && (
         <ul className="mt-4 divide-y divide-cream-100">
           {items.map((a) => (
             <li key={a.id} className="py-3">
@@ -134,6 +142,46 @@ export function PendingScheduling({
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Paquetes con sesiones restantes sin la siguiente cita. */}
+      {packages.length > 0 && (
+        <div className={items.length > 0 ? "mt-6 pt-5 border-t border-cream-200" : "mt-4"}>
+          <h3 className="text-xs uppercase tracking-wider font-semibold text-ink-500">
+            {t.pending.packagesTitle}
+          </h3>
+          <p className="text-sm text-ink-500 mt-1">{t.pending.packagesSubtitle}</p>
+          <ul className="mt-3 divide-y divide-cream-100">
+            {packages.map((p) => (
+              <li key={p.packageId} className="py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-ink-900">{p.patient.fullName}</p>
+                  <p className="text-xs text-ink-500">
+                    {p.serviceName} · {p.usedSessions}/{p.totalSessions}
+                    {p.patient.phone ? ` · ${p.patient.phone}` : ""}
+                  </p>
+                  <p className="text-xs text-ink-500">
+                    {p.lastSessionAt
+                      ? `${t.pending.lastSession} ${fmtDateTime(p.lastSessionAt, BUSINESS_TZ, t.dateLocale)}`
+                      : t.pending.noSessions}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-amber-100 text-amber-800 text-[11px] font-medium px-2.5 py-1">
+                    {t.pending.nextSession} {p.usedSessions + 1} {t.pending.of} {p.totalSessions}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onBook(p.patient.email)}
+                    className="rounded-full bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium px-4 py-2"
+                  >
+                    {t.pending.bookNext}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

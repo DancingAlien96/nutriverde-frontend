@@ -140,7 +140,9 @@ function CitasContent() {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      listPendingAppointments().then((d) => d.appointments.length).catch(() => 0),
+      listPendingAppointments()
+        .then((d) => d.appointments.length + (d.packages?.length ?? 0))
+        .catch(() => 0),
       listRenewals().then((d) => d.renewals.length).catch(() => 0),
       listOutstandingCharges()
         .then((d) => ({ count: d.charges.length, cents: d.totalCents }))
@@ -359,6 +361,11 @@ function CitasContent() {
           onScheduled={(email) => {
             setNotice(email);
             setReloadKey((k) => k + 1);
+          }}
+          onBook={(email) => {
+            setCreateEmail(email);
+            setCreating(true);
+            if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
           }}
         />
       )}

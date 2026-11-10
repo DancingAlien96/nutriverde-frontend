@@ -955,8 +955,21 @@ export interface PendingAppointment {
   service: { id: string; name: string; durationMin: number };
 }
 
+/** Paquete con sesiones restantes y sin la siguiente cita agendada. */
+export interface PendingPackage {
+  packageId: string;
+  patient: { id: string; fullName: string; email: string; phone: string | null };
+  serviceId: string;
+  serviceName: string;
+  totalSessions: number;
+  usedSessions: number;
+  remaining: number;
+  lastSessionAt: string | null;
+}
+
 export async function listPendingAppointments(): Promise<{
   appointments: PendingAppointment[];
+  packages: PendingPackage[];
 }> {
   const res = await authFetch("/api/admin/appointments/pending");
   return parseJson(res);
