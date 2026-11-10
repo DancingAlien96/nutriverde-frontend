@@ -138,6 +138,48 @@ export async function adminMe(): Promise<{ admin: Admin & { active: boolean } }>
   return parseJson(res);
 }
 
+// ============================================================
+// Notificaciones push de la app instalada
+// ============================================================
+
+/** Llave pública VAPID; null si el servidor no tiene push configurado. */
+export async function getPushPublicKey(): Promise<{ publicKey: string | null }> {
+  const res = await authFetch("/api/admin/push/public-key");
+  return parseJson(res);
+}
+
+export async function subscribePush(sub: {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  userAgent?: string;
+}): Promise<{ ok: true }> {
+  const res = await authFetch("/api/admin/push/subscribe", {
+    method: "POST",
+    body: JSON.stringify(sub),
+  });
+  return parseJson(res);
+}
+
+export async function isPushSubscribed(endpoint: string): Promise<{ subscribed: boolean }> {
+  const res = await authFetch(
+    `/api/admin/push/subscribe?endpoint=${encodeURIComponent(endpoint)}`,
+  );
+  return parseJson(res);
+}
+
+export async function unsubscribePush(endpoint: string): Promise<{ ok: true }> {
+  const res = await authFetch("/api/admin/push/subscribe", {
+    method: "DELETE",
+    body: JSON.stringify({ endpoint }),
+  });
+  return parseJson(res);
+}
+
+export async function sendPushTest(): Promise<{ ok: true; sent: number; failed: number }> {
+  const res = await authFetch("/api/admin/push/test", { method: "POST" });
+  return parseJson(res);
+}
+
 export async function listPayments(
   status?: "PENDING_REVIEW" | "APPROVED" | "REJECTED",
 ): Promise<{ payments: PaymentListItem[] }> {

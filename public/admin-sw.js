@@ -7,8 +7,10 @@
  *   nunca cambian).
  * - Cualquier otra cosa, incluida la API (otro origen), va siempre a la red
  *   y no se guarda: los datos del panel no deben quedar en caché.
+ * - Notificaciones push: el servidor manda { title, body, url, tag }; al
+ *   tocarla se enfoca la pestaña del panel si ya está abierta o se abre.
  */
-const VERSION = "admin-v1";
+const VERSION = "admin-v2";
 const STATIC_CACHE = `${VERSION}-static`;
 const PAGES_CACHE = `${VERSION}-pages`;
 const OFFLINE_URL = "/admin/offline";
@@ -74,3 +76,38 @@ async function cacheFirst(request) {
   if (response.ok) cache.put(request, response.clone());
   return response;
 }
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : "" };
+  }
+  const title = data.title || "Plenha Nutrition";
+  const url = data.url || "/admin/citas";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || "",
+      icon: "/icons/admin-192.png",
+      badge: "/icons/admin-192.png",
+      tag: data.tag || undefined,
+      renotify: !!data.tag,
+      data: { url },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL((event.notification.data && event.notification.data.url) || "/admin/citas", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const panel = clients.find((c) => c.url.includes("/admin"));
+      if (panel) {
+        return panel.focus().then((c) => (c && "navigate" in c ? c.navigate(target) : c));
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
+});

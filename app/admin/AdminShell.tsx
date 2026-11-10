@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { adminMe, clearToken, getToken, isSecretary, type Admin } from "../lib/admin";
+import { adminMe, clearToken, getToken, isSecretary, sendPushTest, type Admin } from "../lib/admin";
+import { disablePush, enablePush, getPushState, type PushState } from "./push";
 import { useLocale } from "../lib/i18n";
 import { toSiteLocale, useAdminT, type AdminDict } from "../lib/admin-i18n";
 import {
@@ -20,6 +21,7 @@ import {
   LeafBranch,
   ChevronLeftIcon,
   ChevronRightIcon,
+  BellIcon,
 } from "./icons";
 
 type NavItem = {
@@ -125,6 +127,57 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     if (!installPrompt) return;
     await installPrompt.prompt();
     setInstallPrompt(null);
+  }
+
+  // Notificaciones push: estado real (permiso + suscripcion del navegador +
+  // registro en el servidor). null = todavia no se consulto.
+  const [push, setPush] = useState<PushState | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMsg, setPushMsg] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getPushState()
+      .then((st) => {
+        if (!cancelled) setPush(st);
+      })
+      .catch(() => {
+        if (!cancelled) setPush("unsupported");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handlePushToggle() {
+    if (pushBusy || !push) return;
+    setPushBusy(true);
+    setPushMsg(null);
+    try {
+      if (push === "on") {
+        setPush(await disablePush());
+      } else {
+        const st = await enablePush();
+        setPush(st);
+        if (st === "blocked") setPushMsg(t.common.pushBlocked);
+        else if (st !== "on") setPushMsg(t.common.pushError);
+      }
+    } catch {
+      setPushMsg(t.common.pushError);
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  async function handlePushTest() {
+    if (pushBusy) return;
+    setPushBusy(true);
+    try {
+      await sendPushTest();
+    } catch {
+      setPushMsg(t.common.pushError);
+    } finally {
+      setPushBusy(false);
+    }
   }
 
   useEffect(() => {
@@ -255,6 +308,64 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             {t.common.installApp}
           </button>
         </div>
+      )}
+
+      {/* Notificaciones push (solo cuando el servidor y el navegador pueden) */}
+      {push && push !== "unsupported" && push !== "unavailable" && (
+        mini ? (
+          <div className="px-2 pb-2 flex justify-center">
+            <button
+              type="button"
+              onClick={handlePushToggle}
+              disabled={pushBusy || push === "blocked" || push === "ios-install"}
+              title={push === "on" ? t.common.pushOn : t.common.pushEnable}
+              aria-label={push === "on" ? t.common.pushOn : t.common.pushEnable}
+              className={`h-9 w-9 rounded-full flex items-center justify-center border ${
+                push === "on"
+                  ? "border-brand-300 bg-brand-100 text-brand-800"
+                  : "border-cream-300 text-ink-500 hover:bg-cream-200/70"
+              } disabled:opacity-50`}
+            >
+              <BellIcon className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="px-3 pb-2">
+            {push === "on" ? (
+              <div className="rounded-2xl border border-brand-300 bg-brand-50 px-4 py-2 text-xs text-brand-800">
+                <p className="font-medium inline-flex items-center gap-1.5">
+                  <BellIcon className="h-3.5 w-3.5" />
+                  {t.common.pushOn}
+                </p>
+                <p className="mt-1 flex gap-3">
+                  <button type="button" onClick={handlePushTest} disabled={pushBusy} className="underline underline-offset-2 hover:text-brand-900 disabled:opacity-50">
+                    {t.common.pushTest}
+                  </button>
+                  <button type="button" onClick={handlePushToggle} disabled={pushBusy} className="underline underline-offset-2 hover:text-brand-900 disabled:opacity-50">
+                    {t.common.pushDisable}
+                  </button>
+                </p>
+              </div>
+            ) : push === "blocked" || push === "ios-install" ? (
+              <p className="rounded-2xl border border-cream-300 bg-cream-100 px-4 py-2 text-[11px] leading-snug text-ink-600">
+                {push === "blocked" ? t.common.pushBlocked : t.common.pushIosInstall}
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={handlePushToggle}
+                disabled={pushBusy}
+                className="w-full rounded-2xl border border-cream-300 bg-white px-4 py-2 text-xs font-medium text-ink-700 hover:bg-cream-100 disabled:opacity-60 inline-flex items-center justify-center gap-1.5"
+              >
+                <BellIcon className="h-3.5 w-3.5" />
+                {pushBusy ? t.common.pushWorking : t.common.pushEnable}
+              </button>
+            )}
+            {pushMsg && push !== "blocked" && (
+              <p className="mt-1 px-1 text-[11px] text-red-700">{pushMsg}</p>
+            )}
+          </div>
+        )
       )}
 
       {/* Decoración */}
