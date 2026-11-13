@@ -33,10 +33,20 @@ const inputCls =
 // Campos de precio y forma de pago (Nueva cita y "Registrar cobro")
 // ============================================================
 
+/** Plan del formulario: ademas de los del cobro, "LATER" = hoy no paga nada
+ *  (la consulta inicial se agenda sin pago y se cobra al salir). Se guarda
+ *  como INSTALLMENTS con abono 0. */
+export type ChargeFieldsPlan = ChargePlan | "LATER";
+
+/** Plan que se manda al servidor a partir del plan del formulario. */
+export function toChargePlan(plan: ChargeFieldsPlan): ChargePlan {
+  return plan === "LATER" ? "INSTALLMENTS" : plan;
+}
+
 export interface ChargeFieldsValue {
   /** null = usar el precio de lista del servicio. */
   priceText: string | null;
-  plan: ChargePlan;
+  plan: ChargeFieldsPlan;
   /** Abono de hoy cuando paga por plazos. Vacío = nada todavía. */
   paidText: string;
   method: ChargeMethod;
@@ -62,6 +72,7 @@ export function resolveChargeFields(
     value.priceText === null ? listPriceCents : parseMoney(value.priceText);
   if (priceCents === null) return { priceCents: null, paidCents: null, error: "price" };
   if (value.plan === "FULL") return { priceCents, paidCents: priceCents, error: null };
+  if (value.plan === "LATER") return { priceCents, paidCents: 0, error: null };
   const paidCents = value.paidText.trim() === "" ? 0 : parseMoney(value.paidText);
   if (paidCents === null || paidCents > priceCents) {
     return { priceCents, paidCents: null, error: "paid" };
@@ -85,7 +96,7 @@ export function ChargeFields({
   const diff = priceCents === null ? 0 : listPriceCents - priceCents;
   const symbol = currency === "GTQ" ? "Q" : currency === "USD" ? "US$" : currency;
 
-  const planBtn = (plan: ChargePlan, text: string) => (
+  const planBtn = (plan: ChargeFieldsPlan, text: string) => (
     <button
       type="button"
       onClick={() => onChange({ ...value, plan })}
@@ -144,10 +155,13 @@ export function ChargeFields({
         )}
       </label>
 
-      <div className="inline-flex rounded-full bg-white border border-cream-200 p-1">
+      <div className="inline-flex flex-wrap rounded-full bg-white border border-cream-200 p-1">
+        {planBtn("LATER", t.charge.payLater)}
         {planBtn("FULL", t.charge.paidFull)}
         {planBtn("INSTALLMENTS", t.charge.installments)}
       </div>
+
+      {value.plan === "LATER" && <p className="text-[11px] text-ink-500">{t.charge.laterNote}</p>}
 
       {value.plan === "FULL" && priceCents !== null && (
         <p className="text-[11px] text-ink-500">
@@ -631,7 +645,7 @@ function RegisterCharge({
       await createCharge({
         ...target,
         priceCents: resolved.priceCents,
-        plan: fields.plan,
+        plan: toChargePlan(fields.plan),
         paidCents: resolved.paidCents,
         method: fields.method,
       });

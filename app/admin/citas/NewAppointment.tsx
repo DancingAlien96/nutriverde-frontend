@@ -20,6 +20,7 @@ import {
   ChargeFields,
   EMPTY_CHARGE_FIELDS,
   resolveChargeFields,
+  toChargePlan,
   type ChargeFieldsValue,
 } from "../ChargePanel";
 
@@ -104,8 +105,15 @@ export function NewAppointment({
   // Al cambiar de servicio cambia la duracion, asi que los slots ya no valen.
   function handleServiceChange(slug: string) {
     setServiceSlug(slug);
-    // Otro servicio, otro precio de lista: se descarta el precio escrito.
-    setChargeFields((f) => ({ ...f, priceText: null }));
+    // Otro servicio, otro precio de lista: se descarta el precio escrito. La
+    // consulta suelta se agenda sin pago (se cobra al salir); un programa
+    // vendido directo se paga de una vez.
+    const svc = services.find((x) => x.slug === slug);
+    setChargeFields((f) => ({
+      ...f,
+      priceText: null,
+      plan: svc && svc.sessions > 1 ? "FULL" : "LATER",
+    }));
     setSelectedDate(null);
     setSlots(null);
     setPickedSlot(null);
@@ -185,7 +193,12 @@ export function NewAppointment({
       .then(({ services: list }) => {
         if (cancelled) return;
         setServices(list);
-        if (list.length > 0) setServiceSlug(list[0].slug);
+        if (list.length > 0) {
+          setServiceSlug(list[0].slug);
+          // Cita suelta: se cobra al salir de la consulta. Programa: se paga
+          // de una vez.
+          setChargeFields((f) => ({ ...f, plan: list[0].sessions > 1 ? "FULL" : "LATER" }));
+        }
         // Si venimos de "Por renovar", buscamos a la paciente de una vez.
         if (initialEmail) void lookup(initialEmail, list);
       })
@@ -231,7 +244,7 @@ export function NewAppointment({
           ? {
               priceCents: resolvedCharge.priceCents,
               payment: {
-                plan: chargeFields.plan,
+                plan: toChargePlan(chargeFields.plan),
                 paidCents: resolvedCharge.paidCents ?? 0,
                 method: chargeFields.method,
               },
@@ -575,7 +588,9 @@ export function NewAppointment({
               {formatMoney(resolvedCharge.priceCents, service.currency)} ·{" "}
               {chargeFields.plan === "FULL"
                 ? t.charge.paidFull
-                : `${t.charge.paidToday} ${formatMoney(resolvedCharge.paidCents ?? 0, service.currency)} · ${t.charge.balance} ${formatMoney(
+                : chargeFields.plan === "LATER"
+                  ? t.charge.payLater
+                  : `${t.charge.paidToday} ${formatMoney(resolvedCharge.paidCents ?? 0, service.currency)} · ${t.charge.balance} ${formatMoney(
                     resolvedCharge.priceCents - (resolvedCharge.paidCents ?? 0),
                     service.currency,
                   )}`}

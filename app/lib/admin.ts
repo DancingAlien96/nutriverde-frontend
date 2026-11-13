@@ -1315,7 +1315,13 @@ export async function cancelAppointment(
  */
 export async function convertAppointmentToPackage(
   appointmentId: string,
-  input: { serviceId: string; priceCents?: number; notes?: string },
+  input: {
+    serviceId: string;
+    priceCents?: number;
+    /** Pago que recepción recibe al convertir (completo, abono o nada). */
+    payment?: { plan: ChargePlan; paidCents?: number; method?: ChargeMethod };
+    notes?: string;
+  },
 ): Promise<{
   ok: true;
   package: { id: string; serviceName: string; totalSessions: number; usedSessions: number; remaining: number };

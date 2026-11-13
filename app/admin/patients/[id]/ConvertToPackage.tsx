@@ -2,25 +2,25 @@
 
 import { useEffect, useState } from "react";
 import {
-  centsToInput,
   convertAppointmentToPackage,
   formatMoney,
   listSchedulableServices,
-  parseMoney,
   type ChargeSummary,
   type SchedulableService,
 } from "../../../lib/admin";
 import { useAdminT } from "../../../lib/admin-i18n";
 import { Collapse } from "../../Collapse";
+import {
+  ChargeFields,
+  EMPTY_CHARGE_FIELDS,
+  resolveChargeFields,
+  toChargePlan,
+  type ChargeFieldsValue,
+} from "../../ChargePanel";
 
 const inputCls =
   "w-full rounded-xl border border-cream-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500";
 
-/**
- * "Convertir en programa": la paciente vino a una cita suelta (consulta
- * inicial) y ese dia decide comprar un programa. La cita pasa a ser la
- * sesion 1 del paquete y lo que ya pago se descuenta del precio del programa.
- */
 /** Lo minimo de la cita que hace falta: id, moneda y lo ya pagado. */
 interface ConvertibleAppointment {
   id: string;
@@ -29,6 +29,13 @@ interface ConvertibleAppointment {
   payment?: { status: string; amountCents: number } | null;
 }
 
+/**
+ * "Convertir en programa": la paciente vino a la consulta inicial (agendada
+ * sin pago) y al salir decide comprar un programa. La cita pasa a ser la
+ * sesion 1 del paquete y recepcion registra aqui mismo lo que paga hoy:
+ * completo, un abono o nada todavia. Si la cita ya tenia algo pagado, eso
+ * tambien cuenta.
+ */
 export function ConvertToPackage({
   appointment: a,
   onChanged,
@@ -40,7 +47,8 @@ export function ConvertToPackage({
   const [open, setOpen] = useState(false);
   const [services, setServices] = useState<SchedulableService[] | null>(null);
   const [serviceId, setServiceId] = useState("");
-  const [price, setPrice] = useState("");
+  // Un programa normalmente se paga de una vez al decidirse.
+  const [fields, setFields] = useState<ChargeFieldsValue>({ ...EMPTY_CHARGE_FIELDS, plan: "FULL" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,11 +61,7 @@ export function ConvertToPackage({
         if (cancelled) return;
         const programs = list.filter((s) => s.sessions > 1);
         setServices(programs);
-        const first = programs[0];
-        if (first) {
-          setServiceId(first.id);
-          setPrice(centsToInput(first.priceCents));
-        }
+        if (programs[0]) setServiceId(programs[0].id);
       })
       .catch(() => {
         if (!cancelled) setServices([]);
@@ -73,25 +77,43 @@ export function ConvertToPackage({
   const carried =
     (a.charge?.paidCents ?? 0) +
     (a.payment && a.payment.status === "APPROVED" ? a.payment.amountCents : 0);
-  const priceCents = parseMoney(price);
-  const balance = priceCents != null ? Math.max(0, priceCents - carried) : null;
-  const priceTooLow = priceCents != null && priceCents < carried;
+
+  const resolved = service ? resolveChargeFields(fields, service.priceCents) : null;
+  const priceCents = resolved?.priceCents ?? null;
+  // "Completo" es lo que falta despues de lo ya pagado; por plazos, lo escrito.
+  const todayPaid =
+    priceCents === null
+      ? null
+      : fields.plan === "FULL"
+        ? Math.max(0, priceCents - carried)
+        : (resolved?.paidCents ?? null);
+  const priceTooLow = priceCents !== null && priceCents < carried;
+  const paidTooMuch = priceCents !== null && todayPaid !== null && carried + todayPaid > priceCents;
+  const balance =
+    priceCents !== null && todayPaid !== null ? Math.max(0, priceCents - carried - todayPaid) : null;
+  const invalid =
+    !service || !resolved || !!resolved.error || priceCents === null || todayPaid === null || priceTooLow || paidTooMuch;
 
   function pickService(id: string) {
     setServiceId(id);
-    const s = services?.find((x) => x.id === id);
-    if (s) setPrice(centsToInput(s.priceCents));
+    // Otro programa, otro precio de lista: se descarta el precio escrito.
+    setFields((f) => ({ ...f, priceText: null }));
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!service || priceCents == null || priceTooLow || submitting) return;
+    if (invalid || submitting || !service || priceCents === null) return;
     setSubmitting(true);
     setError(null);
     try {
       await convertAppointmentToPackage(a.id, {
         serviceId: service.id,
         priceCents: priceCents !== service.priceCents ? priceCents : undefined,
+        payment: {
+          plan: toChargePlan(fields.plan),
+          paidCents: fields.plan === "FULL" ? undefined : (todayPaid ?? 0),
+          method: fields.method,
+        },
       });
       setOpen(false);
       onChanged();
@@ -127,8 +149,8 @@ export function ConvertToPackage({
           ) : services.length === 0 ? (
             <p className="text-xs text-red-700">{c.noPrograms}</p>
           ) : (
-            <div className="grid sm:grid-cols-2 gap-3">
-              <label className="block">
+            <>
+              <label className="block sm:max-w-md">
                 <span className="block text-xs font-medium text-ink-700 mb-1">{c.program}</span>
                 <select value={serviceId} onChange={(e) => pickService(e.target.value)} className={inputCls}>
                   {services.map((s) => (
@@ -138,22 +160,19 @@ export function ConvertToPackage({
                   ))}
                 </select>
               </label>
-              <label className="block">
-                <span className="block text-xs font-medium text-ink-700 mb-1">{c.price}</span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  className={inputCls}
-                />
-                {service && priceCents != null && priceCents !== service.priceCents && (
-                  <span className="block mt-1 text-[11px] text-ink-500">
-                    {c.listPrice} {formatMoney(service.priceCents, service.currency)}
-                  </span>
-                )}
-              </label>
-            </div>
+
+              {service && (
+                <div className="rounded-xl border border-cream-200 bg-white p-3">
+                  <p className="text-xs font-medium text-ink-700 mb-2">{t.charge.formTitle}</p>
+                  <ChargeFields
+                    value={fields}
+                    onChange={setFields}
+                    listPriceCents={service.priceCents}
+                    currency={service.currency}
+                  />
+                </div>
+              )}
+            </>
           )}
 
           {service && (
@@ -164,8 +183,14 @@ export function ConvertToPackage({
                 {service.sessions - 1} {c.leftToBook}
               </p>
               <p>
-                {c.alreadyPaid} <strong>{formatMoney(carried, currency)}</strong>
-                {balance != null && (
+                {carried > 0 && (
+                  <>
+                    {c.alreadyPaid} <strong>{formatMoney(carried, currency)}</strong>
+                    {" · "}
+                  </>
+                )}
+                {c.payToday} <strong>{formatMoney(todayPaid ?? 0, currency)}</strong>
+                {balance !== null && (
                   <>
                     {" · "}
                     {c.balance}{" "}
@@ -176,6 +201,7 @@ export function ConvertToPackage({
                 )}
               </p>
               {priceTooLow && <p className="text-red-700">{c.priceTooLow}</p>}
+              {paidTooMuch && <p className="text-red-700">{c.paidTooMuch}</p>}
             </div>
           )}
 
@@ -184,7 +210,7 @@ export function ConvertToPackage({
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              disabled={!service || priceCents == null || priceTooLow || submitting}
+              disabled={invalid || submitting}
               className="rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white text-xs font-medium px-4 py-2"
             >
               {submitting ? c.converting : c.confirm}
