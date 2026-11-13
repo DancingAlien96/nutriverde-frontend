@@ -1309,6 +1309,25 @@ export async function cancelAppointment(
   return parseJson(res);
 }
 
+/**
+ * Convierte una cita suelta en la sesión 1 de un programa: crea el paquete,
+ * liga la cita y lo ya pagado por ella queda como abono del programa.
+ */
+export async function convertAppointmentToPackage(
+  appointmentId: string,
+  input: { serviceId: string; priceCents?: number; notes?: string },
+): Promise<{
+  ok: true;
+  package: { id: string; serviceName: string; totalSessions: number; usedSessions: number; remaining: number };
+  charge: ChargeSummary;
+}> {
+  const res = await authFetch(`/api/admin/appointments/${appointmentId}/convert-to-package`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
 /** Borra una cita cancelada del expediente (solo CANCELED; 409 si tiene abonos). */
 export async function deleteAppointment(appointmentId: string): Promise<{ ok: true }> {
   const res = await authFetch(`/api/admin/appointments/${appointmentId}`, {

@@ -22,6 +22,7 @@ import {
   TrainingsSection,
 } from "./ClinicalSections";
 import { ProgressCharts } from "./ProgressCharts";
+import { ConvertToPackage } from "./ConvertToPackage";
 import { ChargePanel, ChargeStatusChip } from "../../ChargePanel";
 import { Collapse } from "../../Collapse";
 import {
@@ -377,6 +378,12 @@ function Content() {
                     canManage={!secretary}
                     onChanged={reload}
                   />
+                )}
+
+                {/* Cita suelta: la paciente puede decidir ese dia comprar un
+                    programa y esta cita cuenta como su sesion 1. */}
+                {!a.package && a.status !== "CANCELED" && (
+                  <ConvertToPackage appointment={a} onChanged={reload} />
                 )}
 
                 {a.meetingUrl && (
